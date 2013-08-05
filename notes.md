@@ -26,4 +26,7 @@ Lets equip the shaps with their layouts, or maybe indexes with the shape+ layout
 
 
 ## deep embedding backends
-wont be supported till after "version zero", though 
+wont be supported till after "version zero", though will soon afterwards, but 
+some of the scaffolding will be visible in version zero
+
+## why 
