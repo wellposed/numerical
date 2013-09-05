@@ -30,3 +30,10 @@ wont be supported till after "version zero", though will soon afterwards, but
 some of the scaffolding will be visible in version zero
 
 ## why 
+
+
+# design things 
+
+lets have the fast path for every algorithm be the "no aliasing" case, and for
+the imperative versions, bad aliasing (ie the write target and read targe alias 
+in an "incoherent / bad" way )

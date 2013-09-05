@@ -9,3 +9,20 @@ module Numerics.Types.Layout where
 ColumnMajor
 
 -}
+
+data Point = Point 
+    deriving (Show, Read, Eq, Ord,Typeable,Data)
+{-
+Point is the only valid layout for a zero rank array, 
+
+Point has a well defined shape  that is the all ones shape,
+so at every rank, its the single element! 
+-}
+
+
+data head :# tail =
+                     !head :# !tail 
+    deriving (Show, Read, Eq, Ord,Typeable,Data)
+
+class Layout a where
+

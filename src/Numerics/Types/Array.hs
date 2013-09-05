@@ -22,6 +22,8 @@ data Locality = Contiguous | Strided
 maybe do 
      data Locality = Contiguous | Strided
 
+For now lets assume that the concrete (rather than delayed) arrays
+have a regular structure when strided. (rather than nonuniform gaps)
 -}
 {-
 rep = storable, unboxed, boxed, delay, etc
