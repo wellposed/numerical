@@ -14,6 +14,7 @@ lets do just IO and not ST for now
 
 data family Array world rep lay (view:: Locality) sh elm 
 
+--| for now locality is a closed type, may change going forward
 data Locality = Contiguous | Strided 
 
 
@@ -53,6 +54,9 @@ view =
     that suggests (but not for now) having a notion of origin / derived
     that would allow elimiting space leaks. But lets not do that for now
 
+-}
+
+{- what class
 -}
 
 

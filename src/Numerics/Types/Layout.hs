@@ -5,6 +5,8 @@
 
 module Numerics.Types.Layout where
 
+
+
 {-| RowMajor will be defined by a foldRight  over the  ix :^ ixes list
 ColumnMajor
 
@@ -25,4 +27,4 @@ data head :# tail =
     deriving (Show, Read, Eq, Ord,Typeable,Data)
 
 class Layout a where
-
+    index :: IsTuple sh => sh -> Shape sh -> Int 
