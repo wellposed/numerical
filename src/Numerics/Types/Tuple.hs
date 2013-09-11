@@ -6,11 +6,12 @@
 {-# LANGUAGE TypeOperators #-}
 
 --maybe i should just do the type familes version?
-{-# LANGUAGE  FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE UndecidableInstances #-}
+--{-# LANGUAGE  FlexibleInstances #-}
+--{-# LANGUAGE MultiParamTypeClasses #-}
+--{-# LANGUAGE FunctionalDependencies #-}
+--{-# LANGUAGE FlexibleContexts #-}
+--{-# LANGUAGE UndecidableInstances #-}
+
 {-# LANGUAGE  ScopedTypeVariables #-}
 
 
@@ -54,10 +55,12 @@ type DIM3 = Int :* DIM2
     
  -}
 
-transposeIndexTuple :: (IndexTuple it )=> it -> it
-transposeIndexTuple   =  tupleReverse
+transposeIndexTuple :: (IndexTuple a, IndexTuple b, 
+            a ~ TupleTranspose b,b~TupleTranspose a  )=> it -> it
+transposeIndexTuple   =  tupleReverse Z 
 
 class IsTuple a where
+    tupleReverse :: (IsTuple b, c~ TupleReverse b a,)=> b -> a  -> c
 
 instance IsTuple Z where
 
@@ -70,29 +73,16 @@ instance IndexTuple Z where
 
 instance IndexTuple t => IndexTuple (Int :* t ) where
 
+type family TupleTranspose a
+
+type instance TupleTranspose a = TupleReverse Z a 
+
+type family TupleReverse res input 
+
+type instance TupleReverse a Z = a
+type instance TupleReverse a (b:* c) = TupleReverse (b :* a) c 
 
 
-class TupleReverse l1 l2 | l1 -> l2, l2 -> l1  where
-  tupleReverse:: l1 -> l2
-
-instance (TupleReverse' Z l2 l3, TupleReverse' Z l3 l2) =>  TupleReverse l2 l3 where
-  tupleReverse l1 = hReverse' Z l1
-  {-# INLINE tupleReverse#-}
-
-
--- l3 = (reverse l2) ++ l1
-
-class TupleReverse' l1 l2 l3 | l1 l2 -> l3 where
-    hReverse':: l1 -> l2 -> l3
-
-instance TupleReverse' l1 Z l1  where
-
-    hReverse' l1 Z = l1
-    {-# INLINE hReverse' #-}
-
-instance TupleReverse' ( a :* l1) l2' l3  => TupleReverse' l1 ( a  :*l2') l3  where
-    hReverse' l1 (a :* l2') = hReverse' ( a :* l1) l2'
-    {-# INLINE hReverse' #-}
 
 
 
