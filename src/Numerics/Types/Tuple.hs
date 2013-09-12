@@ -4,16 +4,9 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE TypeOperators #-}
-
---maybe i should just do the type familes version?
---{-# LANGUAGE  FlexibleInstances #-}
---{-# LANGUAGE MultiParamTypeClasses #-}
---{-# LANGUAGE FunctionalDependencies #-}
---{-# LANGUAGE FlexibleContexts #-}
---{-# LANGUAGE UndecidableInstances #-}
-
-{-# LANGUAGE  ScopedTypeVariables #-}
-
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 
 module Numerics.Types.Tuple where
@@ -55,46 +48,38 @@ type DIM3 = Int :* DIM2
     
  -}
 
-transposeIndexTuple :: (IndexTuple a, IndexTuple b, 
-            a ~ TupleTranspose b,b~TupleTranspose a  )=> it -> it
-transposeIndexTuple   =  tupleReverse Z 
+-- doing the rank2 tranpose only, because transpose only really makes sense
+-- in the 2d case anyways. 
+tranposeIndex :: IntTuple sh => (Int :* Int :* sh) -> ( Int :* Int :* sh )
+tranposeIndex (i :* j :* rs) = (j:* i :* rs)
+{-# INLINE tranposeIndex#-}
 
-class IsTuple a where
-    tupleReverse :: (IsTuple b, c~ TupleReverse b a,)=> b -> a  -> c
+class Tuple a where   
 
-instance IsTuple Z where
+instance Tuple Z where
 
-instance (IsTuple as) => IsTuple (a :* as ) where
-
-
-class IndexTuple a where 
-
-instance IndexTuple Z where
-
-instance IndexTuple t => IndexTuple (Int :* t ) where
-
-type family TupleTranspose a
-
-type instance TupleTranspose a = TupleReverse Z a 
-
-type family TupleReverse res input 
-
-type instance TupleReverse a Z = a
-type instance TupleReverse a (b:* c) = TupleReverse (b :* a) c 
+instance (Tuple as) => Tuple (a :* as ) where
 
 
+class IntTuple a where 
+
+instance IntTuple Z where
+
+instance IntTuple t => IntTuple (Int :* t ) where
+
+class  ReverseTuple  input partial where
+    type RevTuple input partial
+    reverseTuple :: (input ~ RevTuple res Z,   res ~ RevTuple input partial )=> input -> partial -> out 
+
+instance Tuple partial   ReverseTuple Z partial partial where
+    type RevTuple Z partial = partial   
+    reverseTuple Z partial = partial
+
+instance  (Tuple sh, Tuple (a:* sh), Tuple partial, Tuple  ) =>  ReverseTuple ( a :* sh) where
+    type RevTuple (a :* sh) partialRes =  RevTuple sh (a :* partialRes)
+    reverseTuple (t:* ts) partialT = reverseTuple ts (t :* partialT)
 
 
 
-
-
-
-{-| I take types to be read with an 
-@ x:^ y :^ z :^ Z  
- under row major interpretation
-(ie rightmost index is the least )
-
-
--}
 
 

@@ -7,16 +7,34 @@ module Numerics.Types.Array where
 
 
 
-data family ArrayM  world rep lay (view:: Locality) sh elm 
+data family MArray  world rep lay (view:: Locality) sh elm 
 {-
-lets do just IO and not ST for now
+lets do just IO and not ST for now?
+or bite the primstate bullet now?
 -}
 
 data family Array world rep lay (view:: Locality) sh elm 
 
---| for now locality is a closed type, may change going forward
-data Locality = Contiguous | Strided 
 
+-----------
+-- | for now locality is a closed type, may change going forward
+data  Locality = Contiguous | Strided 
+
+
+{-
+theres several points in the design space of array apis that are nice, but none quite right
+
+Vector is probably the closest
+pros:
+  which has nice pure vs mutable apis
+  simple interface
+cons: 
+  its really designed for Int indexing
+  assumes every pure Vector is internally derived from an imperative one
+    (this is reflected  in where the thaw/freeze)
+
+
+-}
 
 
 {-
