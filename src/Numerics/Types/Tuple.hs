@@ -24,7 +24,7 @@ should figure out a lighter weight indexing story if that
 winds up being widely used and blocking good fusion. Not doing this For now.
 
 However! Writing high level algorithms in a explicitly pointwise indexing
-heavy way will be a bad badd idea. 
+heavy way will be a bad bad idea. 
 
 -} 
 
@@ -57,28 +57,26 @@ type DIM3 = Int :* DIM2
  -}
 
 
-
+-- | `Tuple a` is checking that our shape/index tuples are proper Hlists
 class Tuple a where   
-
 instance Tuple Z where
-
 instance (Tuple as) => Tuple (a :* as ) where
 
-
+-- | `IntTuple a` checks that our shape tuples are only integers
 class IntTuple a where 
-
 instance IntTuple Z where
-
 instance IntTuple t => IntTuple (Int :* t ) where
 
+--- not sure right now if this type family is a good idea or not
 type ReverseTuple input = ReverseTuple' input Z 
 
 type family ReverseTuple' input partial
-
 type instance ReverseTuple' (a:* b) partial = ReverseTuple' b (a:* partial)
 type instance ReverseTuple' Z res = res 
 
 
+-- HList style reverse as a fundeps type class, simplest way to write ti
+-- actually from hlist
 
 class HReverse l1 l2 | l1 -> l2, l2 -> l1 where
     hReverse:: l1 -> l2
@@ -88,17 +86,16 @@ instance (HReverse' Z l2 l3, HReverse' Z l3 l2) =>  HReverse l2 l3 where
     {-#INLINE hReverse#-}
 
 
--- l3 = (reverse l2) ++ l1
 
 class HReverse' l1 l2 l3 | l1 l2 -> l3  where
     hReverse':: l1 -> l2 -> l3
 
 instance HReverse' l1 Z l1 where
-    hReverse' l1 Z = l1
+    hReverse' !l1 Z = l1
     {-# INLINE hReverse' #-}
 
 instance HReverse' ( a  :* l1) l2' l3 => HReverse' l1 (a :* l2') l3 where
-    hReverse' l1 ( a :* l2') = hReverse' ( a :*  l1) l2'
+    hReverse' l1 !( a :* l2') = hReverse' ( a :*  l1) l2'
     {-# INLINE hReverse' #-}
 
 
