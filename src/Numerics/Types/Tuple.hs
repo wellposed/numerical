@@ -4,8 +4,10 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
+--{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-#LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 
@@ -25,6 +27,12 @@ However! Writing high level algorithms in a explicitly pointwise indexing
 heavy way will be a bad badd idea. 
 
 -} 
+
+-- doing the rank2 tranpose only, because transpose only really makes sense
+-- in the 2d case anyways. 
+tranposeIndex :: IntTuple sh => (Int :* Int :* sh) -> ( Int :* Int :* sh )
+tranposeIndex (i :* j :* rs) = (j:* i :* rs)
+{-# INLINE tranposeIndex#-}
 
 
 --  | An shape/index of dimension zero
@@ -48,11 +56,7 @@ type DIM3 = Int :* DIM2
     
  -}
 
--- doing the rank2 tranpose only, because transpose only really makes sense
--- in the 2d case anyways. 
-tranposeIndex :: IntTuple sh => (Int :* Int :* sh) -> ( Int :* Int :* sh )
-tranposeIndex (i :* j :* rs) = (j:* i :* rs)
-{-# INLINE tranposeIndex#-}
+
 
 class Tuple a where   
 
@@ -67,19 +71,35 @@ instance IntTuple Z where
 
 instance IntTuple t => IntTuple (Int :* t ) where
 
-class  ReverseTuple  input partial where
-    type RevTuple input partial
-    reverseTuple :: (input ~ RevTuple res Z,   res ~ RevTuple input partial )=> input -> partial -> out 
+type ReverseTuple input = ReverseTuple' input Z 
 
-instance Tuple partial   ReverseTuple Z partial partial where
-    type RevTuple Z partial = partial   
-    reverseTuple Z partial = partial
+type family ReverseTuple' input partial
 
-instance  (Tuple sh, Tuple (a:* sh), Tuple partial, Tuple  ) =>  ReverseTuple ( a :* sh) where
-    type RevTuple (a :* sh) partialRes =  RevTuple sh (a :* partialRes)
-    reverseTuple (t:* ts) partialT = reverseTuple ts (t :* partialT)
+type instance ReverseTuple' (a:* b) partial = ReverseTuple' b (a:* partial)
+type instance ReverseTuple' Z res = res 
 
 
+
+class HReverse l1 l2 | l1 -> l2, l2 -> l1 where
+    hReverse:: l1 -> l2
+
+instance (HReverse' Z l2 l3, HReverse' Z l3 l2) =>  HReverse l2 l3 where
+    hReverse l1 = hReverse' Z l1
+    {-#INLINE hReverse#-}
+
+
+-- l3 = (reverse l2) ++ l1
+
+class HReverse' l1 l2 l3 | l1 l2 -> l3  where
+    hReverse':: l1 -> l2 -> l3
+
+instance HReverse' l1 Z l1 where
+    hReverse' l1 Z = l1
+    {-# INLINE hReverse' #-}
+
+instance HReverse' ( a  :* l1) l2' l3 => HReverse' l1 (a :* l2') l3 where
+    hReverse' l1 ( a :* l2') = hReverse' ( a :*  l1) l2'
+    {-# INLINE hReverse' #-}
 
 
 
