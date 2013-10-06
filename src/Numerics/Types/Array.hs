@@ -6,8 +6,13 @@
 module Numerics.Types.Array where
 
 
+data  MArray  world rep lay (view:: Locality) sh elem 
 
-data family MArray  world rep lay (view:: Locality) sh elm 
+
+
+ 
+
+
 {-
 lets do just IO and not ST for now?
 or bite the primstate bullet now?
@@ -33,6 +38,10 @@ cons:
   assumes every pure Vector is internally derived from an imperative one
     (this is reflected  in where the thaw/freeze)
 
+so there needs to be an Array class, an MArray class,
+
+and the Thawing / Freezing needs to be in a seperate PhasedArray class!
+why? Because we can't assume that pure/mutable arrays are the fundamental data type!
 
 -}
 

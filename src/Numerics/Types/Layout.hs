@@ -2,6 +2,9 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Numerics.Types.Layout where
 
@@ -11,6 +14,9 @@ module Numerics.Types.Layout where
 ColumnMajor
 
 -}
+
+import Numerics.Types.Shape
+import Data.Data
 
 data Point = Point 
     deriving (Show, Read, Eq, Ord,Typeable,Data)
@@ -26,5 +32,5 @@ data head :# tail =
                      !head :# !tail 
     deriving (Show, Read, Eq, Ord,Typeable,Data)
 
-class Layout a where
-    index :: IsTuple sh => sh -> Shape sh -> Int 
+--class Shape sh => Layout a sh where
+    --index ::  sh -> Shaped a sh -> Int 

@@ -36,7 +36,7 @@ maintainer:          carter at wellposed dot com
 
 category:            Math
 
-build-type:          Simple
+build-type:          Custom    
 
 -- Extra files to be distributed with the package, such as examples or a 
 -- README.
@@ -48,19 +48,36 @@ cabal-version:       >=1.10
 
 library
     -- Modules exported by the library.
-    -- exposed-modules:     
+    exposed-modules:     
+        Numerics.Types.Array
+        Numerics.Types.Layout
+        Numerics.Types.Operations
+        Numerics.Types.Shape
+
 
     -- Modules included in this library but not exported.
     -- other-modules:       
 
     -- LANGUAGE extensions used by modules in this package.
-    -- other-extensions:    
+    other-extensions:    
+        PolyKinds
+        BangPatterns
+        DataKinds
+        TypeFamilies
+        DeriveDataTypeable
+        TypeOperators
+        FlexibleInstances
+        FlexibleContexts
 
     -- Other library packages from which modules are imported.
-    build-depends:       base >=4.6 && <4.7
+    build-depends:       base >= 4.6 ,
+                        primitive,
+                        vector
+
+                        
 
     -- Directories containing source files.
-    -- hs-source-dirs:      
+    hs-source-dirs:     src 
 
     -- Base language which the package is written in.
     default-language:    Haskell2010
