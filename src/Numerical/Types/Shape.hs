@@ -11,7 +11,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 --{-# LANGUAGE MultiParamTypeClasses #-}
 
-module Numerics.Types.Shape where
+module Numerical.Types.Shape where
 
 
 import Data.Data

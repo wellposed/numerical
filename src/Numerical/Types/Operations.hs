@@ -4,8 +4,8 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module Numerics.Types.Operations where 
+module Numerical.Types.Operations where 
 
 import Control.Monad.Primitive ( PrimMonad, PrimState )
-import Numerics.Types.Array
+import Numerical.Types.Array
 

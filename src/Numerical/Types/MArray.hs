@@ -3,11 +3,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Numerics.Types.Algebra.Core where
+module Numerical.Types.MArray where
 
 
-{-
-we dont need 
-
-
--}
+class MArray mv world rep lay (view:: Locality) sh elem where

@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 -- The name of the package.
-name:                numerics-types
+name:                numerical-types
 
 -- The package version.  See the Haskell package versioning policy (PVP) 
 -- for standards guiding when and how versions should be incremented.
@@ -13,7 +13,7 @@ name:                numerics-types
 version:             0.1.0.0
 
 -- A short (one-line) description of the package.
-synopsis:            Generic Numerics Api - backend agnostic
+synopsis:            Generic Numerical Api - backend agnostic
 
 -- A longer description of the package.
 -- description:         
@@ -49,10 +49,10 @@ cabal-version:       >=1.10
 library
     -- Modules exported by the library.
     exposed-modules:     
-        Numerics.Types.Array
-        Numerics.Types.Layout
-        Numerics.Types.Operations
-        Numerics.Types.Shape
+        Numerical.Types.Array
+        Numerical.Types.Layout
+        Numerical.Types.Operations
+        Numerical.Types.Shape
 
 
     -- Modules included in this library but not exported.

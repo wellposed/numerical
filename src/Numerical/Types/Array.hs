@@ -3,7 +3,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Numerics.Types.Array where
+module Numerical.Types.Array where
 
 
 data  MArray  world rep lay (view:: Locality) sh elem 

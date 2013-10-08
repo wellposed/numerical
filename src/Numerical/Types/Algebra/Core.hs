@@ -3,7 +3,11 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Numerics.Types.MArray where
+module Numerical.Types.Algebra.Core where
 
 
-class MArray mv world rep lay (view:: Locality) sh elem where
+{-
+we dont need 
+
+
+-}

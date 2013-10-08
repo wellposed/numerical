@@ -6,7 +6,7 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module Numerics.Types.Layout where
+module Numerical.Types.Layout where
 
 
 
@@ -15,7 +15,7 @@ ColumnMajor
 
 -}
 
-import Numerics.Types.Shape
+import Numerical.Types.Shape
 import Data.Data
 
 data Point = Point 
