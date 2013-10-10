@@ -20,14 +20,14 @@ import Unsafe.Coerce
 
 --- at some point, I should evaluate  using the >= 7.8 type level nats 
 --- also this nat type should be perhaps in its own module for sanity reasons
-data PNat = S !PNat  | Z 
+data Nat = S !Nat  | Z 
 
 
 
 infixr 3 :*
     
  
-data Shape (rank :: PNat) where 
+data Shape (rank :: Nat) where 
     Nil  :: Shape Z
     (:*) :: {-# UNPACK #-} !(Int:: *) -> !(Shape r) -> Shape ( (S r))
 
@@ -50,12 +50,23 @@ heavy way will be a bad bad idea.
 -- reverse an Index Shape tuple    
 reverseShape :: Shape r -> Shape r 
 reverseShape Nil = Nil 
-reverseShape shs@(anIx :* rest) = go  shs Nil 
+reverseShape !shs@(anIx :* rest) = go  shs Nil 
     where
         go :: Shape a -> Shape b -> Shape r  -- want r= PSum a b
-        go Nil res =  unsafeCoerce $!  res 
-        go (ix :* more )  res =  unsafeCoerce $! go more (ix :* res)
+        go !Nil !res =  unsafeCoerce $!  res  -- my "proof"
+        go !(ix :* more )  !res =  go more (ix :* res)
 {-# INLINABLE reverseShape #-}
+
+{-
+NB, see http://ghc.haskell.org/trac/ghc/ticket/8423
+for a provable version, though only works on 7.8
+and uses singletons. Should revist at some point
+
+also see 
+https://gist.github.com/cartazio/6913380 for Ranjit Jhala's formulation 
+and https://gist.github.com/cartazio/6907168 for Richard Eisenberg's formulation
+
+-}
 
 
 --shapePrinciple :: (Shape Z -> Shape tot -> Shape tot)->(Shape (S h))
