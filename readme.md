@@ -1,11 +1,17 @@
-# About  Numerics-Types 
-Numer
+#note 
+
+this library is pre release and not ready for general circulation or use.
+that will change soon though
+
+# About  Numerical-Types 
+
+
 
 
 
 
 # Contributing
-Great! Theres so many great ways you could help out. Either work 
+Great! Theres so many great ways you could help out.  
 
 Before you do, we'd really like you to sign a contributor's license agreement.
 We're a BSD licensed project, but before we can merge in your patches, we'd
