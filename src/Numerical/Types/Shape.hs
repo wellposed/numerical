@@ -10,7 +10,7 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
---{-# LANGUAGE MultiParamTypeClasses #-}
+
 
 module Numerical.Types.Shape(Shape(..),Nat(..)) where
 
@@ -43,8 +43,8 @@ heavy way will be a bad bad idea.
 -} 
 
 -- using unsafe coerce as a ghetto way of writing the "proof"
--- this can be made properly type safe if i switch to 7.8 support only
--- that said
+-- this can be made properly type safe if i switch to >=7.8 support only,
+-- though i'm not sure about the relative power weight ratio
 
 -- reverse an Index Shape tuple    
 reverseShape :: Shape r -> Shape r 
@@ -68,15 +68,7 @@ and https://gist.github.com/cartazio/6907168 for Richard Eisenberg's formulation
 -}
 
 
---shapePrinciple :: (Shape Z -> Shape tot -> Shape tot)->(Shape (S h))
 
---type family PSum (a :: PNat) (b :: PNat) :: PNat
-
---type instance PSum  Z a = a
---type instance PSum (S a) b = S (PSum a b)
--- the proper Summation type needs to also have
---type instance  Psum  a (S b) = S (PSum a b)
---- but that requires closed type families
 
 type Zero = Z 
 type One = S Zero
@@ -95,9 +87,6 @@ type DIM2 = Shape  Two
 type DIM3 = Shape Three 
 
 
-{-| 'Shape' is our way of typing our hlist tuples, rulling out eg 
-    
- -}
 
 
 
