@@ -53,6 +53,7 @@ library
         Numerical.Types.Layout
         Numerical.Types.Operations
         Numerical.Types.Shape
+        Numerical.Types.Nat 
 
 
     -- Modules included in this library but not exported.

@@ -12,15 +12,14 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 --{-# LANGUAGE MultiParamTypeClasses #-}
 
-module Numerical.Types.Shape where
+module Numerical.Types.Shape(Shape(..),Nat(..)) where
 
 
+import Numerical.Types.Nat 
 import Data.Data
 import Unsafe.Coerce
 
---- at some point, I should evaluate  using the >= 7.8 type level nats 
---- also this nat type should be perhaps in its own module for sanity reasons
-data Nat = S !Nat  | Z 
+
 
 
 
