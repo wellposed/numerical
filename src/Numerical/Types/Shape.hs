@@ -10,9 +10,11 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE TemplateHaskell #-}
 
-
-module Numerical.Types.Shape(Shape(..),Nat(..)) where
+module Numerical.Types.Shape where
 
 
 import Numerical.Types.Nat 
@@ -29,6 +31,18 @@ infixr 3 :*
 data Shape (rank :: Nat) where 
     Nil  :: Shape Z
     (:*) :: {-# UNPACK #-} !(Int:: *) -> !(Shape r) -> Shape ( (S r))
+
+deriving instance Show (Shape rank)
+
+deriving instance Eq (Shape rank)
+
+#if defined( __GLASGOW_HASKELL__ ) &&  ( __GLASGOW_HASKELL__  >= 707)
+
+deriving instance Typeable (Shape rank)
+
+#endif    
+
+--deriving instance (Eq (Shape Z))
 
 {-|
 index ideas inspired by repa3 / repa4, but 
@@ -88,6 +102,8 @@ type DIM3 = Shape Three
 
 
 
+nilShape :: Shape $(nat 0)-> Int
+nilShape _ = 0 
 
 
 

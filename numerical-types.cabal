@@ -71,9 +71,12 @@ library
         FlexibleContexts
 
     -- Other library packages from which modules are imported.
-    build-depends:       base >= 4.6 ,
-                        primitive,
-                        vector
+    build-depends:       base >= 4.6 && < 4.8 ,
+                        primitive >= 0.5 && < 0.6,
+                        vector >= 0.10 && < 0.11,
+                        tagged >= 0.7 && < 0.8,
+                        template-haskell 
+                        -- what version constraints?
 
                         
 

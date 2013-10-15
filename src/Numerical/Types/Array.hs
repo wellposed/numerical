@@ -5,6 +5,7 @@
 
 module Numerical.Types.Array where
 
+import Numerical.Types.Shape
 
 data  MArray  world rep lay (view:: Locality) sh elem 
 
@@ -23,6 +24,7 @@ data family Array world rep lay (view:: Locality) sh elm
 
 -----------
 -- | for now locality is a closed type, may change going forward
+-- also should it be in a different module like shape or layout?
 data  Locality = Contiguous | Strided 
 
 

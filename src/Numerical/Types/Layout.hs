@@ -24,7 +24,7 @@ data Point = Point
 Point is the only valid layout for a zero rank array, 
 
 Point has a well defined shape  that is the all ones shape,
-so at every rank, its the single element! 
+so at every rank, its a single element/entry! 
 
 The idea being, we have 
 -}
