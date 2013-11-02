@@ -34,5 +34,24 @@ data head :# tail =
                      !head :# !tail 
     deriving (Show, Read, Eq, Ord,Typeable,Data)
 
---class Shape sh => Layout a sh where
-    --index ::  sh -> Shaped a sh -> Int 
+class Layout lay where 
+    type Tranposed lay 
+
+
+
+
+{-
+when indexing x :* h :* Nil,  we'll interpret the h as the row and the x 
+as column.   So Column major forms a nice foldl (left fold), and  Row major forms
+a nice 
+
+lets try to require writing 
+
+for now we'll distinguish between contiguous vs strided indexing, and 
+for now have strided be done with  baseShape + (indexShape * strideShape),
+
+also: should the layout 
+
+-}
+
+
