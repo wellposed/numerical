@@ -13,6 +13,7 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Numerical.Types.Shape where
 
@@ -21,78 +22,89 @@ import Numerical.Types.Nat
 import Data.Data
 import Unsafe.Coerce
 
+import Prelude  hiding (map,foldl,foldr)
 
 
 
 
-infixr 3 :*
+
+--infixr 3 :*
     
  
-data Shape (rank :: Nat) where 
-    Nil  :: Shape Z
-    (:*) :: {-# UNPACK #-} !(Int:: *) -> !(Shape r) -> Shape ( (S r))
+--data Shape (rank :: Nat) where 
+--    Nil  :: Shape Z
+--    (:*) :: {-# UNPACK #-} !(Int:: *) -> !(Shape r) -> Shape ( (S r))
 
-deriving instance Show (Shape rank)
+--deriving instance Show (Shape rank)
 
-deriving instance Eq (Shape rank)
+--deriving instance Eq (Shape rank)
 
 
-#if defined( __GLASGOW_HASKELL__ ) &&  ( __GLASGOW_HASKELL__  >= 707)
-deriving instance Typeable (Shape rank)
+-- #if defined( __GLASGOW_HASKELL__ ) &&  ( __GLASGOW_HASKELL__  >= 707)
+--deriving instance Typeable (Shape rank)
 
-#endif    
+-- #endif    
 
 --deriving instance (Eq (Shape Z))
 
 
-{-
-maybe should just do  custom data family indexed on rank,
-but lets shelve that for now, and accept that i won't quite be doing the right thing
-for the initial release,
 
-will probably want to switch to having a "Shapable" class
-and have the Shape n type be a data family of sized tuples, rather than sized lists.
+type Zero = Z 
+type One = S Zero
+type Two = S One
+type Three = S Two 
+type Four = S Three
+type Five = S Four
+type Six = S Five
+type Seven = S Six
+type Eight = S Seven 
+type Nine = S Eight
+type Ten = S Nine 
 
-This is because the computations
+
+class Shapable (n :: Nat)   where 
+    data Shape n :: * 
+    type  Tuple n :: * 
+    type TupleRank tup  :: Nat -- this should map an int tuple to their rank n 
+
+
+    --type Fun n  res :: *  --- not sure if i'll include these in the final approach
+                    --- but 
+    --type FunRank b :: Nat 
+    toShape :: (n~TupleRank tup, Tuple n ~ tup )=> tup -> Shape n 
+
+    foldl ::  (a -> Int -> a) -> a -> Shape n -> a
+    
+    foldr :: (Int -> a -> a ) -> a -> Shape n -> a 
+    
+    -- not sure if I need the  strict variants of 
+    map :: (Int -> Int) -> Shape n -> Shape n 
+    zip :: (Int -> Int -> Int ) -> Shape n -> Shape n -> Shape n 
+    zip2 :: (Int -> Int -> (Int ,Int ))-> Shape n -> Shape n -> (Shape n, Shape n )
+
+-- zero rank is boring but lets include it for completeness
+class Shapable Zero where
+    data Shape Zero  = Shape0
+    type Tuple Zero  = ()
+    type TupleRank Int = Zero
+    toShape = \ _ -> Shape0 
+    foldl = \ f init  (Shape0) -> init 
+    foldr = \ f (Shape0) init -> init 
+    zip = \ f _ _ -> Shape0 
+    zip2 = \f _ _ -> (Shape0,Shape0)
+
+{-| For now I'm not making any thing strict in the shapeable instances,
+except for 
 
 -}
-
--- should the psuedo integral ops for Shape be made into a type class?
--- would enable being able to give the SPECIALIZE pragma 
-
-addShapes :: Shape s -> Shape s -> Shape s 
-addShapes Nil Nil = Nil 
-addShapes (a :* as) (b :* bs) = (a+b):* (addShapes as bs)
-{-# INLINABLE addShapes #-}
-
-
-multShapes :: Shape s -> Shape s -> Shape s 
-multShapes Nil Nil = Nil 
-multShapes (a :* as) (b :* bs) = (a * b):* (addShapes as bs)
-
-remShapes ::  Shape s -> Shape s -> Shape s 
-remShapes Nil Nil = Nil 
-remShapes (a :* as) (b :* bs) =  (a `rem` b) :* remShapes as bs 
-
-modShapes ::  Shape s -> Shape s -> Shape s 
-modShapes Nil Nil = Nil 
-modShapes (a :* as) (b :* bs) = (a `mod` b) :* modShapes as bs 
-
---- the quotRem and divMod Stuff need a reverse if I do it direct style, so maybe
---- they should be done in CPS? Lets do CPS and inline dangerously :) 
---- 
----
-
-quotRemShapes :: Shape s -> Shape s ->( Shape s ,  Shape s )
-quotRemShapes Nil Nil = (Nil, Nil  )
-quotRemShapes (a :* as) (b :* bs) = undefined
-{-# INLINABLE quotRemShapes  #-}
-
-divModShapes :: Shape s -> Shape s -> (Shape s ,  Shape s  )
-divModShapes Nil Nil = (Nil , Nil )
-divModShapes aShp@(a :* as) bShp@(b :* bs) = undefined 
-{-#  INLINABLE divModShapes #-}
-
+class Shapable  One  where
+    data Shape One  = Shape1  {-# UNPACK #-}  !Int 
+    type Tuple One  = Int 
+    type TupleRank Int = One 
+    toShape = Shape1
+    foldl = \ f init  (Shape1 v1) -> f v1 init 
+    foldr = \f init  (Shape1 v1) -> f init v1 
+    zip = \
 
 
 {-|
@@ -113,24 +125,6 @@ heavy way will be a bad bad idea.
 
 
 
-
--- using unsafe coerce as a ghetto way of writing the "proof"
--- this can be made properly type safe if i switch to >=7.8 support only,
--- though i'm not sure about the relative power weight ratio
-
-
-
-
--- reverse an Index Shape tuple    
-reverseShape :: Shape r -> Shape r 
-reverseShape Nil = Nil 
-reverseShape !shs@(anIx :* rest) = go  shs Nil 
-    where
-        go :: Shape a -> Shape b -> Shape r  -- want r= PSum a b
-        go !Nil !res =  unsafeCoerce $!  res  -- my "proof"
-        go !(ix :* more )  !res =  go more (ix :* res)
-{-# INLINABLE reverseShape #-}
-
 {-
 NB, see http://ghc.haskell.org/trac/ghc/ticket/8423
 for a provable version, though only works on 7.8
@@ -145,26 +139,22 @@ and https://gist.github.com/cartazio/6907168 for Richard Eisenberg's formulation
 
 
 
-type Zero = Z 
-type One = S Zero
-type Two = S One
-type Three = S Two 
 
 
 
--- | `Shaped lay sh` is a Shape meant for representing the Array rank and dimensions sh,
--- with layout lay.
-newtype Shaped lay sh = Shaped sh 
+---- | `Shaped lay sh` is a Shape meant for representing the Array rank and dimensions sh,
+---- with layout lay.
+--newtype Shaped lay sh = Shaped sh 
 
--- |  Writing down the common ranks. 
-type DIM1 = Shape  One
-type DIM2 = Shape  Two 
-type DIM3 = Shape Three 
+---- |  Writing down the common ranks. 
+--type DIM1 = Shape  One
+--type DIM2 = Shape  Two 
+--type DIM3 = Shape Three 
 
 
 
-nilShape :: Shape $(nat 0)-> Int
-nilShape _ = 0 
+--nilShape :: Shape $(nat 0)-> Int
+--nilShape _ = 0 
 
 
 
