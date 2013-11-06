@@ -27,7 +27,13 @@ import Prelude  hiding (map,foldl,foldr)
 
 
 
+{-
+not doing the  HLIST style shape because I don't want to have
+any pattern matchings going on.
 
+Also would play hell with locality quality in the address translation hackery,
+because there'd be an extra load to get those ints!
+-}
 --infixr 3 :*
     
  
@@ -49,29 +55,36 @@ import Prelude  hiding (map,foldl,foldr)
 
 
 
-type Zero = Z 
-type One = S Zero
-type Two = S One
-type Three = S Two 
-type Four = S Three
-type Five = S Four
-type Six = S Five
-type Seven = S Six
-type Eight = S Seven 
-type Nine = S Eight
-type Ten = S Nine 
+type N0 = Z
+
+type N1= S N0 
+
+type N2 = S N1
+
+type N3 = S N2 
+
+type N4 = S N3
+
+type N5 = S N4
+
+type N6 = S N5
+
+type N7 = S N6
+
+type N8 = S N7  
+
+type N9 = S N8
+
+type N10 = S N9 
 
 
-class Shapable (n :: Nat)   where 
-    data Shape n :: * 
-    type  Tuple n :: * 
-    type TupleRank tup  :: Nat -- this should map an int tuple to their rank n 
-
-
-    --type Fun n  res :: *  --- not sure if i'll include these in the final approach
-                    --- but 
-    --type FunRank b :: Nat 
-    toShape :: (n~TupleRank tup, Tuple n ~ tup )=> tup -> Shape n 
+class Shapable (n :: Nat)  tup | tup -> n , n-> tup  where 
+    data Shape n 
+    type  Tuple n  
+    --type Tuple n = tup 
+    type (TupleRank tup ) :: Nat -- this should map an int tuple to their rank n 
+ 
+    toShape ::  tup -> Shape n 
 
     foldl ::  (a -> Int -> a) -> a -> Shape n -> a
     
@@ -83,28 +96,151 @@ class Shapable (n :: Nat)   where
     zip2 :: (Int -> Int -> (Int ,Int ))-> Shape n -> Shape n -> (Shape n, Shape n )
 
 -- zero rank is boring but lets include it for completeness
-class Shapable Zero where
-    data Shape Zero  = Shape0
-    type Tuple Zero  = ()
-    type TupleRank Int = Zero
+instance Shapable Z  () where
+    data Shape  Z = Shape0
+    type Tuple  Z = ()
+    type TupleRank () = Z
     toShape = \ _ -> Shape0 
+    map = \ f Shape0 -> Shape0
     foldl = \ f init  (Shape0) -> init 
-    foldr = \ f (Shape0) init -> init 
+    foldr = \ f  init (Shape0)  -> init 
     zip = \ f _ _ -> Shape0 
     zip2 = \f _ _ -> (Shape0,Shape0)
 
 {-| For now I'm not making any thing strict in the shapeable instances,
-except for 
+except for the data Shape n =  unpacked strict Int constructors
 
 -}
-class Shapable  One  where
-    data Shape One  = Shape1  {-# UNPACK #-}  !Int 
-    type Tuple One  = Int 
-    type TupleRank Int = One 
+instance  Shapable  N1 Int  where
+    data Shape N1  = Shape1  {-# UNPACK #-}  !Int 
+    type Tuple N1  = Int 
+    type TupleRank Int = N1
     toShape = Shape1
-    foldl = \ f init  (Shape1 v1) -> f v1 init 
-    foldr = \f init  (Shape1 v1) -> f init v1 
-    zip = \
+    map = \f (Shape1 v1)-> Shape1 $ f v1 
+    foldl = \ f init  (Shape1 v1) -> f init v1  
+    foldr = \f init  (Shape1 v1) -> f  v1 init
+    zip = \ f (Shape1 a1) (Shape1 b1) -> Shape1 $! f a1 b1
+    zip2 =  \ f (Shape1 a1) (Shape1 b1) -> 
+                let  (ra1,rb1)= f a1 b1  in (Shape1 ra1,Shape1 rb1)
+
+
+instance Shapable N2  (Int,Int) where
+    data Shape N2 = Shape2 {-# UNPACK #-}  !Int {-# UNPACK #-}  !Int 
+    type Tuple  N2 = (Int,Int)
+    type TupleRank (Int,Int) = N2 
+    toShape = \ (a,b) -> Shape2 a b 
+    map  = \f  (Shape2 v1 v2) -> Shape2 (f v1) (f v2)
+    foldl =  \f init (Shape2 v1 v2) ->  init `f` v1 `f` v2
+    foldr = \f init  (Shape2 v1 v2) -> f v1 $ f v2 init 
+    zip = \f (Shape2 a1 a2) (Shape2 b1 b2) -> Shape2 (f a1 b1) (f a2 b2)
+    zip2 = 
+        \f (Shape2 a1 a2) (Shape2 b1 b2) -> 
+            let 
+                (ra1,rb1) = f a1 b1
+                (ra2,rb2) = f a2 b2
+                in (Shape2 ra1 ra2, Shape2 rb1 rb2)
+
+instance Shapable N3 (Int,Int,Int) where
+    data Shape N3 = Shape3 {-# UNPACK #-} !Int {-# UNPACK #-} !Int {-# UNPACK #-}  !Int 
+    type Tuple N3 = (Int,Int,Int)
+    type TupleRank (Int,Int,Int) = N3
+    toShape  =  \ (v1,v2,v3)-> Shape3 v1 v2 v3
+    map  = \f (Shape3 v1 v2 v3) -> Shape3 (f v1) (f v2) (f v3)
+    foldl = \ f init (Shape3 v1 v2 v3) -> init `f` v1 `f` v2 `f` v3
+    foldr = \ f init (Shape3 v1 v2 v3) -> f v1 $! f v2 $! f v3 init 
+    zip =  \ f  (Shape3 a1 a2 a3) (Shape3 b1 b2 b3) ->
+                 Shape3 (f a1 b1) (f a2 b2) (f a3 b3)
+    zip2  = \f (Shape3 a1 a2 a3  ) (Shape3 b1 b2 b3  ) -> 
+                (let 
+                    (ra1,rb1)= f a1 b1
+                    (ra2,rb2)= f a2 b2
+                    (ra3,rb3)= f a3 b3
+                    in 
+                    (Shape3 ra1 ra2 ra3  ,  
+                            Shape3 rb1 rb2 rb3  ))
+
+instance Shapable  N4  (Int,Int,Int,Int) where 
+    data Shape N4 = Shape4 {-# UNPACK #-} !Int {-# UNPACK #-} !Int {-# UNPACK #-}  !Int 
+                        {-# UNPACK #-} !Int 
+
+    type Tuple N4 = (Int,Int,Int,Int)
+    type TupleRank (Int,Int,Int,Int) =  N4
+    toShape  = \ (v1,v2,v3,v4) -> Shape4 v1 v2 v3 v4
+    map  = \ f (Shape4 v1 v2 v3 v4) -> Shape4 (f v1) (f v2) (f v3) (f v4) 
+    foldl = \ f init (Shape4 v1 v2 v3 v4  ) ->
+                     init `f` v1 `f`  v2 `f` v3 `f` v4  
+    foldr = \ f init (Shape4 v1 v2 v3 v4) ->
+                      f v1  $! f  v2 $! f v3  $! f v4    init
+    zip = \f (Shape4 a1 a2 a3 a4 ) (Shape4 b1 b2 b3 b4 ) ->
+                    Shape4 (f a1 b1) (f a2 b2) (f a3 b3)  (f a4 b4) 
+    zip2 =  \f (Shape4 a1 a2 a3 a4  ) (Shape4 b1 b2 b3 b4 ) -> 
+                (let 
+                    (ra1,rb1)= f a1 b1
+                    (ra2,rb2)= f a2 b2
+                    (ra3,rb3)= f a3 b3
+                    (ra4,rb4)= f a4 b4
+                    in 
+                    (Shape4 ra1 ra2 ra3 ra4 ,  
+                            Shape4 rb1 rb2 rb3 rb4 ))
+
+
+instance Shapable  N5 (Int,Int,Int,Int,Int) where 
+    data Shape N5 = Shape5 {-# UNPACK #-} !Int {-# UNPACK #-} !Int {-# UNPACK #-}  !Int 
+                        {-# UNPACK #-} !Int {-# UNPACK #-} !Int 
+
+    type Tuple N5 = (Int,Int,Int,Int,Int)
+    type TupleRank (Int,Int,Int,Int,Int) = N5 
+    toShape  = \(v1,v2,v3,v4,v5) -> Shape5 v1 v2 v3 v4 v5 
+    map  = \ f (Shape5 v1 v2 v3 v4 v5) -> Shape5 (f v1) (f v2) (f v3) (f v4) (f v5)
+    foldl = \ f init (Shape5 v1 v2 v3 v4 v5 ) ->
+                     init `f` v1 `f`  v2 `f` v3 `f` v4 `f` v5  
+    foldr = \ f init (Shape5 v1 v2 v3 v4 v5 ) ->
+                      f v1  $! f  v2 $! f v3  $! f v4  $! f v5   init
+    zip = \f (Shape5 a1 a2 a3 a4 a5) (Shape5 b1 b2 b3 b4 b5) ->
+                    Shape5 (f a1 b1) (f a2 b2) (f a3 b3)  (f a4 b4) (f a5 b5) 
+    zip2 = \f (Shape5 a1 a2 a3 a4 a5 ) (Shape5 b1 b2 b3 b4 b5) -> 
+                (let 
+                    (ra1,rb1)= f a1 b1
+                    (ra2,rb2)= f a2 b2
+                    (ra3,rb3)= f a3 b3
+                    (ra4,rb4)= f a4 b4
+                    (ra5,rb5)= f a5 b5
+                    in 
+                        (Shape5 ra1 ra2 ra3 ra4 ra5,  
+                            Shape5 rb1 rb2 rb3 rb4 rb5 ))
+
+
+instance Shapable  N6 (Int,Int,Int,Int,Int,Int) where 
+    data Shape N6 = Shape6 {-# UNPACK #-}   !Int {-# UNPACK #-}     !Int {-# UNPACK #-}
+          !Int {-# UNPACK #-}      !Int {-# UNPACK #-}     !Int {-# UNPACK #-}  !Int   
+
+
+    type Tuple N6 = (Int,Int,Int,Int,Int,Int) 
+    type TupleRank (Int,Int,Int,Int,Int,Int) = N6 
+    toShape  = \(v1,v2,v3,v4,v5,v6) -> Shape6 v1 v2 v3 v4 v5 v6
+    map  = \ f (Shape6 v1 v2 v3 v4 v5 v6) -> Shape6 (f v1) (f v2) (f v3) (f v4) (f v5) (f v6)
+    foldl = \ f init (Shape6 v1 v2 v3 v4 v5 v6) ->
+                     init `f` v1 `f`  v2 `f` v3 `f` v4 `f` v5  `f` v6
+    foldr = \ f init (Shape6 v1 v2 v3 v4 v5 v6) ->
+                      f v1  $! f  v2 $! f v3  $! f v4  $! f v5  $! f v6 init
+    zip = \f (Shape6 a1 a2 a3 a4 a5 a6) (Shape6 b1 b2 b3 b4 b5 b6) ->
+                    Shape6 (f a1 b1) (f a2 b2) (f a3 b3)  (f a4 b4) (f a5 b5) (f a6 b6) 
+    zip2 = \f (Shape6 a1 a2 a3 a4 a5 a6) (Shape6 b1 b2 b3 b4 b5 b6) -> 
+                (let 
+                    (ra1,rb1)= f a1 b1
+                    (ra2,rb2)= f a2 b2
+                    (ra3,rb3)= f a3 b3
+                    (ra4,rb4)= f a4 b4
+                    (ra5,rb5)= f a5 b5
+                    (ra6,rb6)= f a6 b6
+                    in 
+                    (Shape6 ra1 ra2 ra3 ra4 ra5 ra6,  
+                            Shape6 rb1 rb2 rb3 rb4 rb5 rb6 ))
+
+{-
+NB: Should maybe add up to dimension 8 or 10 (or at some joke, 26 for string theory),
+but 6 should 
+-}
 
 
 {-|
