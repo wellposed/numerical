@@ -55,7 +55,7 @@ library
         Numerical.Types.Shape
         Numerical.Types.Nat 
 
-
+    ghc-options: -O2 -Wall
     -- Modules included in this library but not exported.
     -- other-modules:       
 
@@ -75,7 +75,8 @@ library
                         primitive >= 0.5 && < 0.6,
                         vector >= 0.10 && < 0.11,
                         tagged >= 0.7 && < 0.8,
-                        template-haskell 
+                        template-haskell >= 2.8.0.0 && < 2.10.0.0,
+                        ghc-prim >= 0.3.0.0 && < 0.5.0.0
                         -- what version constraints?
 
                         
