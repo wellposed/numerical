@@ -19,11 +19,13 @@
 module Numerical.Types.Shape where
 
 import GHC.Magic 
+import Data.Data 
+import Data.Typeable
+
 import qualified Data.Monoid  as M 
 import qualified Data.Functor as Fun 
 import qualified  Data.Foldable as F
 import qualified Control.Applicative as A 
-import Data.Typeable
 
 import Numerical.Types.Nat 
 
@@ -52,13 +54,21 @@ newtype Only a = Only {
 data Shape (rank :: Nat) a where 
     Nil  :: Shape Z a
     (:*) ::  !(a) -> !(Shape r a ) -> Shape  (S r) a
-        --deriving (Show)
-
-instance   (Eq a,F.Foldable (Shape n), A.Applicative (Shape n)) => Eq (Shape n a) where
-    (==) = \ a  b -> F.foldr (&&) True $ map2 (==) a b 
-    (/=) = \ a  b -> F.foldr (||) False $ map2 (/=) a b 
+        --deriving (Typeable)
 
 
+#if defined(__GLASGOW_HASKELL_) && (__GLASGOW_HASKELL__ >= 707)
+deriving instance Typeable Shape 
+#endif
+
+--deriving instance Eq a => Eq (Shape Z a)
+
+--instance   (Eq a,F.Foldable (Shape n), A.Applicative (Shape n)) => Eq (Shape n a) where
+--    (==) = \ a  b -> F.foldr (&&) True $ map2 (==) a b 
+--    (/=) = \ a  b -> F.foldr (||) False $ map2 (/=) a b 
+
+
+--instance (Show a, F.Foldable (Shape n ) ) => 
 
 --instance   Eq a => Eq (Shape n a) where
 --    (==) = \ a  b -> F.foldr (&&) True $  A.pure ((==) :: a ->a -> Bool) A.<*> a A.<*> b
@@ -69,6 +79,8 @@ instance   (Eq a,F.Foldable (Shape n), A.Applicative (Shape n)) => Eq (Shape n a
     -- #endif    
 
 type family (TupleRank tup ) :: Nat 
+
+
 type instance TupleRank () = Z
 type instance TupleRank (Only Int) = N1 
  -- TupleRank a = N1  would be incoherent and overlapping
@@ -114,10 +126,10 @@ instance F.Foldable (Shape Z) where
 
 instance (F.Foldable (Shape r))  => F.Foldable (Shape (S r)) where
     foldMap = \f  (a:* as) -> f a M.<> F.foldMap f as 
-    foldl' = \f !init (a :* as) -> let   next = f  init a   in     next `seq` (inline F.foldl) f next as 
-    foldr' = \f !init (a :* as ) -> f a $! (inline F.foldr) f init as               
-    foldl = \f init (a :* as) -> let   next = f  init a  in   (inline F.foldl) f next as 
-    foldr = \f init (a :* as ) -> f a $ (inline F.foldr) f init as     
+    foldl' = \f !init (a :* as) -> let   next = f  init a   in     next `seq`  F.foldl f next as 
+    foldr' = \f !init (a :* as ) -> f a $!  F.foldr f init as               
+    foldl = \f init (a :* as) -> let   next = f  init a  in    F.foldl f next as 
+    foldr = \f init (a :* as ) -> f a $  F.foldr f init as     
 
 
 
@@ -126,5 +138,39 @@ map2 :: (A.Applicative (Shape r))=> (a->b ->c) -> (Shape r a) -> (Shape r b) -> 
 map2 = \f l r -> A.pure f A.<*>  l  A.<*> r 
 -- {-# INLINABLE map2 #-}
 
+
+-- not sure if this is expressible without a type class, 
+--- lets try though
+-- may get better specialization / inlining with a type class though
+foldLeftMap :: (b->a -> b) -> b -> Shape r a -> Shape r b
+foldLeftMap f init Nil = Nil 
+foldLeftMap f init (a:* as) =  res :* foldLeftMap f res as 
+    where res = f init a 
+--  {-# INLINE foldLeftMap #-}    
+
+
+foldRightMap :: (a -> b -> b ) -> b -> Shape r a -> Shape r b 
+foldRightMap f init shs = finalShape
+    where
+        (accum,!finalShape)= go f init shs
+        go   :: (a -> b -> b ) -> b -> Shape r a -> (b  ,Shape r b )
+        go f init Nil = (init,Nil)
+        go f init (a:* as) = (res, res :*  suffix)
+            where 
+                (accum,suffix)= go f init as 
+                !res =  f a accum
+-- may also want to try cpsing it
+
+
+foldRightMapCPSd :: (a->b ->b) -> b -> Shape r a -> Shape r b 
+foldRightMapCPSd  f init shs = go f  init shs (\accum final -> final)
+    where
+        go :: (a->b->b) -> b -> Shape h a -> (b-> Shape h  b -> c)->c
+        go f init Nil cont = cont init Nil 
+        go f init (a:* as) cont = 
+            go f init as 
+                (\ accum suffShape -> 
+                    let moreAccum = f a accum in 
+                        cont moreAccum (moreAccum:*suffShape) )
 
 
