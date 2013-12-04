@@ -29,7 +29,7 @@ import qualified Control.Applicative as A
 
 import Numerical.Types.Nat 
 
-import Prelude hiding  (foldl,foldr,init)
+import Prelude hiding  (foldl,foldr,init,scanl,scanr,scanl1,scanr1)
 
 
 
@@ -56,6 +56,11 @@ data Shape (rank :: Nat) a where
     (:*) ::  !(a) -> !(Shape r a ) -> Shape  (S r) a
         --deriving (Typeable)
 
+-- at some point also try data model that
+-- has layout be dynamicly reified, but for now
+-- keep it phantom typed for sanity / forcing static dispatch.
+-- NB: may need to make it more general at some future point
+newtype Shaped r a lay = MkShaped (Shape r a)
 
 #if defined(__GLASGOW_HASKELL_) && (__GLASGOW_HASKELL__ >= 707)
 deriving instance Typeable Shape 
@@ -139,18 +144,19 @@ map2 = \f l r -> A.pure f A.<*>  l  A.<*> r
 -- {-# INLINABLE map2 #-}
 
 
--- not sure if this is expressible without a type class, 
---- lets try though
--- may get better specialization / inlining with a type class though
-foldLeftMap :: (b->a -> b) -> b -> Shape r a -> Shape r b
-foldLeftMap f init Nil = Nil 
-foldLeftMap f init (a:* as) =  res :* foldLeftMap f res as 
+{-
+the scannable ops may be better as a type class, because
+i'll be able to get things to specialize better
+-}
+scanl :: (b->a -> b) -> b -> Shape r a -> Shape r b
+scanl f init Nil = Nil 
+scanl f init (a:* as) =  res :* scanl f res as 
     where res = f init a 
 --  {-# INLINE foldLeftMap #-}    
 
 
-foldRightMap :: (a -> b -> b ) -> b -> Shape r a -> Shape r b 
-foldRightMap f init shs = finalShape
+scanr :: (a -> b -> b ) -> b -> Shape r a -> Shape r b 
+scanr f init shs = finalShape
     where
         (accum,!finalShape)= go f init shs
         go   :: (a -> b -> b ) -> b -> Shape r a -> (b  ,Shape r b )
@@ -162,8 +168,8 @@ foldRightMap f init shs = finalShape
 -- may also want to try cpsing it
 
 
-foldRightMapCPSd :: (a->b ->b) -> b -> Shape r a -> Shape r b 
-foldRightMapCPSd  f init shs = go f  init shs (\accum final -> final)
+scanrCPSd :: (a->b ->b) -> b -> Shape r a -> Shape r b 
+scanrCPSd  f init shs = go f  init shs (\accum final -> final)
     where
         go :: (a->b->b) -> b -> Shape h a -> (b-> Shape h  b -> c)->c
         go f init Nil cont = cont init Nil 

@@ -6,6 +6,8 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE CPP #-}
 
 module Numerical.Types.Nat(Nat(..),nat,N0,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10)  where
 import Data.Typeable
@@ -14,6 +16,11 @@ import Language.Haskell.TH hiding (reify)
 
 data Nat = S !Nat  | Z 
     deriving (Eq,Show,Read,Typeable,Data)    
+
+#if defined(__GLASGOW_HASKELL_) && (__GLASGOW_HASKELL__ >= 707)
+deriving instance Typeable 'Z
+deriving instance Typeable 'S
+#endif
 
 
 -- only use this if you're ok required template haskell
