@@ -1,27 +1,24 @@
 # Contributing
-Great! Theres so many awesome ways you could help out.  
+Great! Theres so many awesome ways you could help out. Pick anything :)  
+
+## How to submit a bug report
+
+If you're just reporting a bug, thats great! Please be sure to 
+provide a minimal example that can reproduce the error if you can.
 
 
 
+## Pull request procedure
+
+Pull requests should be targeted at Numerical's `master` branch.
+Before pushing to your Github repo and issuing the pull request,
+please do two things:
+
+1. [Rebase](http://git-scm.com/book/en/Git-Branching-Rebasing) your
+   local changes against the `master` branch. Resolve any conflicts
+   that arise.
+
+2. Run the tests and benchmark suite! If theres no tests or benchmarks for your contribution, be sure to add them.
 
 
-# Wellposed Contributor License Agreement
-
-Why is this agreement necessary?
-We very much appreciate your wanting to contribute to Wellposed!
-
-Note that the following agreement is not a transfer of copyright ownership, this simply is a license agreement for contributions. You also do not change your rights to use your own contributions for any other purpose, subject to the terms of any license agreement between you and Wellposed with respect to your use of Wellposed software.
-
-For some background on why contributor license agreements are necessary, you can read FAQs from many other open source projects:
-
-* Django's excellent [CLA FAQ](https://www.djangoproject.com/foundation/cla/faq/)
-
-* A [well-written chapter](http://producingoss.com/en/copyright-assignment.html) from Karl Fogel's Producing Open Source Software on CLAs
-
-* The [Wikipedia article](http://en.wikipedia.org/wiki/Contributor_license_agreement) on CLAs
-
-This is part of the legal framework of the open-source ecosystem that adds some red tape, but protects both the contributor and the company / foundation behind the project. It also gives us the option to relicense the code with a more permissive license in the future.
-
-If you have more questions, shoot Carter an email  or drop by #wellposed or #numerical-haskell on IRC on freenode.
-
-Our contributors license agreement can be found [here](https://www.hellosign.com/s/7e53e35f). 
+3. All commits need to be signed off by their author, as a means of communicating that the contributions are in accordance with the project's open source license terms.
