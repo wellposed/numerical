@@ -66,6 +66,16 @@ newtype Shaped r a lay = MkShaped (Shape r a)
 deriving instance Typeable Shape 
 #endif
 
+
+{-# INLINE reverseShape #-}
+reverseShape :: Shape n a -> Shape n a 
+reverseShape Nil = Nil 
+reverseShape s@(a :* Nil ) = s 
+reverseShape (a:* b :* Nil) = (b:* a :* Nil )
+reverseShape (a:* b:* c :* Nil ) = (c :* b :* a :* Nil)
+
+
+
 --deriving instance Eq a => Eq (Shape Z a)
 
 --instance   (Eq a,F.Foldable (Shape n), A.Applicative (Shape n)) => Eq (Shape n a) where
@@ -87,8 +97,10 @@ type family (TupleRank tup ) :: Nat
 
 
 type instance TupleRank () = Z
-type instance TupleRank (Only Int) = N1 
+type instance TupleRank  Int = N1 
  -- TupleRank a = N1  would be incoherent and overlapping
+ -- if tuples were polymorphic, or would have to do Only a, which seems ugly
+ --
 type instance TupleRank (Int,Int) = N2 
 type instance TupleRank (Int,Int,Int) = N3
 type instance TupleRank (Int,Int,Int,Int) =  N4
@@ -96,6 +108,9 @@ type instance TupleRank (Int,Int,Int,Int,Int) = N5
 type instance TupleRank (Int,Int,Int,Int,Int,Int) = N6 
 type instance TupleRank (Int,Int,Int,Int,Int,Int,Int) = N7
 type instance TupleRank (Int,Int,Int,Int,Int,Int,Int,Int) = N8
+
+
+
 
 
 class Shapeable (n :: Nat) where
@@ -106,6 +121,38 @@ class Shapeable (n :: Nat) where
     toShape :: (tup~Tuple n, n ~ TupleRank tup ) => tup -> Shape n Int
     fromShape :: (tup~Tuple n, n ~ TupleRank tup ) => Shape n Int-> tup 
 
+
+--- should evaluate using TH to generate these instances later
+instance Shapeable N0 where
+    type Tuple N0 = ()
+    toShape _ = Nil 
+    fromShape _ = ()
+
+instance Shapeable N1 where
+    type Tuple N1 = Int 
+    toShape i = i :* Nil 
+    fromShape (i :* Nil) = i 
+
+instance Shapeable N2 where
+    type Tuple N2 = (Int,Int)
+    toShape (x , y)=  x :*  y :* Nil 
+    fromShape (x :*  y :* Nil ) = (x,y)
+
+instance Shapeable N3 where
+    type Tuple N3 = (Int,Int,Int)
+    toShape (x,y,z)=  x :*  y :* z :* Nil 
+    fromShape (x :*  y :* z:* Nil ) = (x,y,z)
+
+
+instance Shapeable N3 where
+    type Tuple N3 = (Int,Int,Int)
+    toShape (x,y,z,a)=  x :*  y :* z :* a :* Nil 
+    fromShape (x :*  y :* z:* a :*  Nil ) = (x,y,z,a)
+
+instance Shapeable N3 where
+    type Tuple N3 = (Int,Int,Int)
+    toShape (x,y,z,a,b)=  x :*  y :* z :* a :* Nil 
+    fromShape (x :*  y :* z:* a :*  Nil ) = (x,y,z,a)
 
 instance Fun.Functor (Shape Z) where
     fmap  = \ _ Nil -> Nil 

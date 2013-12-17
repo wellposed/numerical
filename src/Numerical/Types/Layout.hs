@@ -72,10 +72,10 @@ data Sized :: * -> * where
         (:@) :: Nat -> a -> Sized a 
 
 
-{-|
+{-
 
 per se I don't need the StaticLay, PrimLay, Lay constructors, BUT
-I really do 
+I really do like how it makes things a teeny bit simpler.. though I may remove them
 -}
 
 
@@ -84,9 +84,13 @@ class PrimLayout lay (rank :: Nat) where
     toIndexPrim :: Shaped rank Int (PrimLay lay) -> Shape rank Int -> Int 
     fromIndexPrim :: Shaped rank Int (PrimLay lay) -> Int -> Shape rank Int 
 
+{-
+primlayouts have a block size of 1
+-}
 
-class StaticLayout (ls :: [ Sized *]) where
-    type TranposedStatic
+
+class StaticLayout (ls :: [ Sized *]) (rank :: Nat) where
+    type TranposedStatic ls 
     toIndexStatic :: Shaped rank Int (StaticLay ls) -> Shape rank Int -> Int 
     fromIndexStatic :: Shaped rank Int (StaticLay ls) -> Int -> Shape rank Int     
 
@@ -94,10 +98,33 @@ class StaticLayout (ls :: [ Sized *]) where
 
 --    deriving (Show, Read, Eq, Ord,Typeable,Data)
 
-class  Layout lay where 
+class  GenLayout lay (rank :: Nat) where 
+    type TranposedGen lay 
+    toIndexGen :: Shaped rank Int (Lay lay) -> Shape rank Int -> Int
+    fromIndexGen :: Shaped rank Int (Lay lay) -> Int -> Shape rank Int 
+
+--- not sure if I need this extra layer here
+class Layout lay (rank :: Nat) where 
     type Tranposed lay 
-    toIndex :: Shaped rank Int (Lay lay) -> Shape rank Int -> Int
-    fromIndex :: Shaped rank Int (Lay lay) -> Int -> Shape rank Int 
+    toIndex :: Shaped rank Int lay -> Shape rank Int -> Int
+    {-# INLINE toIndex #-}
+    fromIndex :: Shaped rank Int lay -> Int -> Shape rank Int 
+    {-# INLINE fromIndex #-}
+
+instance GenLayout l r => Layout (Lay lay) r where
+    type Tranposed (Lay lay) = Lay (TranposedGen lay) 
+    toIndex = toIndexGen
+    {-# INLINE toIndex #-}
+    fromIndex = fromIndexGen
+    {-# INLINE fromIndex #-}
+
+instance StaticLay l r => Layout  (StaticLay l) r where
+    type Tranposed (StaticLay l)=  StaticLay ( TranposedStatic  l)
+    toIndex = toIndexStatic
+    {-# INLINE toIndex #-}
+    fromIndex = fromIndexStatic
+    {-# INLINE fromIndex #-}
+
 
 
 {-
