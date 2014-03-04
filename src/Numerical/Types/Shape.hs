@@ -1,10 +1,8 @@
-{-# LANGUAGE PolyKinds   #-}
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE DataKinds, PolyKinds, GADTs, TypeFamilies, TypeOperators,
+             ConstraintKinds, ScopedTypeVariables, RankNTypes #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -20,7 +18,9 @@ module Numerical.Types.Shape where
 
 import GHC.Magic 
 import Data.Data 
-import Data.Typeable
+import Data.Typeable()
+
+import Data.Type.Equality
 
 import qualified Data.Monoid  as M 
 import qualified Data.Functor as Fun 
@@ -46,15 +46,30 @@ the concern basically boils down to "will it specialize / inline well"
 
  -}
 
-newtype Only a = Only {
-      fromOnly :: a
-    } deriving (Eq, Ord, Read, Show, Typeable, Functor)
+newtype At a = At  a
+     deriving (Eq, Ord, Read, Show, Typeable, Functor)
 
 
 data Shape (rank :: Nat) a where 
     Nil  :: Shape Z a
     (:*) ::  !(a) -> !(Shape r a ) -> Shape  (S r) a
-        --deriving (Typeable)
+        --deriving  (Show)
+
+#if defined(__GLASGOW_HASKELL_) && (__GLASGOW_HASKELL__ >= 707)
+deriving instance Typeable Shape 
+#endif
+
+
+instance  Eq (Shape Z a) where
+    (==) _ _ = True 
+instance (Eq a,Eq (Shape s a))=> Eq (Shape (S s) a )  where 
+    (==)  (a:* as) (b:* bs) =  (a == b) && (as == bs )   
+
+instance  Show (Shape Z a) where 
+    show _ = "Nil"
+
+instance (Show a, Show (Shape s a))=> Show (Shape (S s) a) where
+    show (a:* as) = show a  ++ " :* " ++ show as 
 
 -- at some point also try data model that
 -- has layout be dynamicly reified, but for now
@@ -62,17 +77,28 @@ data Shape (rank :: Nat) a where
 -- NB: may need to make it more general at some future point
 newtype Shaped r a lay = MkShaped (Shape r a)
 
-#if defined(__GLASGOW_HASKELL_) && (__GLASGOW_HASKELL__ >= 707)
-deriving instance Typeable Shape 
-#endif
+
 
 
 {-# INLINE reverseShape #-}
 reverseShape :: Shape n a -> Shape n a 
-reverseShape Nil = Nil 
-reverseShape s@(a :* Nil ) = s 
-reverseShape (a:* b :* Nil) = (b:* a :* Nil )
-reverseShape (a:* b:* c :* Nil ) = (c :* b :* a :* Nil)
+reverseShape Nil = Nil
+reverseShape list = go SZero Nil list
+  where
+    go :: SNat n1 -> Shape n1  a-> Shape n2 a -> Shape (n1 + n2) a
+    go snat acc Nil = gcastWith (plus_id_r snat) acc
+    go snat acc (h :* (t :: Shape n3 a)) =
+      gcastWith (plus_succ_r snat (Proxy :: Proxy n3))
+              (go (SSucc snat) (h :* acc) t)
+
+--reverseShape :: Shape n a -> Shape n a 
+--reverseShape Nil = Nil 
+--reverseShape s@(a :* Nil ) = s 
+--reverseShape (a:* b :* Nil) = (b:* a :* Nil )
+--reverseShape (a:* b:* c :* Nil ) = (c :* b :* a :* Nil)
+--reverseShape s = go SZero Nil s
+--  where
+--    go :: SNat n1 -> Shape n1  a-> Shape n2 a-> Shape (n1 + n2) a
 
 
 
@@ -97,62 +123,64 @@ type family (TupleRank tup ) :: Nat
 
 
 type instance TupleRank () = Z
-type instance TupleRank  Int = N1 
- -- TupleRank a = N1  would be incoherent and overlapping
- -- if tuples were polymorphic, or would have to do Only a, which seems ugly
- --
-type instance TupleRank (Int,Int) = N2 
-type instance TupleRank (Int,Int,Int) = N3
-type instance TupleRank (Int,Int,Int,Int) =  N4
-type instance TupleRank (Int,Int,Int,Int,Int) = N5 
-type instance TupleRank (Int,Int,Int,Int,Int,Int) = N6 
-type instance TupleRank (Int,Int,Int,Int,Int,Int,Int) = N7
-type instance TupleRank (Int,Int,Int,Int,Int,Int,Int,Int) = N8
+type instance TupleRank  (At a) = N1 
+type instance TupleRank (a,a) = N2 
+type instance TupleRank (a,a,a) = N3
+type instance TupleRank (a,a,a,a) =  N4
+type instance TupleRank (a,a,a,a,a) = N5 
+type instance TupleRank (a,a,a,a,a,a) = N6 
+type instance TupleRank (a,a,a,a,a,a,a) = N7
+type instance TupleRank (a,a,a,a,a,a,a,a) = N8
+--higher ranks available on request 
 
 
+--type family GoLeft a b 
 
+--type instance GoLeft 
 
 
 class Shapeable (n :: Nat) where
-    type  Tuple n  
+    type  Tuple n   a 
     --type Tuple n = tup 
 -- this should map an int tuple to their rank n 
  
-    toShape :: (tup~Tuple n, n ~ TupleRank tup ) => tup -> Shape n Int
-    fromShape :: (tup~Tuple n, n ~ TupleRank tup ) => Shape n Int-> tup 
+    toShape :: (tup ~Tuple n a, n ~ TupleRank tup ) => tup -> Shape n a
+    fromShape :: (tup~Tuple n a, n ~ TupleRank tup ) => Shape n a-> tup 
 
 
 --- should evaluate using TH to generate these instances later
-instance Shapeable N0 where
-    type Tuple N0 = ()
+instance Shapeable Z   where
+    type Tuple N0 a = ()
     toShape _ = Nil 
     fromShape _ = ()
 
-instance Shapeable N1 where
-    type Tuple N1 = Int 
-    toShape i = i :* Nil 
-    fromShape (i :* Nil) = i 
+instance Shapeable N1  where
+    type Tuple N1  a= At a  
+    toShape (At i) = i :* Nil 
+    fromShape (i :* Nil) =At  i 
 
-instance Shapeable N2 where
-    type Tuple N2 = (Int,Int)
+instance Shapeable N2  where
+    type Tuple N2 a= (a,a)
     toShape (x , y)=  x :*  y :* Nil 
     fromShape (x :*  y :* Nil ) = (x,y)
 
-instance Shapeable N3 where
-    type Tuple N3 = (Int,Int,Int)
+instance Shapeable N3   where
+    type Tuple N3 a= (a,a,a)
     toShape (x,y,z)=  x :*  y :* z :* Nil 
     fromShape (x :*  y :* z:* Nil ) = (x,y,z)
 
 
-instance Shapeable N3 where
-    type Tuple N3 = (Int,Int,Int)
+instance Shapeable N4  where
+    type Tuple N4 a = (a,a,a,a)
     toShape (x,y,z,a)=  x :*  y :* z :* a :* Nil 
     fromShape (x :*  y :* z:* a :*  Nil ) = (x,y,z,a)
 
-instance Shapeable N3 where
-    type Tuple N3 = (Int,Int,Int)
-    toShape (x,y,z,a,b)=  x :*  y :* z :* a :* Nil 
-    fromShape (x :*  y :* z:* a :*  Nil ) = (x,y,z,a)
+instance Shapeable N5   where
+    type Tuple N5 a= (a,a,a,a,a)
+    toShape (x,y,z,a,b)=  x :*  y :* z :* a :* b :* Nil 
+    fromShape (x :*  y :* z:* a :* b:*  Nil ) = (x,y,z,a,b)
+-- higher rank insances welcome :) 
+
 
 instance Fun.Functor (Shape Z) where
     fmap  = \ _ Nil -> Nil 

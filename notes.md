@@ -73,3 +73,5 @@ col major of 2x2 rowmajor (2dim)
 Array ... rank storage  layout  ... elem
 
 layout =  Lay (ColMajor :#  [n3:@ Colmajor, n2:@ RowMajor] )
+
+Theres currently a somewhat 

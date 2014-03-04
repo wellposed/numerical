@@ -11,6 +11,8 @@
 -- do i need flexible instances really?
 {-# LANGUAGE FlexibleInstances #-}
 
+{-# LANGUAGE UndecidableInstances #-}
+
 module Numerical.Types.Layout where
 
 
@@ -31,7 +33,7 @@ make it easy to define new dense array layouts
 
 
 -}
-
+data  Locality = Contiguous | Strided  | InnerContiguous
 
 data PrimLay a  
 data StaticLay a 
@@ -41,6 +43,11 @@ data Lay a
 data Row = RowS
 
 data Col = ColS 
+
+
+--data Elem ls el  where 
+--    Point :: Elem '[] el
+--    (:#) :: a -> Elem ls el -> Elem (a ': ls) el  
 
 
 {-|
@@ -59,6 +66,27 @@ data Col = ColS
     we have that
        toIndex shapedLayout xi <  toIndex  shapedLayout yj
 
+
+this actually relates to the notion of partial ordering over vectors in convex
+geometry!
+
+
+so roughly: we have layouts that are dense
+we have layouts that can be used as tiles (and are dense)
+
+and we have layouts which can can't be tiled, but can have elements which are tiled
+
+So we have
+
+PrimitiveLayouts
+
+Static Layouts
+
+General Layouts (which are a Top level layout over a static layout)
+
+the Layout class tries to abstract over all three cases 
+(NB: this only makes sense when the "rank" for the inner 
+and outer layouts have the same rank!)
 
 -}
 
@@ -79,51 +107,58 @@ I really do like how it makes things a teeny bit simpler.. though I may remove t
 -}
 
 
+
+--class SimpleDenseLayout lay (rank :: Nat) where
+--  type SimpleDenseTranpose lay 
+--  toIndexSimpleDense :: Shaped rank Int lay -> Shape rank Int -> Int 
+
+
 class PrimLayout lay (rank :: Nat) where 
     type TranposedPrim lay 
     toIndexPrim :: Shaped rank Int (PrimLay lay) -> Shape rank Int -> Int 
     fromIndexPrim :: Shaped rank Int (PrimLay lay) -> Int -> Shape rank Int 
 
-{-
-primlayouts have a block size of 1
--}
+--{-
+--primlayouts have a block size of 1, no tiling, though they may themselves
+--used in forming tiles
+---}
 
 
-class StaticLayout (ls :: [ Sized *]) (rank :: Nat) where
-    type TranposedStatic ls 
-    toIndexStatic :: Shaped rank Int (StaticLay ls) -> Shape rank Int -> Int 
-    fromIndexStatic :: Shaped rank Int (StaticLay ls) -> Int -> Shape rank Int     
+--class StaticLayout (ls :: [ Sized *]) (rank :: Nat) where
+--    type TranposedStatic ls 
+--    toIndexStatic :: Shaped rank Int (StaticLay ls) -> Shape rank Int -> Int 
+--    fromIndexStatic :: Shaped rank Int (StaticLay ls) -> Int -> Shape rank Int     
 
---instance  StaticLayout [(N3 :@ Row),(N2 :@ Col)]    where 
+----instance  StaticLayout [(N3 :@ Row),(N2 :@ Col)]    where 
 
---    deriving (Show, Read, Eq, Ord,Typeable,Data)
+----    deriving (Show, Read, Eq, Ord,Typeable,Data)
 
-class  GenLayout lay (rank :: Nat) where 
-    type TranposedGen lay 
-    toIndexGen :: Shaped rank Int (Lay lay) -> Shape rank Int -> Int
-    fromIndexGen :: Shaped rank Int (Lay lay) -> Int -> Shape rank Int 
+--class  GenLayout lay (rank :: Nat) where 
+--    type TranposedGen lay 
+--    toIndexGen :: Shaped rank Int (Lay lay) -> Shape rank Int -> Int
+--    fromIndexGen :: Shaped rank Int (Lay lay) -> Int -> Shape rank Int 
 
---- not sure if I need this extra layer here
-class Layout lay (rank :: Nat) where 
-    type Tranposed lay 
-    toIndex :: Shaped rank Int lay -> Shape rank Int -> Int
-    {-# INLINE toIndex #-}
-    fromIndex :: Shaped rank Int lay -> Int -> Shape rank Int 
-    {-# INLINE fromIndex #-}
-
-instance GenLayout l r => Layout (Lay lay) r where
-    type Tranposed (Lay lay) = Lay (TranposedGen lay) 
-    toIndex = toIndexGen
-    {-# INLINE toIndex #-}
-    fromIndex = fromIndexGen
-    {-# INLINE fromIndex #-}
-
-instance StaticLay l r => Layout  (StaticLay l) r where
-    type Tranposed (StaticLay l)=  StaticLay ( TranposedStatic  l)
-    toIndex = toIndexStatic
-    {-# INLINE toIndex #-}
-    fromIndex = fromIndexStatic
-    {-# INLINE fromIndex #-}
+----- not sure if I need this extra layer here
+--class Layout lay (rank :: Nat) where 
+--    type Tranposed lay 
+--    toIndex :: Shaped rank Int lay -> Shape rank Int -> Int
+--    {-# INLINE toIndex #-}
+--    fromIndex :: Shaped rank Int lay -> Int -> Shape rank Int 
+--    {-# INLINE fromIndex #-}
+----the fact that months layer i don't understand these genlayout and static layout instances tells me something
+--instance GenLayout lay rnk => Layout (Lay lay) rnk where
+--    type Tranposed (Lay lay) = Lay (TranposedGen lay) 
+--    toIndex = toIndexGen
+--    {-# INLINE toIndex #-}
+--    fromIndex = fromIndexGen
+--    {-# INLINE fromIndex #-}
+----
+--instance StaticLayout lay rnk => Layout  (StaticLay lay) rnk where
+--    type Tranposed (StaticLay lay)=  StaticLay ( TranposedStatic  lay)
+--    toIndex = toIndexStatic
+--    {-# INLINE toIndex #-}
+--    fromIndex = fromIndexStatic
+--    {-# INLINE fromIndex #-}
 
 
 

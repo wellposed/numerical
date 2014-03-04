@@ -22,10 +22,21 @@ or bite the primstate bullet now?
 data family Array world rep lay (view:: Locality) sh elm 
 
 
+{-
+only Row and Column Major have  dense formats that are unique across ALL
+possible ranks, not so simple for others. Make different data instances per formats
+
+
+
+
+
+-}
+--class Array  where
+
 -----------
 -- | for now locality is a closed type, may change going forward
 -- also should it be in a different module like shape or layout?
-data  Locality = Contiguous | Strided 
+
 
 
 {-
@@ -85,7 +96,11 @@ view =
 
 -}
 
-{- what class
+{-
+
+uncheckedReshape :: Array wld rep lay 
+
+
 -}
 
 
