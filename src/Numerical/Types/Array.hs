@@ -7,7 +7,7 @@ module Numerical.Types.Array where
 
 import Numerical.Types.Shape
 
-data  MArray  world rep lay (view:: Locality) sh elem 
+--data  MArray  world rep lay (view:: Locality) sh elem 
 
 
 
@@ -19,7 +19,7 @@ lets do just IO and not ST for now?
 or bite the primstate bullet now?
 -}
 
-data family Array world rep lay (view:: Locality) sh elm 
+--data family Array world rep lay (view:: Locality) sh elm 
 
 
 {-
