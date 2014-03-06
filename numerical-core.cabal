@@ -49,8 +49,9 @@ cabal-version:       >=1.10
 library
     -- Modules exported by the library.
     exposed-modules:     
-        Numerical.Types.Array
         Numerical.Types.Layout
+        Numerical.Types.Array
+
         Numerical.Types.Operations
         Numerical.Types.Shape
         Numerical.Types.Nat 

@@ -12,6 +12,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Numerical.Types.Layout where
 
@@ -23,9 +24,11 @@ ColumnMajor
 -}
 
 import Numerical.Types.Nat
-import Numerical.Types.Shape
+import Numerical.Types.Shape as S 
 import Data.Data
-
+import qualified Data.Foldable as F 
+import Control.Applicative
+import Prelude hiding (foldr,foldl,foldl')
 
 {-|  A major design goal with the Layout module is to 
 make it easy to define new dense array layouts
@@ -40,9 +43,11 @@ data StaticLay a
 data Lay a 
 
 
+data Direct = DirectS
+
 data Row = RowS
 
-data Col = ColS 
+data Column = ColumnS 
 
 
 --data Elem ls el  where 
@@ -113,88 +118,79 @@ I really do like how it makes things a teeny bit simpler.. though I may remove t
 --  toIndexSimpleDense :: Shaped rank Int lay -> Shape rank Int -> Int 
 
 
-class PrimLayout lay (rank :: Nat) where 
-    type TranposedPrim lay 
-    toIndexPrim :: Shaped rank Int (PrimLay lay) -> Shape rank Int -> Int 
-    fromIndexPrim :: Shaped rank Int (PrimLay lay) -> Int -> Shape rank Int 
-
---{-
---primlayouts have a block size of 1, no tiling, though they may themselves
---used in forming tiles
----}
-
-
---class StaticLayout (ls :: [ Sized *]) (rank :: Nat) where
---    type TranposedStatic ls 
---    toIndexStatic :: Shaped rank Int (StaticLay ls) -> Shape rank Int -> Int 
---    fromIndexStatic :: Shaped rank Int (StaticLay ls) -> Int -> Shape rank Int     
-
-----instance  StaticLayout [(N3 :@ Row),(N2 :@ Col)]    where 
-
-----    deriving (Show, Read, Eq, Ord,Typeable,Data)
-
---class  GenLayout lay (rank :: Nat) where 
---    type TranposedGen lay 
---    toIndexGen :: Shaped rank Int (Lay lay) -> Shape rank Int -> Int
---    fromIndexGen :: Shaped rank Int (Lay lay) -> Int -> Shape rank Int 
-
------ not sure if I need this extra layer here
---class Layout lay (rank :: Nat) where 
---    type Tranposed lay 
---    toIndex :: Shaped rank Int lay -> Shape rank Int -> Int
---    {-# INLINE toIndex #-}
---    fromIndex :: Shaped rank Int lay -> Int -> Shape rank Int 
---    {-# INLINE fromIndex #-}
-----the fact that months layer i don't understand these genlayout and static layout instances tells me something
---instance GenLayout lay rnk => Layout (Lay lay) rnk where
---    type Tranposed (Lay lay) = Lay (TranposedGen lay) 
---    toIndex = toIndexGen
---    {-# INLINE toIndex #-}
---    fromIndex = fromIndexGen
---    {-# INLINE fromIndex #-}
-----
---instance StaticLayout lay rnk => Layout  (StaticLay lay) rnk where
---    type Tranposed (StaticLay lay)=  StaticLay ( TranposedStatic  lay)
---    toIndex = toIndexStatic
---    {-# INLINE toIndex #-}
---    fromIndex = fromIndexStatic
---    {-# INLINE fromIndex #-}
-
+--class PrimLayout lay (rank :: Nat) where 
+--    type TranposedPrim lay 
+--    toIndexPrim :: Shaped rank Int (PrimLay lay) -> Shape rank Int -> Int 
+--    fromIndexPrim :: Shaped rank Int (PrimLay lay) -> Int -> Shape rank Int 
 
 
 {-
-NB: I want to consider the Point a "Sized" layout of one
-
-
+for now we will not deal with nested formats, but this will
+be a breaking change i plan for later
 -}
-
-
-{-data Slay :: Nat ->a->[(Nat,a)]->  * where
-    Point :: Slay 1 () '[]
-    Cat ::   a -> n -> Slay rank top ls -> Slay n a ((rank,top): ls)
-
-    --- NOT SURE HOW TO WRITE THIS
--}
---data Lay a = Point  | (:#) a  Nat  (Lay a) 
-    --deriving (Show, Read, Eq,Typeable,Data)
-
---data head :# tail =
---                     !head :# !tail 
-
-
 
 {-
-when indexing x :* h :* Nil,  we'll interpret the h as the row and the x 
-as column.   So Column major forms a nice foldl (left fold), and  Row major forms
-a nice 
+what is the law for the Layout class?
+forall valid formms
+toIndex sd  (fromIndex sd ix)==ix
+fromIndex sd (toIndex sd shp)==shp
 
-lets try to require writing 
+if   tup1 is strictly less than tup2 (pointwise),
+  then any lawful Layout will asign tup1 an index strictly less than that
+  asigned to tup2 
 
-for now we'll distinguish between contiguous vs strided indexing, and 
-for now have strided be done with  baseShape + (indexShape * strideShape),
+  transposedLayout . transposedLayout == id 
 
-also: should the layout 
 
+
+i treat coordinates as being in x:* y :* z :* Nil, which is Fortran style idexing 
+in row major, X would be the innermost variable because it varies over columns, Z the outtermost
+in column major, Z would be the inner most, b
 -}
 
 
+
+class Layout lay (contiguity:: Locality) (rank :: Nat) where
+    type Tranposed lay 
+    data family Form lay contiguity (rank :: Nat)
+    
+    transposedLayout ::  (lay ~ Tranposed l2,l2~Tranposed lay)=> Form lay contiguity rank -> Form l2 contiguity rank 
+    
+    toIndex :: Form lay contiguity rank -> Shape rank Int -> Int 
+
+    fromIndex :: Form   lay contiguity rank -> Int -> Shape rank Int 
+
+
+instance Layout Direct Contiguous (S Z)   where
+    type Tranposed Direct = Direct
+    data Form  Direct Contiguous (S Z) = FormDirectContiguous
+
+    transposedLayout = id 
+
+    toIndex   FormDirectContiguous  (j :* Nil )= j 
+
+    fromIndex FormDirectContiguous ix = (ix ) :* Nil 
+
+instance  Layout Row  Contiguous n where
+    type Tranposed Row = Column 
+
+    data Form  Row  Contiguous rank  = FormRow {sizeRow :: Shape rank Int} -- strideRow :: Shape rank Int,
+
+    transposedLayout = \(FormRow shp) -> FormColumn $ reverseShape shp
+
+    toIndex rs = \tup -> let !strider = S.scanr (*) 1 (sizeRow rs) in S.foldl'  (+) 0 $! map2 (*) strider tup 
+
+    fromIndex rs = \ix -> let !strider = S.scanr (*) 1 (sizeRow rs) in undefined
+
+
+
+instance  Layout Column  Contiguous n where
+    type Tranposed Column = Row  
+    data Form  Column Contiguous rank  = FormColumn {boundsColumn :: Shape rank Int} -- strideRow :: Shape rank Int,
+
+    transposedLayout = \(FormColumn shp)-> FormRow $ reverseShape shp 
+
+    toIndex rs = undefined  
+    --  \tup -> let !strider = S.scanr (*) 0 (boundsColumn rs) $ foldr  (+) 0  $! map2 (*) strider tup 
+    fromIndex rs = undefined 
+     --- \ix -> let !strider = S.scanr (*) 0 (boundsColumn rs) in undefined

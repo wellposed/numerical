@@ -15,7 +15,19 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Numerical.Types.Shape where
+module Numerical.Types.Shape(Shape(..)
+    ,foldl
+    ,foldr
+    ,foldl'
+    ,scanr
+    ,scanl
+    ,map
+    ,map2
+    ,reverseShape
+    ,At(..)
+    ,Nat(..)
+    ,shapeSize
+    ,SNat(..)) where
 
 import GHC.Magic 
 import Data.Data 
@@ -89,6 +101,10 @@ shapeSize (a:* as) = SSucc (shapeSize as)
 {-# INLINE reverseShape #-}
 reverseShape :: Shape n a -> Shape n a 
 reverseShape Nil = Nil
+reverseShape r@(a :* Nil)= r
+reverseShape (a:* b :* Nil) = b:* a :* Nil
+reverseShape (a:* b :* c:* Nil )=  c :* b :* a :* Nil
+reverseShape (a:* b :* c :* d :* Nil)= d :* c :* b :* a :* Nil 
 reverseShape list = go SZero Nil list
   where
     go :: SNat n1 -> Shape n1  a-> Shape n2 a -> Shape (n1 + n2) a
@@ -208,75 +224,61 @@ instance Fun.Functor (Shape r) where
 --    {-# INLINE pure #-}
 --    (<*>) = \ (f:* fs) (a :* as) ->  f a :* (inline (A.<*>)) fs as 
 --    {-# INLINE (<*>) #-}
---instance F.Foldable (Shape Z) where
---    foldMap = \ _ _ -> M.mempty
-    
---    foldl = \ _ init  _ -> init 
---    foldr = \ _ init _ -> init 
---    foldr' = \_ !init _ -> init 
---    foldl' = \_ !init _ -> init   
---    {-# INLINE foldMap  #-}
---    {-#  INLINE foldl #-}
---    {-#  INLINE foldr  #-}
---    {-# INLINE foldl' #-}
---    {-#  INLINE foldr'  #-}
---instance (F.Foldable (Shape r))  => F.Foldable (Shape (S r)) where
---    foldMap = \f  (a:* as) -> f a M.<> F.foldMap f as 
---    foldl' = \f !init (a :* as) -> let   next = f  init a   in     next `seq`  F.foldl f next as 
---    foldr' = \f !init (a :* as ) -> f a $!  F.foldr f init as               
---    foldl = \f init (a :* as) -> let   next = f  init a  in    F.foldl f next as 
---    foldr = \f init (a :* as ) -> f a $  F.foldr f init as     
---    {-# INLINE foldMap  #-}
---    {-#  INLINE foldl #-}
---    {-#  INLINE foldr  #-}
---    {-# INLINE foldl' #-}
---    {-#  INLINE foldr'  #-}
+
+instance    F.Foldable (Shape  r) where
+    --foldMap = \f  (a:* as) -> f a M.<> F.foldMap f as 
+    foldl' = foldl'Shape
+    --foldr' = \f !init (a :* as ) -> f a $!  F.foldr f init as               
+    foldl = foldlShape
+    foldr = foldrShape 
+    --{-# INLINE foldMap  #-}
+    --{-#  INLINE foldl #-}
+    --{-#  INLINE foldr  #-}
+    --{-# INLINE foldl' #-}
+    --{-#  INLINE foldr'  #-}
+
+foldl'Shape=foldl'
+foldrShape=foldr
+foldlShape=foldl
+mapShape = map 
 
 
-{- NB: these inline pragmas are more overengineering than anythign else -}
-
-----
---map2 :: (A.Applicative (Shape r))=> (a->b ->c) -> (Shape r a) -> (Shape r b) -> (Shape r c )
---map2 = \f l r -> A.pure f A.<*>  l  A.<*> r 
----{-# SPECIALIZE map2 :: (a->b->c)-> (Shape Z a )-> Shape Z b -> Shape Z c #-}
----{-# SPECIALIZE map2 :: (a->b->c)-> (Shape (S Z) a )-> Shape (S Z) b -> Shape (S Z) c #-}
----{-# SPECIALIZE map2 :: (a->b->c)-> (Shape (S (S Z)) a )-> Shape (S (S Z)) b -> Shape (S (S Z)) c #-}
----{-# SPECIALIZE map2 :: (a->b->c)-> (Shape (S (S(S Z))) a )-> Shape (S (S (S Z))) b -> Shape (S (S(S Z))) c #-}
--- {-# INLINABLE map2 #-}
-{-
-I think i need to do a rewrite rule to size monomorphic operations
--}
 
 {-
-the scannable ops may be better as a type class, because
-i'll be able to get things to specialize better
+TODO: abstract out all the different unrolled cases i have
+
+
 -}
-
-
 
   
 {-# INLINE map2 #-}    
 map2 :: forall a b c r .   (a->b ->c) -> (Shape r a) -> (Shape r b) -> (Shape r c )  
-map2 f = go 
-    where 
+map2 f = let 
         go :: (Shape h a) -> (Shape h b) -> (Shape h c ) 
         go (a:* as) (b:* bs)= f a b :* go as bs
+        in \ shpa shpb ->
+            case (shpa,shpb) of
+                (Nil,Nil) -> Nil 
+                (a1:* Nil, b1:* Nil)-> f a1 b1 :* Nil
+                (a1:* a2 :* Nil, b1:* b2 :* Nil) -> f a1 b1 :* f a2 b2 :* Nil
+                (a1:* a2 :* a3:* Nil, b1:* b2 :* b3 :* Nil) -> f a1 b1 :* f a2 b2 :* f a3 b3 :* Nil
+                _ -> go shpa shpb 
 
-{-# INLINE mapShape #-}
-mapShape:: forall a b r . (a->b) -> (Shape r a )->( Shape r b)        
-mapShape f = go
-    where 
+
+{-# INLINE map #-}
+map:: forall a b r . (a->b) -> (Shape r a )->( Shape r b)        
+map f = let 
         go :: (Shape h a )->( Shape h b) 
         go (a:*as) = f a :* go as 
         go Nil = Nil 
---foldrShape :: (a -> b -> b) -> b -> Shape r a -> b 
---foldrShape f  start inshape = res
---    where 
---            res :: b 
---            res = go start inshape 
---            go:: b -> Shape h a -> b 
---            go init Nil = init 
---            go init (a:* as) = f  a  (go init as)
+        in \ shp ->
+            case shp of
+                Nil -> Nil
+                (a:* Nil)->  f a :*Nil
+                (a1 :* a2:* Nil) ->  f a1 :* f a2 :* Nil
+                (a1:* a2 :* a3 :* Nil) -> f a1 :* f a2 :* f a3 :* Nil 
+                _ -> go shp 
+
 
 
 {-# INLINE  foldr #-}
@@ -338,7 +340,7 @@ scanl f  = let
                 (a:* Nil) ->  (f  init a ) :* Nil
                 (a:* b :* Nil) -> (f   init a )  :* ((f init  a  ) `f`  b ) :* Nil 
                 (a :* b :* c :* Nil) -> (f init a  ):* ((f init a ) `f` b) :* (((f init a ) `f` b) `f` c) :* Nil 
-                shp  ->  go init shp  
+                _  ->  go init shp  
 
 {-# INLINE scanr  #-}
 scanr :: forall a b r . (a -> b -> b ) -> b -> Shape r a -> Shape r b 
