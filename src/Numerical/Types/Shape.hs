@@ -204,30 +204,31 @@ instance Shapeable N5   where
 -- higher rank insances welcome :) 
 
 
-instance Fun.Functor (Shape r) where
-    fmap = mapShape 
+--instance Fun.Functor (Shape r) where
+--    fmap = mapShape 
+--    {-#INLINE fmap #-}
 
---instance Fun.Functor (Shape Z) where
---    fmap  = \ _ Nil -> Nil 
---    {-# INLINE fmap #-}
+instance Fun.Functor (Shape Z) where
+    fmap  = \ _ Nil -> Nil 
+    {-# INLINE fmap #-}
 
---instance  (Fun.Functor (Shape r)) => Fun.Functor (Shape (S r)) where
---    fmap  = \ f (a :* rest) -> f a :* Fun.fmap f rest 
---    {-# INLINE fmap  #-}
---instance  A.Applicative (Shape Z) where 
---    pure = \ _ -> Nil
---    {-# INLINE pure  #-}
---    (<*>) = \ _  _ -> Nil 
---    {-# INLINE (<*>) #-}
---instance  A.Applicative (Shape r)=> A.Applicative (Shape (S r)) where     
---    pure = \ a -> a :* (A.pure a)
---    {-# INLINE pure #-}
---    (<*>) = \ (f:* fs) (a :* as) ->  f a :* (inline (A.<*>)) fs as 
---    {-# INLINE (<*>) #-}
+instance  (Fun.Functor (Shape r)) => Fun.Functor (Shape (S r)) where
+    fmap  = \ f (a :* rest) -> f a :* Fun.fmap f rest 
+    {-# INLINE fmap  #-}
+instance  A.Applicative (Shape Z) where 
+    pure = \ _ -> Nil
+    {-# INLINE pure  #-}
+    (<*>) = \ _  _ -> Nil 
+    {-# INLINE (<*>) #-}
+instance  A.Applicative (Shape r)=> A.Applicative (Shape (S r)) where     
+    pure = \ a -> a :* (A.pure a)
+    {-# INLINE pure #-}
+    (<*>) = \ (f:* fs) (a :* as) ->  f a :* (inline (A.<*>)) fs as 
+    {-# INLINE (<*>) #-}
 
 instance    F.Foldable (Shape  r) where
     --foldMap = \f  (a:* as) -> f a M.<> F.foldMap f as 
-    foldl' = foldl'Shape
+    foldl' = foldlPShape
     --foldr' = \f !init (a :* as ) -> f a $!  F.foldr f init as               
     foldl = foldlShape
     foldr = foldrShape 
@@ -237,10 +238,23 @@ instance    F.Foldable (Shape  r) where
     --{-# INLINE foldl' #-}
     --{-#  INLINE foldr'  #-}
 
-foldl'Shape=foldl'
+
+indexedPure :: A.Applicative (Shape n)=> SNat n -> a -> Shape n a 
+indexedPure _ = \val -> A.pure val 
+{-# INLINE indexedPure #-}
+    
+{-# INLINE foldlPShape   #-}
+foldlPShape=foldl'
+   
+
 foldrShape=foldr
+{-# INLINE  foldrShape #-}
+
 foldlShape=foldl
+{-# INLINE foldlShape #-}
+
 mapShape = map 
+{-# INLINE mapShape#-}
 
 
 

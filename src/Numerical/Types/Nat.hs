@@ -21,19 +21,36 @@ deriving instance Typeable 'S
 #endif
 
 
-
+{-
+use closed type families when available,
+need to test that the 
+-}
+#if defined(__GLASGOW_HASKELL__) && (__GLASGOW_HASKELL__ >= 707)
 type family n1 + n2 where
   Z + n2 = n2
   (S n1') + n2 = S (n1' + n2)
+
+#else
+type family n1 + n2 
+
+type instance Z + n2 = n2
+type instance  (S n1) + n2 = S (n1 + n2)  
+
+gcastWith :: (a :~: b) -> ((a ~ b) => r) -> r
+gcastWith Refl x = x
+data a :~: b where
+  Refl :: a :~: a
+
+#endif  
  
 -- singleton for Nat
+
+
 data SNat :: Nat -> * where
   SZero :: SNat Z
   SSucc :: SNat n -> SNat (S n)
  
---gcoerce :: (a :~: b) -> ((a ~ b) => r) -> r
---gcoerce Refl x = x
---gcoerce = gcastWith
+
  
 -- inductive proof of right-identity of +
 plus_id_r :: SNat n -> ((n + Z) :~: n)
