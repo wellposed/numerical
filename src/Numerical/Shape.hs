@@ -27,7 +27,9 @@ module Numerical.Types.Shape(Shape(..)
     ,At(..)
     ,Nat(..)
     ,shapeSize
-    ,SNat(..)) where
+    ,SNat(..)
+    ,weaklyDominates
+    ,strictlyDominates) where
 
 import GHC.Magic 
 import Data.Data 
@@ -47,8 +49,7 @@ import Prelude hiding  (map,foldl,foldr,init,scanl,scanr,scanl1,scanr1)
 
 
 {-
-Need to sort out packed+unboxed vs generic approaches
-see ShapeAlternatives/ for 
+Shape may get renamed to Index in the near future! 
 
 -}
 
@@ -95,8 +96,22 @@ shapeSize :: Shape n a -> SNat n
 shapeSize Nil = SZero
 shapeSize (a:* as) = SSucc (shapeSize as)
 
+{- when you lift a toral order onto vectors, you get
+interesting partial order -}
+{-# SPECIALIZE weaklyDominates :: Shape n Int -> Shape n Int -> Bool #-}
+{-# SPECIALIZE weaklyDominates :: Shape n Integer -> Shape n Integer -> Bool #-}
+{-# SPECIALIZE weaklyDominates :: Shape n Double -> Shape n Double -> Bool #-}
+{-# SPECIALIZE weaklyDominates :: Shape n Float -> Shape n Float -> Bool #-}
+{-# SPECIALIZE weaklyDominates :: Shape n Rational -> Shape n Rational -> Bool #-}
 
-
+{-# SPECIALIZE strictlyDominates :: Shape n Int -> Shape n Int -> Bool #-}
+{-# SPECIALIZE strictlyDominates :: Shape n Integer -> Shape n Integer -> Bool #-}
+{-# SPECIALIZE strictlyDominates :: Shape n Double -> Shape n Double -> Bool #-}
+{-# SPECIALIZE strictlyDominates :: Shape n Float -> Shape n Float -> Bool #-}
+{-# SPECIALIZE strictlyDominates :: Shape n Rational -> Shape n Rational -> Bool #-}
+weaklyDominates, strictlyDominates :: Ord a => Shape n a -> Shape n a -> Bool 
+weaklyDominates = \major minor -> foldl (&&) True $! map2 (>=)  major minor
+strictlyDominates  = \major minor -> foldl (&&) True $! map2 (>)  major minor
 
 {-# INLINE reverseShape #-}
 reverseShape :: Shape n a -> Shape n a 

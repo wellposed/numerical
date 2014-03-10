@@ -14,7 +14,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Numerical.Types.Layout where
+module Numerical.Types.Layout(Locality(..),Row(..),Column(..),Direct(..),Layout(..)) where
 
 
 
@@ -102,7 +102,7 @@ and outer layouts have the same rank!)
    hand blocking sizes are expressible for every single rank!
 -}
 data Sized :: * -> * where
-        (:@) :: Nat -> a -> Sized a 
+    (:@) :: Nat -> a -> Sized a 
 
 
 {-
@@ -134,7 +134,9 @@ what is the law for the Layout class?
 forall valid formms
 toIndex sd  (fromIndex sd ix)==ix
 fromIndex sd (toIndex sd shp)==shp
+-}
 
+{-
 if   tup1 is strictly less than tup2 (pointwise),
   then any lawful Layout will asign tup1 an index strictly less than that
   asigned to tup2 
@@ -144,11 +146,33 @@ if   tup1 is strictly less than tup2 (pointwise),
 
 
 i treat coordinates as being in x:* y :* z :* Nil, which is Fortran style idexing 
-in row major, X would be the innermost variable because it varies over columns, Z the outtermost
-in column major, Z would be the inner most, b
+
+in row major we'd have for x:* y :* Nil that X is the inner dimension, and y the outter,
+by contrast, in column major, y would be the inner most, and x the outter most.
+
+
+
+
 -}
 
 
+{- In some respects, the Layout type class is a multidimensional
+analogue of the Enum type class in Haskell Prelude, 
+for Dense / Dense Structured matrix formats
+but 
+    a) requires a witness value, the "Form"
+    b) needs to handle multivariate structures
+    c) has to deal with structure matrices, like triangular, symmetric, etc
+    e) I think every layout should have pure 0 be a valid index, at least for "Dense" 
+    arrays
+    f) transposedLayout . transposedLayout == id
+    g) 
+
+
+-}
+{-
+
+-}
 
 class Layout lay (contiguity:: Locality) (rank :: Nat) where
     type Tranposed lay 
@@ -156,9 +180,16 @@ class Layout lay (contiguity:: Locality) (rank :: Nat) where
     
     transposedLayout ::  (lay ~ Tranposed l2,l2~Tranposed lay)=> Form lay contiguity rank -> Form l2 contiguity rank 
     
-    toIndex :: Form lay contiguity rank -> Shape rank Int -> Int 
+    toAddress :: Form lay contiguity rank -> Shape rank Int -> Int 
 
-    fromIndex :: Form   lay contiguity rank -> Int -> Shape rank Int 
+    --unchecked
+    --nextAddress --- not sure if this should even exist for contiguous ones..
+    -- not sure if this is the right model for the valid ops
+    --validAddress::Form   lay contiguity rank -> Int -> Either String (Shape rank Int)
+    --validIndex ::Form   lay contiguity rank -> Shape rank Int -> Either String Int 
+
+    nextIndex :: Form   lay contiguity rank -> Shape rank Int ->Maybe (Shape rank Int) 
+    toIndex :: Form   lay contiguity rank -> Int -> Shape rank Int 
 
 
 instance Layout Direct Contiguous (S Z)   where
@@ -167,9 +198,9 @@ instance Layout Direct Contiguous (S Z)   where
 
     transposedLayout = id 
 
-    toIndex   FormDirectContiguous  (j :* Nil )= j 
+    toAddress   FormDirectContiguous  (j :* Nil )= j 
 
-    fromIndex FormDirectContiguous ix = (ix ) :* Nil 
+    toIndex FormDirectContiguous ix = (ix ) :* Nil 
 
 instance  Layout Row  Contiguous n where
     type Tranposed Row = Column 
@@ -178,9 +209,9 @@ instance  Layout Row  Contiguous n where
 
     transposedLayout = \(FormRow shp) -> FormColumn $ reverseShape shp
 
-    toIndex rs = \tup -> let !strider = S.scanr (*) 1 (sizeRow rs) in S.foldl'  (+) 0 $! map2 (*) strider tup 
+    toAddress rs = \tup -> let !strider = S.scanr (*) 1 (sizeRow rs) in S.foldl'  (+) 0 $! map2 (*) strider tup 
 
-    fromIndex rs = \ix -> let !strider = S.scanr (*) 1 (sizeRow rs) in undefined
+    toIndex rs = \ix -> let !strider = S.scanr (*) 1 (sizeRow rs) in undefined
 
 
 
@@ -190,7 +221,7 @@ instance  Layout Column  Contiguous n where
 
     transposedLayout = \(FormColumn shp)-> FormRow $ reverseShape shp 
 
-    toIndex rs = undefined  
+    toAddress rs = undefined  
     --  \tup -> let !strider = S.scanr (*) 0 (boundsColumn rs) $ foldr  (+) 0  $! map2 (*) strider tup 
-    fromIndex rs = undefined 
+    toIndex rs = undefined 
      --- \ix -> let !strider = S.scanr (*) 0 (boundsColumn rs) in undefined
