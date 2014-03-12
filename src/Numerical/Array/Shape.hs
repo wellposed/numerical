@@ -12,10 +12,9 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Numerical.Types.Shape(Shape(..)
+module Numerical.Array.Shape(Shape(..)
     ,foldl
     ,foldr
     ,foldl'
@@ -42,7 +41,7 @@ import qualified Data.Functor as Fun
 import qualified  Data.Foldable as F
 import qualified Control.Applicative as A 
 
-import Numerical.Types.Nat 
+import Numerical.Nat 
 
 import Prelude hiding  (map,foldl,foldr,init,scanl,scanr,scanl1,scanr1)
 
@@ -228,7 +227,7 @@ instance Fun.Functor (Shape Z) where
     {-# INLINE fmap #-}
 
 instance  (Fun.Functor (Shape r)) => Fun.Functor (Shape (S r)) where
-    fmap  = \ f (a :* rest) -> f a :* Fun.fmap f rest 
+    fmap  = \ f (a :* rest) -> f a :* (  (inline (Fun.fmap)) f rest )
     {-# INLINE fmap  #-}
 instance  A.Applicative (Shape Z) where 
     pure = \ _ -> Nil

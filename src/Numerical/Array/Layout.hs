@@ -14,7 +14,12 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Numerical.Types.Layout(Locality(..),Row(..),Column(..),Direct(..),Layout(..)) where
+module Numerical.Array.Layout(
+  Locality(..)
+  ,Row(..)
+  ,Column(..)
+  ,Direct(..)
+  ,Layout(..)) where
 
 
 

@@ -5,7 +5,7 @@
 {-# LANGUAGE DeriveDataTypeable#-}
 {-# LANGUAGE CPP #-}
 
-module Numerical.Types.Nat(Nat(..),nat,N0,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10
+module Numerical.Nat(Nat(..),nat,N0,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10
     ,SNat(..), type (+),plus_id_r,plus_succ_r)  where
 import Data.Typeable
 import Data.Data 
