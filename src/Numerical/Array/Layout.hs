@@ -3,7 +3,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
-
+{-#  LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
@@ -28,8 +28,8 @@ ColumnMajor
 
 -}
 
-import Numerical.Types.Nat
-import Numerical.Types.Shape as S 
+import Numerical.Nat
+import Numerical.Array.Shape as S 
 import Data.Data
 import qualified Data.Foldable as F 
 import Control.Applicative
@@ -48,11 +48,11 @@ data StaticLay a
 data Lay a 
 
 
-data Direct = DirectS
+data Direct 
 
-data Row = RowS
+data Row 
 
-data Column = ColumnS 
+data Column 
 
 
 --data Elem ls el  where 
@@ -173,19 +173,35 @@ but
     f) transposedLayout . transposedLayout == id
     g) 
 
+  Form needs to carry the shape / extent of the matrix
 
 -}
 {-
 
 -}
+getAddress :: Address -> Int 
+getAddress (Address ix)=ix
 
-class Layout lay (contiguity:: Locality) (rank :: Nat) where
+newtype Address = Address  Int 
+  deriving (Eq,Ord,Show,Read,Typeable,Data,Num)
+
+--data View = Origin | Slice 
+{-
+i'm really really hoping to not need a View parameter,
+but the nature of the addressing logic needs to change when its a slice 
+vs a deep copy (for certain classes of arrays that I wish to support very easily)
+
+I will be likely adding this the moment benchmarks validate the distinction
+-}
+
+class Layout lay (contiguity:: Locality) (rank :: Nat)  where
     type Tranposed lay 
-    data family Form lay contiguity (rank :: Nat)
+    data family Form lay contiguity  (rank :: Nat)
     
     transposedLayout ::  (lay ~ Tranposed l2,l2~Tranposed lay)=> Form lay contiguity rank -> Form l2 contiguity rank 
-    
-    toAddress :: Form lay contiguity rank -> Shape rank Int -> Int 
+    shapeOf 
+
+    toAddress :: Form lay contiguity rank -> Shape rank Int -> Address  
 
     --unchecked
     --nextAddress --- not sure if this should even exist for contiguous ones..
@@ -194,7 +210,7 @@ class Layout lay (contiguity:: Locality) (rank :: Nat) where
     --validIndex ::Form   lay contiguity rank -> Shape rank Int -> Either String Int 
 
     nextIndex :: Form   lay contiguity rank -> Shape rank Int ->Maybe (Shape rank Int) 
-    toIndex :: Form   lay contiguity rank -> Int -> Shape rank Int 
+    toIndex :: Form   lay contiguity rank -> Address -> Shape rank Int 
 
 
 instance Layout Direct Contiguous (S Z)   where
@@ -203,9 +219,9 @@ instance Layout Direct Contiguous (S Z)   where
 
     transposedLayout = id 
 
-    toAddress   FormDirectContiguous  (j :* Nil )= j 
+    toAddress   FormDirectContiguous  (j :* Nil )= Address j 
 
-    toIndex FormDirectContiguous ix = (ix ) :* Nil 
+    toIndex FormDirectContiguous (Address ix) = (ix ) :* Nil 
 
 instance  Layout Row  Contiguous n where
     type Tranposed Row = Column 
@@ -214,9 +230,10 @@ instance  Layout Row  Contiguous n where
 
     transposedLayout = \(FormRow shp) -> FormColumn $ reverseShape shp
 
-    toAddress rs = \tup -> let !strider = S.scanr (*) 1 (sizeRow rs) in S.foldl'  (+) 0 $! map2 (*) strider tup 
+    toAddress rs = \tup -> let !strider = S.scanr (*) 1 (sizeRow rs) 
+                                in Address $! S.foldl'  (+) 0 $! map2 (*) strider tup 
 
-    toIndex rs = \ix -> let !strider = S.scanr (*) 1 (sizeRow rs) in undefined
+    toIndex rs = \(Address ix) -> let !strider = S.scanr (*) 1 (sizeRow rs) in undefined
 
 
 

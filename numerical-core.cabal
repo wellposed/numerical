@@ -13,7 +13,7 @@ name:                numerical-core
 version:             0.1.0.0
 
 -- A short (one-line) description of the package.
-synopsis:            Generic Numerical Api - backend agnostic
+synopsis:            core package for Numerical Haskell project 
 
 -- A longer description of the package.
 -- description:         
@@ -49,12 +49,12 @@ cabal-version:       >=1.10
 library
     -- Modules exported by the library.
     exposed-modules:     
-        Numerical.Types.Layout
-        Numerical.Types.Array
+        Numerical.Array.Layout
+        Numerical.Array
 
-        Numerical.Types.Operations
-        Numerical.Types.Shape
-        Numerical.Types.Nat 
+        --Numerical.Array.Operations
+        Numerical.Array.Shape
+        Numerical.Nat 
 
     ghc-options: -O2 
     -- Modules included in this library but not exported.
@@ -75,7 +75,7 @@ library
     -- Other library packages from which modules are imported.
     build-depends:       base >= 4.6 && < 4.9 
                         ,primitive >= 0.5 && < 0.6
-                        ,vector >= 0.10 && < 0.11
+                        ,vector >= 0.9 && < 0.12
                         ,tagged >= 0.7 && < 0.8
                         ,template-haskell >= 2.8.0.0 && < 2.10.0.0
                         ,ghc-prim >= 0.3.0.0 && < 0.5.0.0

@@ -3,9 +3,9 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Numerical.Types.Array where
+module Numerical.Array where
 
-import Numerical.Types.Shape
+import Numerical.Array.Shape
 
 --data  MArray  world rep lay (view:: Locality) sh elem 
 

@@ -1,7 +1,7 @@
 
 
 
-module Numerics.Types.World where 
+module Numerical.World where 
 
 
 
