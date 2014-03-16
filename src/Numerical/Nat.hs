@@ -14,7 +14,7 @@ import Language.Haskell.TH hiding (reify)
 #if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
 import Data.Type.Equality(gcastWith)
 #else 
-import Data.Proxy(Proxy)
+import Data.Proxy
 #endif 
 
 
