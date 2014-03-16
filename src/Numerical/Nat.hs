@@ -10,7 +10,10 @@ module Numerical.Nat(Nat(..),nat,N0,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10
 import Data.Typeable
 import Data.Data 
 import Language.Haskell.TH hiding (reify)
+#if defined(__GLASGOW_HASKELL_) && (__GLASGOW_HASKELL__ >= 707)
 import Data.Type.Equality
+#endif 
+
 
 data Nat = S !Nat  | Z 
     deriving (Eq,Show,Read,Typeable,Data)    
