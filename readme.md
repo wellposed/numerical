@@ -1,21 +1,30 @@
+[![Wellposed](http://www.wellposed.com/mini.png)](http://www.wellposed.com)® 
+
+
+# About  Numerical-Core
+This is the core Package for Numerical Haskell, a project by Carter Schonwald aka
+Wellposed Ltd, and (soon I hope!) other contributors.
+
+Numerical-Core is an open source component of the [Wellposed](http://www.wellposed.com)® Numerical Haskell software suite. 
+
 #note 
 
 this library is **pre release** and not ready for general circulation or use or even reading.
-that will change soon though. ** please understand that the current code base is changing faster
-than an underwater sand castle in a hurricane **
+that will change soon though.
 
-# About  Numerical-Core
-This is the types package for Numerical Haskell, a project by Carter Schonwald,
-Wellposed Ltd, and other contributors.
+**please understand that the current code base is changing faster than an underwater sand castle in a hurricane**
+
+
 
 ##Numerical Haskell
 Numerical Haskell is an effort to bring great numerical computation and data analysis
-tooling to 
+tooling to haskell, and be the best possible platform for sophisticated efforts in those same domains
 
 
 
 # Contributing 
-Great! Theres so many awesome ways you could help out. Look at CONTRIBUTING.md for more details
+Great! Theres so many awesome ways you could help out. Look at CONTRIBUTING.md for more details.
+Ask Carter!
 
 
 # FAQ
