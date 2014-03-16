@@ -16,7 +16,7 @@ version:             0.1.0.0
 synopsis:            core package for Numerical Haskell project 
 
 -- A longer description of the package.
--- description:         
+ description:  the core package for Numerical Haskell 
 
 -- The license under which the package is released.
 license:             BSD3
@@ -56,7 +56,8 @@ library
         Numerical.Array.Shape
         Numerical.Nat 
 
-    ghc-options: -O2 
+    ghc-options: 
+    -- -O2 
     -- Modules included in this library but not exported.
     -- other-modules:       
 
