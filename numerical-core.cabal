@@ -42,8 +42,20 @@ build-type:          Custom
 -- README.
 -- extra-source-files:  
 
+
+
 -- Constraint on the version of Cabal needed to build this package.
 cabal-version:       >=1.10
+
+
+extra-source-files:  
+  readme.md,
+  changelog.md 
+
+
+source-repository head
+  type: git
+  location: http://github.com/wellposed/numerical-core.git
 
 
 library
