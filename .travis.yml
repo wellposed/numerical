@@ -21,6 +21,7 @@ env:
 matrix:
   allow_failures:
     - env: GHCVER=head
+    - env: GHCVER=7.4.2
 
 before_install:
   - sudo apt-get update 

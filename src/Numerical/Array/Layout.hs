@@ -199,7 +199,7 @@ class Layout lay (contiguity:: Locality) (rank :: Nat)  where
     data family Form lay contiguity  (rank :: Nat)
     
     transposedLayout ::  (lay ~ Tranposed l2,l2~Tranposed lay)=> Form lay contiguity rank -> Form l2 contiguity rank 
-    shapeOf 
+    --shapeOf 
 
     toAddress :: Form lay contiguity rank -> Shape rank Int -> Address  
 
@@ -220,7 +220,7 @@ instance Layout Direct Contiguous (S Z)   where
     transposedLayout = id 
 
     toAddress   FormDirectContiguous  (j :* Nil )= Address j 
-
+    nextIndex= undefined
     toIndex FormDirectContiguous (Address ix) = (ix ) :* Nil 
 
 instance  Layout Row  Contiguous n where
@@ -234,7 +234,7 @@ instance  Layout Row  Contiguous n where
                                 in Address $! S.foldl'  (+) 0 $! map2 (*) strider tup 
 
     toIndex rs = \(Address ix) -> let !strider = S.scanr (*) 1 (sizeRow rs) in undefined
-
+    nextIndex=undefined
 
 
 instance  Layout Column  Contiguous n where
@@ -247,3 +247,6 @@ instance  Layout Column  Contiguous n where
     --  \tup -> let !strider = S.scanr (*) 0 (boundsColumn rs) $ foldr  (+) 0  $! map2 (*) strider tup 
     toIndex rs = undefined 
      --- \ix -> let !strider = S.scanr (*) 0 (boundsColumn rs) in undefined
+
+
+    nextIndex=undefined
