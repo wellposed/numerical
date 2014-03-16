@@ -196,7 +196,7 @@ I will be likely adding this the moment benchmarks validate the distinction
 
 class Layout lay (contiguity:: Locality) (rank :: Nat)  where
     type Tranposed lay 
-    data family Form lay contiguity  (rank :: Nat)
+    data Form lay contiguity  (rank :: Nat)
     
     transposedLayout ::  (lay ~ Tranposed l2,l2~Tranposed lay)=> Form lay contiguity rank -> Form l2 contiguity rank 
     --shapeOf 
