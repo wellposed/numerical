@@ -67,7 +67,7 @@ data Shape (rank :: Nat) a where
     (:*) ::  !(a) -> !(Shape r a ) -> Shape  (S r) a
         --deriving  (Show)
 
-#if defined(__GLASGOW_HASKELL_) && (__GLASGOW_HASKELL__ >= 707)
+#if defined(__GLASGOW_HASKELL_) && __GLASGOW_HASKELL__ >= 707
 deriving instance Typeable Shape 
 #endif
 

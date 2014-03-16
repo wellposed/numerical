@@ -4,6 +4,9 @@ module Numerical.Array.Generic.Mutable(MArray(..)) where
 
 import Control.Monad.Primitive ( PrimMonad, PrimState )
 import Numerical.Array.Layout
+import qualified Data.Vector.Storable.Mutable as SM
+import qualified Data.Vector.Unboxed.Mutable as UM
+import qualified Data.Vector.Mutable as BM
 \end{code}
 --
 -- For now we're going to just crib the vector style api and Lift it
@@ -30,12 +33,14 @@ For now any ``Address'' shift will need to be via the buffer
 
 
 
-we need to have ``MArrayElem'' be decoupled
+we need to have ``MArrayElem'' be decoupled from the type classe instances
+because we to sometimes have things that are world parametric
 
 \begin{code}
 
 
 type family MArrayElem world  rep el :: Constraint
+type instance MArrayElem
 
 class  MutableArray world rep lay  where
     data  MBuffer world rep lay

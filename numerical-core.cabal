@@ -49,7 +49,7 @@ cabal-version:       >=1.10
 
 
 extra-source-files:  
-  README.md,
+  README.md
   CHANGELOG.md 
 
 
