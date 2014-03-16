@@ -192,11 +192,16 @@ but the nature of the addressing logic needs to change when its a slice
 vs a deep copy (for certain classes of arrays that I wish to support very easily)
 
 I will be likely adding this the moment benchmarks validate the distinction
+
+on the
 -}
+
+data family Form lay (contiguity:: Locality)  (rank :: Nat)
+
 
 class Layout lay (contiguity:: Locality) (rank :: Nat)  where
     type Tranposed lay 
-    data Form lay contiguity  (rank :: Nat)
+
     
     transposedLayout ::  (lay ~ Tranposed l2,l2~Tranposed lay)=> Form lay contiguity rank -> Form l2 contiguity rank 
     --shapeOf 
@@ -212,10 +217,10 @@ class Layout lay (contiguity:: Locality) (rank :: Nat)  where
     nextIndex :: Form   lay contiguity rank -> Shape rank Int ->Maybe (Shape rank Int) 
     toIndex :: Form   lay contiguity rank -> Address -> Shape rank Int 
 
-
+data instance Form  Direct Contiguous (S Z) = FormDirectContiguous
 instance Layout Direct Contiguous (S Z)   where
     type Tranposed Direct = Direct
-    data Form  Direct Contiguous (S Z) = FormDirectContiguous
+
 
     transposedLayout = id 
 
@@ -223,10 +228,12 @@ instance Layout Direct Contiguous (S Z)   where
     nextIndex= undefined
     toIndex FormDirectContiguous (Address ix) = (ix ) :* Nil 
 
-instance  Layout Row  Contiguous n where
+data instance  Form  Row  Contiguous rank  = FormRow {sizeRow :: Shape rank Int} 
+-- strideRow :: Shape rank Int,
+instance  Layout Row  Contiguous rank where
     type Tranposed Row = Column 
 
-    data Form  Row  Contiguous rank  = FormRow {sizeRow :: Shape rank Int} -- strideRow :: Shape rank Int,
+
 
     transposedLayout = \(FormRow shp) -> FormColumn $ reverseShape shp
 
@@ -236,10 +243,11 @@ instance  Layout Row  Contiguous n where
     toIndex rs = \(Address ix) -> let !strider = S.scanr (*) 1 (sizeRow rs) in undefined
     nextIndex=undefined
 
-
-instance  Layout Column  Contiguous n where
+data instance  Form  Column Contiguous rank  = FormColumn {boundsColumn :: Shape rank Int}
+ -- strideRow :: Shape rank Int,
+instance  Layout Column  Contiguous rank where
     type Tranposed Column = Row  
-    data Form  Column Contiguous rank  = FormColumn {boundsColumn :: Shape rank Int} -- strideRow :: Shape rank Int,
+
 
     transposedLayout = \(FormColumn shp)-> FormRow $ reverseShape shp 
 
