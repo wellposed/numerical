@@ -1,7 +1,8 @@
 #note 
 
-this library is pre release and not ready for general circulation or use.
-that will change soon though
+this library is **pre release** and not ready for general circulation or use or even reading.
+that will change soon though. ** please understand that the current code base is changing faster
+than an underwater sand castle in a hurricane **
 
 # About  Numerical-Core
 This is the types package for Numerical Haskell, a project by Carter Schonwald,
