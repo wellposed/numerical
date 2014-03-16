@@ -37,7 +37,7 @@ type family n1 + n2 where
   Z + n2 = n2
   (S n1') + n2 = S (n1' + n2)
 #else
-type family n1 + n2 
+type family (n1::Nat) + (n2::Nat) :: Nat  
 type instance Z + n2 = n2
 type instance  (S n1) + n2 = S (n1 + n2)  
 gcastWith :: (a :~: b) -> ((a ~ b) => r) -> r
