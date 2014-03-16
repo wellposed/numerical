@@ -6,7 +6,6 @@ env:
     # - HPVER=2013.2.0.0
     # - GHCVER=7.0.4
     # - GHCVER=7.2.2
-    - GHCVER=7.4.2
     - GHCVER=7.6.3
     - GHCVER=7.8.1
     - GHCVER=head
@@ -21,7 +20,6 @@ env:
 matrix:
   allow_failures:
     - env: GHCVER=head
-    - env: GHCVER=7.4.2
     - env: GHCVER=7.6.3
 
 before_install:
