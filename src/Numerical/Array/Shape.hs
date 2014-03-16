@@ -34,9 +34,6 @@ import GHC.Magic
 import Data.Data 
 import Data.Typeable()
 
-#if defined(__GLASGOW_HASKELL_) && (__GLASGOW_HASKELL__ >= 707)
-import Data.Type.Equality
-#endif
 
 import qualified Data.Monoid  as M 
 import qualified Data.Functor as Fun 
