@@ -13,10 +13,10 @@ name:                numerical-core
 version:             0.1.0.0
 
 -- A short (one-line) description of the package.
-synopsis:            core package for Numerical Haskell project 
+synopsis:           core package for Numerical Haskell project 
 
 -- A longer description of the package.
- description:  the core package for Numerical Haskell 
+description:  the core package for Numerical Haskell 
 
 -- The license under which the package is released.
 license:             BSD3
