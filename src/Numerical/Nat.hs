@@ -10,15 +10,18 @@ module Numerical.Nat(Nat(..),nat,N0,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10
 import Data.Typeable
 import Data.Data 
 import Language.Haskell.TH hiding (reify)
-#if defined(__GLASGOW_HASKELL_) && (__GLASGOW_HASKELL__ >= 707)
-import Data.Type.Equality
+
+#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
+import Data.Type.Equality(gcastWith)
+#else 
+
 #endif 
 
 
 data Nat = S !Nat  | Z 
     deriving (Eq,Show,Read,Typeable,Data)    
 
-#if defined(__GLASGOW_HASKELL_) && (__GLASGOW_HASKELL__ >= 707)
+#if defined(__GLASGOW_HASKELL_) && __GLASGOW_HASKELL__ >= 707
 deriving instance Typeable 'Z
 deriving instance Typeable 'S
 #endif
@@ -28,22 +31,19 @@ deriving instance Typeable 'S
 use closed type families when available,
 need to test that the 
 -}
-#if defined(__GLASGOW_HASKELL__) && (__GLASGOW_HASKELL__ >= 707)
+#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
+
 type family n1 + n2 where
   Z + n2 = n2
   (S n1') + n2 = S (n1' + n2)
-
 #else
 type family n1 + n2 
-
 type instance Z + n2 = n2
 type instance  (S n1) + n2 = S (n1 + n2)  
-
 gcastWith :: (a :~: b) -> ((a ~ b) => r) -> r
 gcastWith Refl x = x
 data a :~: b where
   Refl :: a :~: a
-
 #endif  
  
 -- singleton for Nat
