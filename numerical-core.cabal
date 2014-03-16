@@ -49,8 +49,8 @@ cabal-version:       >=1.10
 
 
 extra-source-files:  
-  readme.md,
-  changelog.md 
+  README.md,
+  CHANGELOG.md 
 
 
 source-repository head
