@@ -217,7 +217,7 @@ class Layout lay (contiguity:: Locality) (rank :: Nat)  where
     nextIndex :: Form   lay contiguity rank -> Shape rank Int ->Maybe (Shape rank Int) 
     toIndex :: Form   lay contiguity rank -> Address -> Shape rank Int 
 
-data instance Form  Direct Contiguous (S Z) = FormDirectContiguous
+data instance Form  Direct Contiguous (S Z) = FormDirectContiguous  --- {-#UNPACK#-} !(Shape (S Z) Int)
 instance Layout Direct Contiguous (S Z)   where
     type Tranposed Direct = Direct
 
@@ -237,10 +237,14 @@ instance  Layout Row  Contiguous rank where
 
     transposedLayout = \(FormRow shp) -> FormColumn $ reverseShape shp
 
-    toAddress rs = \tup -> let !strider = S.scanr (*) 1 (sizeRow rs) 
+    toAddress = \rs tup -> let !strider =takePrefix $! S.scanl (*) 1 (sizeRow rs) 
                                 in Address $! S.foldl'  (+) 0 $! map2 (*) strider tup 
 
-    toIndex rs = \(Address ix) -> let !strider = S.scanr (*) 1 (sizeRow rs) in undefined
+    toIndex  = undefined
+   --    \ rs (Address ix) -> 
+          --let !strider =  !strider =takePrefix $! S.scanl (*) 1 (sizeRow rs) 
+            --in takePrefix $! S.scanr1 (flip ) 
+
     nextIndex=undefined
 
 data instance  Form  Column Contiguous rank  = FormColumn {boundsColumn :: Shape rank Int}
@@ -251,10 +255,25 @@ instance  Layout Column  Contiguous rank where
 
     transposedLayout = \(FormColumn shp)-> FormRow $ reverseShape shp 
 
-    toAddress rs = undefined  
-    --  \tup -> let !strider = S.scanr (*) 0 (boundsColumn rs) $ foldr  (+) 0  $! map2 (*) strider tup 
+    toAddress rs   =   \tup -> let !strider =  takeSuffix $! S.scanr (*) 1 (boundsColumn rs) 
+                                in Address $! foldl' (+) 0  $! map2 (*) strider tup 
     toIndex rs = undefined 
      --- \ix -> let !strider = S.scanr (*) 0 (boundsColumn rs) in undefined
 
 
     nextIndex=undefined
+
+{-
+*Numerical.Array.Layout> toAddress (FormRow (2 :* 3 :* 7 :* Nil)) (0:* 2 :* 2 :* Nil)
+Address 16
+*Numerical.Array.Layout> toAddress (FormRow (2 :* 3 :* 7 :* Nil)) (1:* 0 :* 0 :* Nil)
+Address 1
+*Numerical.Array.Layout> toAddress (FormRow (2 :* 3 :* 7 :* Nil)) (0:* 0 :* 0 :* Nil)
+Address 0
+*Numerical.Array.Layout> toAddress (FormRow (2 :* 3 :* 7 :* Nil)) (0:* 1 :* 0 :* Nil)
+Address 2
+*Numerical.Array.Layout> toAddress (FormRow (2 :* 3 :* 7 :* Nil)) (0:* 0 :* 1 :* Nil)
+
+
+
+-}
