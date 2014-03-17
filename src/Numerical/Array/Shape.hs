@@ -223,21 +223,21 @@ instance Shapeable N5   where
 
 instance Fun.Functor (Shape Z) where
     fmap  = \ _ Nil -> Nil 
-    {-# INLINE fmap #-}
+    {-# INLINEABLE fmap #-}
 
 instance  (Fun.Functor (Shape r)) => Fun.Functor (Shape (S r)) where
     fmap  = \ f (a :* rest) -> f a :* (  (inline (Fun.fmap)) f rest )
-    {-# INLINE fmap  #-}
+    {-# INLINEABLE fmap  #-}
 instance  A.Applicative (Shape Z) where 
     pure = \ _ -> Nil
-    {-# INLINE pure  #-}
+    {-# INLINEABLE pure  #-}
     (<*>) = \ _  _ -> Nil 
-    {-# INLINE (<*>) #-}
+    {-# INLINEABLE (<*>) #-}
 instance  A.Applicative (Shape r)=> A.Applicative (Shape (S r)) where     
     pure = \ a -> a :* (A.pure a)
-    {-# INLINE pure #-}
+    {-# INLINEABLE pure #-}
     (<*>) = \ (f:* fs) (a :* as) ->  f a :* (inline (A.<*>)) fs as 
-    {-# INLINE (<*>) #-}
+    {-# INLINEABLE (<*>) #-}
 
 instance    F.Foldable (Shape  r) where
     --foldMap = \f  (a:* as) -> f a M.<> F.foldMap f as 
