@@ -28,7 +28,12 @@ module Numerical.Array.Shape(Shape(..)
     ,shapeSize
     ,SNat(..)
     ,weaklyDominates
-    ,strictlyDominates) where
+    ,strictlyDominates
+    ,cons
+    ,snoc
+    ,takeSuffix
+    ,takePrefix) 
+    where
 
 import GHC.Magic 
 import Data.Data 
@@ -387,6 +392,48 @@ scanr f  = let
                 (a :* b :* c :* Nil) -> (f a $  f b $ f c init):* f b (f c init) :* (f c init ) :* init :* Nil 
                 _ -> snd   $! go init shs 
 --should try out unboxed tuples once benchmarking starts
+
+{-# INLINE cons  #-}
+cons :: a -> Shape n a -> Shape (S n) a 
+cons = \ a as -> a :* as 
+
+snoc ::  Shape n a -> a -> Shape (S n) a
+snoc = let 
+            go ::  Shape r a -> a -> Shape (S r) a
+            go Nil val = val :* Nil 
+            go (a:*as) val = a :* (go  as val )
+            in 
+                \ shp val -> 
+                    case shp of 
+                        Nil -> val :* Nil 
+                        (a:* Nil ) -> a :* val :* Nil 
+                        (a:* b :* Nil ) -> a:* b :* val :* Nil
+                        (a:* b :* c:* Nil) -> a :* b :* c :* val :* Nil 
+                        (a:* b :* c:* d :*  Nil) -> a :* b :* c  :* d  :* val :* Nil 
+                        _ -> go shp val 
+
+
+-- a sort of uncons
+{-#INLINE takeSuffix#-}
+takeSuffix :: Shape (S n) a -> Shape n a 
+takeSuffix = \ (a:* as) -> as 
+
+-- a sort of unsnoc
+{-# INLINE takePrefix #-}
+takePrefix :: Shape (S n) a -> Shape n a 
+takePrefix = 
+    let 
+        go :: Shape (S n) a -> Shape n a 
+        go (a:* Nil) = Nil 
+        go (a:* bs@(_ :* _)) = a:*  go bs 
+        in 
+            \shp ->
+                case shp of 
+                    (a:* Nil) -> Nil
+                    (a:* b :* Nil) -> (a:* Nil)
+                    (a:* b :* c :* Nil)  -> (a:* b :* Nil )
+                    (a:* b :* c :* d :* Nil ) -> (a:* b :* c :* Nil )
+                    _ -> go shp 
 
 
 {-
