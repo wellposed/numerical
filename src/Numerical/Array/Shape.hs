@@ -20,6 +20,8 @@ module Numerical.Array.Shape(Shape(..)
     ,foldl'
     ,scanr
     ,scanl
+    ,scanl1
+    ,scanr1
     ,map
     ,map2
     ,reverseShape
@@ -363,9 +365,9 @@ foldl' f =let
 scanl :: forall a b r . (b->a -> b) -> b -> Shape r a -> Shape (S r) b
 scanl f  = let  
         go ::b -> Shape h a -> Shape (S h) b
-        go val Nil =  val :* Nil
-        go val (a:* as)=  val :* go res as
-            where res = f val a 
+        go !val Nil =  val :* Nil
+        go !val (a:* as)=  val :* go res as
+                    where res = f val a 
         in \ init shp -> 
             case shp of 
                 Nil -> init :* Nil  
@@ -373,6 +375,42 @@ scanl f  = let
                 (a:* b :* Nil) -> init :* (f   init a )  :* ((f init  a  ) `f`  b ) :* Nil 
                 (a :* b :* c :* Nil) ->init  :*  (f init a  ):* ((f init a ) `f` b) :* (((f init a ) `f` b) `f` c) :* Nil 
                 _  ->  go init shp  
+
+{-# INLINE scanl1  #-}
+scanl1 :: forall a b r . (b->a -> b) -> b -> Shape r a -> Shape  r b
+scanl1 f  = let  
+        go ::b -> Shape h a -> Shape h b
+        go val Nil =   Nil
+        go val (a:* as)=  val :* go res as
+            where res = f val a 
+        in \ init shp -> 
+            case shp of 
+                Nil ->  Nil  
+                (a:* Nil) ->   (f  init a ) :* Nil
+                (a:* b :* Nil) ->  (f   init a )  :* ((f init  a  ) `f`  b ) :* Nil 
+                (a :* b :* c :* Nil) -> (f init a  ):* ((f init a ) `f` b) :* (((f init a ) `f` b) `f` c) :* Nil 
+                _  ->  go init shp  
+
+
+{-# INLINE scanr1  #-}
+scanr1 :: forall a b r . (a -> b -> b ) -> b -> Shape r a -> Shape  r b 
+scanr1 f  = let 
+        --(accum,!finalShape)= go f init shs
+        go   ::  b -> Shape h a -> (b  ,Shape h b )
+        go  init Nil = (init, Nil)
+        go  init (a:* as) = (res, res :*  suffix)
+            where 
+                !(!accum,!suffix)= go  init as 
+                !res =  f a accum
+        in \ init shs -> 
+            case shs of 
+                Nil ->   Nil 
+                (a:* Nil) ->  f a init:*   Nil
+                (a:* b :* Nil) -> f a (f b init) :* (f b init ) :*   Nil 
+                (a :* b :* c :* Nil) -> (f a $  f b $ f c init):* f b (f c init) :* (f c init )  :* Nil 
+                _ -> snd   $! go init shs 
+--should try out unboxed tuples once benchmarking starts
+
 
 {-# INLINE scanr  #-}
 scanr :: forall a b r . (a -> b -> b ) -> b -> Shape r a -> Shape (S r) b 
