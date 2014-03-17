@@ -355,38 +355,38 @@ foldl' f =let
 
 
 {-# INLINE scanl  #-}
-scanl :: forall a b r . (b->a -> b) -> b -> Shape r a -> Shape r b
+scanl :: forall a b r . (b->a -> b) -> b -> Shape r a -> Shape (S r) b
 scanl f  = let  
-        go ::b -> Shape h a -> Shape h b
-        go val Nil =  Nil
-        go val (a:* as)=  res :* go res as
+        go ::b -> Shape h a -> Shape (S h) b
+        go val Nil =  val :* Nil
+        go val (a:* as)=  val :* go res as
             where res = f val a 
         in \ init shp -> 
             case shp of 
-                Nil -> Nil  
-                (a:* Nil) ->  (f  init a ) :* Nil
-                (a:* b :* Nil) -> (f   init a )  :* ((f init  a  ) `f`  b ) :* Nil 
-                (a :* b :* c :* Nil) -> (f init a  ):* ((f init a ) `f` b) :* (((f init a ) `f` b) `f` c) :* Nil 
+                Nil -> init :* Nil  
+                (a:* Nil) -> init  :* (f  init a ) :* Nil
+                (a:* b :* Nil) -> init :* (f   init a )  :* ((f init  a  ) `f`  b ) :* Nil 
+                (a :* b :* c :* Nil) ->init  :*  (f init a  ):* ((f init a ) `f` b) :* (((f init a ) `f` b) `f` c) :* Nil 
                 _  ->  go init shp  
 
 {-# INLINE scanr  #-}
-scanr :: forall a b r . (a -> b -> b ) -> b -> Shape r a -> Shape r b 
+scanr :: forall a b r . (a -> b -> b ) -> b -> Shape r a -> Shape (S r) b 
 scanr f  = let 
         --(accum,!finalShape)= go f init shs
-        go   ::  b -> Shape h a -> (b  ,Shape h b )
-        go  init Nil = (init,Nil)
+        go   ::  b -> Shape h a -> (b  ,Shape (S h) b )
+        go  init Nil = (init,init  :*Nil)
         go  init (a:* as) = (res, res :*  suffix)
             where 
-                (accum,suffix)= go  init as 
+                !(!accum,!suffix)= go  init as 
                 !res =  f a accum
         in \ init shs -> 
             case shs of 
-                Nil -> Nil 
-                (a:* Nil) ->  f a init :* Nil
-                (a:* b :* Nil) -> f a (f b init) :* (f b init ) :* Nil 
-                (a :* b :* c :* Nil) -> (f a $  f b $ f c init):* f b (f c init) :* (f c init ) :* Nil 
-                _ -> snd   $ go init shs 
-
+                Nil -> init :* Nil 
+                (a:* Nil) ->  f a init:* init  :* Nil
+                (a:* b :* Nil) -> f a (f b init) :* (f b init ) :* init  :* Nil 
+                (a :* b :* c :* Nil) -> (f a $  f b $ f c init):* f b (f c init) :* (f c init ) :* init :* Nil 
+                _ -> snd   $! go init shs 
+--should try out unboxed tuples once benchmarking starts
 
 
 {-
