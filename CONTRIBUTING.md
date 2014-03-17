@@ -1,11 +1,6 @@
 # Contributing
 Great! Theres so many awesome ways you could help out. Pick anything :)  
 
-## How to submit a bug report
-
-If you're just reporting a bug, thats great! Please be sure to 
-provide a minimal example that can reproduce the error if you can.
-
 
 
 ## Pull request procedure

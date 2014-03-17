@@ -23,15 +23,19 @@ that will change soon though.
 
 
 
-##Numerical Haskell
+# Numerical Haskell
 Numerical Haskell is an effort to bring great numerical computation and data analysis
 tooling to haskell, and be the best possible platform for sophisticated efforts in those same domains
 
 
 
+
+
 # Contributing 
 Great! Theres so many awesome ways you could help out. Look at CONTRIBUTING.md for more details.
-Ask Carter!
+
+## bug reports
+see bug.md for how to file a bug report
 
 
 # FAQ
@@ -46,6 +50,9 @@ Ask Carter!
     * Because of certain aspects of the numerical haskell design, we can't *automagically* use
     the fusion optimization facilities of the underlying array representations such as Vector.
     
+# Support
+
+
 
 
 
