@@ -42,7 +42,7 @@ import GHC.Magic
 import Data.Data 
 import Data.Typeable()
 
-import Data.Type.Equality(gcastWith)
+
 import qualified Data.Monoid  as M 
 import qualified Data.Functor as Fun 
 import qualified  Data.Foldable as F

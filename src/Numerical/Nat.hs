@@ -7,7 +7,7 @@
 {-# LANGUAGE CPP #-}
 
 module Numerical.Nat(Nat(..),nat,N0,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10
-    ,SNat(..), type (+),plus_id_r,plus_succ_r,Proxy(..),LitNat,U)  where
+    ,SNat(..), type (+),plus_id_r,plus_succ_r,gcastWith,Proxy(..),LitNat,U)  where
 import Data.Typeable
 import Data.Data 
 import qualified GHC.TypeLits as TL 
