@@ -50,7 +50,21 @@ see bug.md for how to file a bug report
     * Because of certain aspects of the numerical haskell design, we can't *automagically* use
     the fusion optimization facilities of the underlying array representations such as Vector.
     
+# Community
+Many member of the Numerical Haskell community can be found on `#numerical-haskell` on freenode IRC
+There is also  the [numericalhaskell mailing list](https://groups.google.com/forum/#!forum/numericalhaskell)
+
 # Support
+The community provides some basic support through the IRC channel, Mailing list,
+and the relevant project [issue trackers](http://github.com/wellposed). 
+
+If your support needs can't be resolved though those channels, please do not 
+hesistate to contact Wellposed (aka Carter) to find out more about our support and
+professional services options.
+
+
+
+
 
 
 
