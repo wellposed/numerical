@@ -63,7 +63,7 @@ library
     exposed-modules:     
         Numerical.Array.Layout
         Numerical.Array
-
+        --Control.Monad.State.ReallyStrict
         --Numerical.Array.Operations
         Numerical.Array.Shape
         Numerical.Nat 

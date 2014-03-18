@@ -1,14 +1,16 @@
 {-# LANGUAGE DataKinds, PolyKinds, GADTs, TypeFamilies, TypeOperators,
              ConstraintKinds, ScopedTypeVariables, RankNTypes #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE DeriveDataTypeable#-}
 {-# LANGUAGE CPP #-}
 
 module Numerical.Nat(Nat(..),nat,N0,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10
-    ,SNat(..), type (+),plus_id_r,plus_succ_r,gcastWith,Proxy(..))  where
+    ,SNat(..), type (+),plus_id_r,plus_succ_r,Proxy(..),LitNat,U)  where
 import Data.Typeable
 import Data.Data 
+import qualified GHC.TypeLits as TL 
 import Language.Haskell.TH hiding (reify)
 
 #if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
@@ -17,6 +19,7 @@ import Data.Type.Equality(gcastWith)
 import Data.Proxy
 #endif 
 
+type LitNat = TL.Nat
 
 data Nat = S !Nat  | Z 
     deriving (Eq,Show,Read,Typeable,Data)    
@@ -31,12 +34,25 @@ deriving instance Typeable 'S
 use closed type families when available,
 need to test that the 
 -}
+
 #if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
+
+type family U (n:: TL.Nat) :: Nat  where
+  U 0 = Z 
+  U n = S (U (((TL.-)) n  1))  
+
 
 type family n1 + n2 where
   Z + n2 = n2
   (S n1') + n2 = S (n1' + n2)
+
 #else
+
+type family U (n:: LitNat) :: Nat
+
+-- can't induct, hence crippled
+type instance U n = Z  
+
 type family (n1::Nat) + (n2::Nat) :: Nat  
 type instance Z + n2 = n2
 type instance  (S n1) + n2 = S (n1 + n2)  
@@ -45,6 +61,9 @@ gcastWith Refl x = x
 data a :~: b where
   Refl :: a :~: a
 #endif  
+
+
+
  
 -- singleton for Nat
 

@@ -4,6 +4,7 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE UnboxedTuples #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -41,7 +42,7 @@ import GHC.Magic
 import Data.Data 
 import Data.Typeable()
 
-
+import Data.Type.Equality(gcastWith)
 import qualified Data.Monoid  as M 
 import qualified Data.Functor as Fun 
 import qualified  Data.Foldable as F
@@ -490,5 +491,11 @@ scanrCPS  f init shs = go f  init shs (\accum final -> final)
                 (\ accum suffShape -> 
                     let moreAccum = f a accum in 
                         cont moreAccum (moreAccum:*suffShape) )
+
+
+
+
+
+
 
 
