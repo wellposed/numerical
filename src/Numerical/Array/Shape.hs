@@ -368,7 +368,7 @@ scanl f  = let
         go ::b -> Shape h a -> Shape (S h) b
         go !val Nil =  val :* Nil
         go !val (a:* as)=  val :* go res as
-                    where res = f val a 
+                    where !res = f val a 
         in \ init shp -> 
             case shp of 
                 Nil -> init :* Nil  

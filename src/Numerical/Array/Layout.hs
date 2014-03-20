@@ -33,7 +33,7 @@ import Numerical.Array.Shape as S
 import Data.Data
 import qualified Data.Foldable as F 
 import Control.Applicative
-import Prelude hiding (foldr,foldl,foldl')
+import Prelude hiding (foldr,foldl,foldl',map,scanl,scanr,scanl1,scanr1,scanl')
 
 {-|  A major design goal with the Layout module is to 
 make it easy to define new dense array layouts
@@ -206,7 +206,7 @@ class Layout lay (contiguity:: Locality) (rank :: Nat)  where
     transposedLayout ::  (lay ~ Tranposed l2,l2~Tranposed lay)=> Form lay contiguity rank -> Form l2 contiguity rank 
     --shapeOf 
 
-    toAddress :: Form lay contiguity rank -> Shape rank Int -> Address  
+    basicToAddress :: Form lay contiguity rank -> Shape rank Int -> Address  
 
     --unchecked
     --nextAddress --- not sure if this should even exist for contiguous ones..
@@ -214,21 +214,22 @@ class Layout lay (contiguity:: Locality) (rank :: Nat)  where
     --validAddress::Form   lay contiguity rank -> Int -> Either String (Shape rank Int)
     --validIndex ::Form   lay contiguity rank -> Shape rank Int -> Either String Int 
 
-    nextIndex :: Form   lay contiguity rank -> Shape rank Int ->Maybe (Shape rank Int) 
-    toIndex :: Form   lay contiguity rank -> Address -> Shape rank Int 
+    basicNextIndex :: Form   lay contiguity rank -> Shape rank Int ->Maybe (Shape rank Int) 
+    basicToIndex :: Form   lay contiguity rank -> Address -> Shape rank Int 
 
-data instance Form  Direct Contiguous (S Z) = FormDirectContiguous  --- {-#UNPACK#-} !(Shape (S Z) Int)
+data instance Form  Direct Contiguous (S Z) = FormDirectContiguous    !(Shape (S Z) Int)
 instance Layout Direct Contiguous (S Z)   where
     type Tranposed Direct = Direct
 
 
     transposedLayout = id 
 
-    toAddress   FormDirectContiguous  (j :* Nil )= Address j 
-    nextIndex= undefined
-    toIndex FormDirectContiguous (Address ix) = (ix ) :* Nil 
+    basicToAddress   (FormDirectContiguous _) (j :* Nil )= Address j 
+    basicNextIndex=  undefined -- \ _ x ->  Just $! x + 1 
+    --note its unchecked!
+    basicToIndex (FormDirectContiguous _) (Address ix) = (ix ) :* Nil 
 
-data instance  Form  Row  Contiguous rank  = FormRow {sizeRow :: Shape rank Int} 
+data instance  Form  Row  Contiguous rank  = FormRow {boundsRow :: !(Shape rank Int)} 
 -- strideRow :: Shape rank Int,
 instance  Layout Row  Contiguous rank where
     type Tranposed Row = Column 
@@ -237,17 +238,17 @@ instance  Layout Row  Contiguous rank where
 
     transposedLayout = \(FormRow shp) -> FormColumn $ reverseShape shp
 
-    toAddress = \rs tup -> let !strider =takePrefix $! S.scanl (*) 1 (sizeRow rs) 
+    basicToAddress = \rs tup -> let !strider =takePrefix $! S.scanr (*) 1 (boundsRow rs) 
                                 in Address $! S.foldl'  (+) 0 $! map2 (*) strider tup 
 
-    toIndex  = undefined
-   --    \ rs (Address ix) -> 
-          --let !strider =  !strider =takePrefix $! S.scanl (*) 1 (sizeRow rs) 
-            --in takePrefix $! S.scanr1 (flip ) 
+    basicToIndex  =   \ rs (Address ix) -> 
+          let !striderShape  =takePrefix $! S.scanr (*) 1 (boundsRow rs) 
+              in  S.map  fst $! takeSuffix $! 
+                          S.scanl (\(q,r) strid -> r `quotRem`  strid) (0,ix ) striderShape
 
-    nextIndex=undefined
+    basicNextIndex=   undefined --let maxIx = fold
 
-data instance  Form  Column Contiguous rank  = FormColumn {boundsColumn :: Shape rank Int}
+data instance  Form  Column Contiguous rank  = FormColumn {boundsColumn :: !(Shape rank Int)}
  -- strideRow :: Shape rank Int,
 instance  Layout Column  Contiguous rank where
     type Tranposed Column = Row  
@@ -255,24 +256,25 @@ instance  Layout Column  Contiguous rank where
 
     transposedLayout = \(FormColumn shp)-> FormRow $ reverseShape shp 
 
-    toAddress rs   =   \tup -> let !strider =  takeSuffix $! S.scanr (*) 1 (boundsColumn rs) 
+    basicToAddress    =   \ rs tup -> let !strider =  takeSuffix $! S.scanl (*) 1 (boundsColumn rs) 
                                 in Address $! foldl' (+) 0  $! map2 (*) strider tup 
-    toIndex rs = undefined 
-     --- \ix -> let !strider = S.scanr (*) 0 (boundsColumn rs) in undefined
+    basicToIndex  = \ rs (Address ix) -> 
+          let !striderShape  =takeSuffix $! S.scanl (*) 1 (boundsColumn rs) 
+              in    S.map  fst $! takePrefix  $! 
+                          undefined -- S.scanr (\ strid (q,r)  -> r `quotRem`  strid) (0,ix ) striderShape
 
-
-    nextIndex=undefined
+    basicNextIndex=undefined
 
 {-
-*Numerical.Array.Layout> toAddress (FormRow (2 :* 3 :* 7 :* Nil)) (0:* 2 :* 2 :* Nil)
+*Numerical.Array.Layout> basicToAddress (FormColumn (2 :* 3 :* 7 :* Nil)) (0:* 2 :* 2 :* Nil)
 Address 16
-*Numerical.Array.Layout> toAddress (FormRow (2 :* 3 :* 7 :* Nil)) (1:* 0 :* 0 :* Nil)
+*Numerical.Array.Layout> basicToAddress (FormColumn (2 :* 3 :* 7 :* Nil)) (1:* 0 :* 0 :* Nil)
 Address 1
-*Numerical.Array.Layout> toAddress (FormRow (2 :* 3 :* 7 :* Nil)) (0:* 0 :* 0 :* Nil)
+*Numerical.Array.Layout> basicToAddress (FormColumn (2 :* 3 :* 7 :* Nil)) (0:* 0 :* 0 :* Nil)
 Address 0
-*Numerical.Array.Layout> toAddress (FormRow (2 :* 3 :* 7 :* Nil)) (0:* 1 :* 0 :* Nil)
+*Numerical.Array.Layout> basicToAddress (FormColumn (2 :* 3 :* 7 :* Nil)) (0:* 1 :* 0 :* Nil)
 Address 2
-*Numerical.Array.Layout> toAddress (FormRow (2 :* 3 :* 7 :* Nil)) (0:* 0 :* 1 :* Nil)
+*Numerical.Array.Layout> basicToAddress (FormColumn (2 :* 3 :* 7 :* Nil)) (0:* 0 :* 1 :* Nil)
 
 
 
