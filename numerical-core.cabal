@@ -49,8 +49,8 @@ cabal-version:       >=1.10
 
 
 extra-source-files:  
-  README.md
-  CHANGELOG.md 
+  readme.md
+  changelog.md 
 
 
 source-repository head
@@ -91,7 +91,8 @@ library
                         ,vector >= 0.10 && < 0.12
                         ,tagged >= 0.7 && < 0.8
                         ,template-haskell >= 2.8.0.0 && < 2.10.0.0
-                        ,ghc-prim 
+                        ,ghc-prim
+                         -- , quickcheck >=
                          
                         -- what version constraints?
 
