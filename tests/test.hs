@@ -1,7 +1,7 @@
 import Test.Tasty
---import Test.Tasty.SmallCheck as SC
 import Test.Tasty.QuickCheck as QC
---import Test.Tasty.HUnit
+import PropShape
+import PropLayout 
 
 import Data.List
 import Data.Ord
@@ -9,7 +9,7 @@ import Data.Ord
 main = defaultMain tests
 
 tests :: TestTree
-tests = testGroup "Tests"  []-- [properties, unitTests]
+tests = testGroup "Tests"  [layoutProperties,shapeProperties]-- [properties, unitTests]
 
 --properties :: TestTree
 --properties = testGroup "Properties" [scProps, qcProps]

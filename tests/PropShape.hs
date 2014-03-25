@@ -1,1 +1,4 @@
-module PropShape.hs  where 
+module PropShape  where 
+
+shapeProperties= undefined    
+
