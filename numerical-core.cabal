@@ -109,7 +109,7 @@ Test-suite test
     type: exitcode-stdio-1.0
     build-depends: base >= 4 && < 5
         ,tasty >= 0.8 &&  < 0.9
-        ,tasty-quickcheck >= 0.8.0.3 && < 0.9
+        --,tasty-quickcheck >= 0.8.0.3 && < 0.9
         ,QuickCheck >=  2.7.3 && < 2.8
         ,numerical-core
     hs-source-dirs: tests

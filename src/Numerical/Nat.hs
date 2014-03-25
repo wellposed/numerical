@@ -48,7 +48,7 @@ type family n1 + n2 where
 
 #else
 
-type family U (n:: LitNat) :: Nat
+type family U (n:: (TL.Nat)) :: Nat
 
 -- can't induct, hence crippled
 type instance U n = Z  
