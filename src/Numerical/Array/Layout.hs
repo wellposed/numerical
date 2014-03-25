@@ -241,10 +241,13 @@ instance  Layout Row  Contiguous rank where
     basicToAddress = \rs tup -> let !strider =takePrefix $! S.scanr (*) 1 (boundsRow rs) 
                                 in Address $! S.foldl'  (+) 0 $! map2 (*) strider tup 
 
-    basicToIndex  =   \ rs (Address ix) -> 
-          let !striderShape  =takePrefix $! S.scanr (*) 1 (boundsRow rs) 
-              in  S.map  fst $! takeSuffix $! 
-                          S.scanl (\(q,r) strid -> r `quotRem`  strid) (0,ix ) striderShape
+    basicToIndex  =   \ rs (Address ix) -> case boundsRow rs of 
+          Nil -> Nil 
+          (_:*_)->
+            let !striderShape  =takePrefix $! S.scanr (*) 1 (boundsRow rs) 
+                in  S.map  fst $!
+                            S.scanl1 (\(q,r) strid -> r `quotRem`  strid) 
+                                (ix,error "impossible remainder access in Row Contiguous basicToIndex") striderShape
 
     basicNextIndex=   undefined --let maxIx = fold
 
@@ -261,7 +264,8 @@ instance  Layout Column  Contiguous rank where
     basicToIndex  = \ rs (Address ix) -> 
           let !striderShape  =takeSuffix $! S.scanl (*) 1 (boundsColumn rs) 
               in    S.map  fst $! takePrefix  $! 
-                          undefined -- S.scanr (\ strid (q,r)  -> r `quotRem`  strid) (0,ix ) striderShape
+                          S.scanr (\ strid (q,r)  -> r `quotRem`  strid) 
+                            (ix,error "impossible remainder access in Column Contiguous basicToIndex") striderShape
 
     basicNextIndex=undefined
 
