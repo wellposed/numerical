@@ -9,7 +9,7 @@ import Data.Ord
 main = defaultMain tests
 
 tests :: TestTree
-tests = testGroup "Tests"  [layoutProperties,shapeProperties]-- [properties, unitTests]
+tests = testGroup "Tests"   [] --[layoutProperties,shapeProperties]-- [properties, unitTests]
 
 --properties :: TestTree
 --properties = testGroup "Properties" [scProps, qcProps]
