@@ -92,7 +92,12 @@ class Layout lay (contiguity:: Locality) (rank :: Nat)  where
     basicToIndex :: Form   lay contiguity rank -> Address -> Shape rank Int 
     {-# MINIMAL transposedLayout, basicToIndex, basicToAddress #-}
 
-data instance Form  Direct Contiguous (S Z) = FormDirectContiguous    !(Shape (S Z) Int)
+-----
+-----
+-----
+
+data instance Form  Direct Contiguous (S Z) = 
+            FormDirectContiguous { logicalShapeDirectContiguous :: {-#UNPACK#-} !Int }
 
 instance Layout Direct Contiguous (S Z)   where
     type Tranposed Direct = Direct
@@ -107,41 +112,83 @@ instance Layout Direct Contiguous (S Z)   where
     {-# INLINE basicToIndex#-}
     basicToIndex (FormDirectContiguous _) (Address ix) = (ix ) :* Nil 
 
+
+
+data instance Form  Direct Strided (S Z) = 
+        FormDirectStrided { logicalShapeDirectStrided :: {-#UNPACK#-}!Int
+                    , logicalStrideDirectStrided:: {-#UNPACK#-}!Int}
+
+instance Layout Direct Strided (S Z)   where
+    type Tranposed Direct = Direct
+
+
+    transposedLayout = id 
+    {-#INLINE basicToAddress#-}
+    basicToAddress   (FormDirectStrided _ strid) (j :* Nil )= Address (strid * j) 
+
+    --basicNextIndex=  undefined -- \ _ x ->  Just $! x + 1 
+    --note its unchecked!
+    {-# INLINE basicToIndex#-}
+    basicToIndex (FormDirectStrided _ stride) (Address ix) = (ix `div` stride ) :* Nil 
+
 -----
 -----
 -----
 
 
 
-data instance  Form  Row  Contiguous rank  = FormRow {boundsRow :: !(Shape rank Int)} 
+data instance  Form  Row  Contiguous rank  = FormRowContiguous {boundsFormRow :: !(Shape rank Int)} 
 -- strideRow :: Shape rank Int,
 instance  Layout Row  Contiguous rank where
     type Tranposed Row = Column 
 
 
 
-    transposedLayout = \(FormRow shp) -> FormColumn $ reverseShape shp
+    transposedLayout = \(FormRowContiguous shp) -> FormColumnContiguous $ reverseShape shp
     {-# INLINE basicToAddress #-}
-    basicToAddress = \rs tup -> let !strider =takePrefix $! S.scanr (*) 1 (boundsRow rs) 
+    basicToAddress = \rs tup -> let !strider =takePrefix $! S.scanr (*) 1 (boundsFormRow rs) 
                                 in Address $! S.foldl'  (+) 0 $! map2 (*) strider tup 
     {-# INLINE basicToIndex #-}
-    basicToIndex  =   \ rs (Address ix) -> case boundsRow rs of 
+    basicToIndex  =   \ rs (Address ix) -> case boundsFormRow rs of 
           Nil -> Nil 
           (_:*_)->
-            let !striderShape  =takePrefix $! S.scanr (*) 1 (boundsRow rs) 
+            let !striderShape  =takePrefix $! S.scanr (*) 1 (boundsFormRow rs) 
                 in  S.map  fst $!
                             S.scanl1 (\(q,r) strid -> r `quotRem`  strid) 
                                 (ix,error "impossible remainder access in Row Contiguous basicToIndex") striderShape
 
 
+--data instance  Form  Row  InnerContiguous rank  = 
+--        FormRowInnerContig {boundsFormRowIC :: !(Shape rank Int), strideFormRowIC:: !(Shape rank Int)} 
+---- strideRow :: Shape rank Int,
+--instance  Layout Row  Contiguous rank where
+--    type Tranposed Row = Column 
 
-data instance  Form  Column Contiguous rank  = FormColumn {boundsColumn :: !(Shape rank Int)}
+
+
+--    transposedLayout = \(FormRow shp) -> FormRowInnerContig $ reverseShape shp
+--    {-# INLINE basicToAddress #-}
+--    basicToAddress = \rs tup ->   Address $! S.foldl'  (+) 0 $! map2 (*) (strideFormRowIC rs ) tup 
+--    {-# INLINE basicToIndex #-}
+--    basicToIndex  =   \ rs (Address ix) -> case boundsFormRowIC rs of 
+--          Nil -> Nil 
+--          (_:*_)->
+--              S.map  fst $!
+--                S.scanl1 (\(q,r) strid -> r `quotRem`  strid) 
+--                    (ix,error "impossible remainder access in Row Contiguous basicToIndex") (strideFormRowIC rs )
+
+
+-----
+-----
+-----
+
+data instance  Form  Column Contiguous rank  = FormColumnContiguous {boundsColumn :: !(Shape rank Int)}
  -- strideRow :: Shape rank Int,
 instance  Layout Column  Contiguous rank where
     type Tranposed Column = Row  
 
 
-    transposedLayout = \(FormColumn shp)-> FormRow $ reverseShape shp 
+    transposedLayout = \(FormColumnContiguous shp)-> FormRowContiguous $ reverseShape shp 
     {-# INLINE basicToAddress #-}
     basicToAddress    =   \ rs tup -> let !strider =  takeSuffix $! S.scanl (*) 1 (boundsColumn rs) 
                                 in Address $! foldl' (+) 0  $! map2 (*) strider tup 
