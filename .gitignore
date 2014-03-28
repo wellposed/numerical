@@ -1,3 +1,5 @@
 cabal.sandbox.config
 .cabal-sandbox
 report.html
+*.dyn_hi
+*.dyn_o
