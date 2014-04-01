@@ -56,6 +56,24 @@ data Row
 data Column 
 
 
+{-
+NB: may need to add some specialization for low rank indexing, 
+theres 4 choices:
+a) INLINE EVERYTHING
+b) rewrite rules that take low rank indexing code into specialized versions thereof
+c) wait till ghc 7.8.2 to resolve https://ghc.haskell.org/trac/ghc/ticket/8848
+    and use SPECIALIZE
+d) benchmark and then decide
+
+for now I choose (e), defer benchmarking till everything works :) 
+
+
+a related concern is the interplay of inlining and specialization 
+https://ghc.haskell.org/trac/ghc/ticket/5928
+
+-}
+
+
 getAddress :: Address -> Int 
 getAddress (Address ix)=ix
 
@@ -80,17 +98,19 @@ class Layout lay (contiguity:: Locality) (rank :: Nat)  where
     -- not sure if this is the right model for the valid ops
     --validAddress::Form   lay contiguity rank -> Int -> Either String (Shape rank Int)
     --validIndex ::Form   lay contiguity rank -> Shape rank Int -> Either String Int 
+    basicNextAddress :: Form   lay contiguity rank -> Address ->  Address 
 
+    basicNextAddress =  \form shp ->  basicToAddress form $  (basicNextIndex form  $! basicToIndex form  shp )
     
-    basicNextIndex :: Form   lay contiguity rank -> Shape rank Int ->Maybe (Shape rank Int) 
-    
-    -- basicNextIndex default implementation, unchecked increment 
-    -- Will be INCORRECT for Sparse and DisContiguous memory models
-    basicNextIndex  = \form shp -> Just $! basicToIndex form $! (+) 1 $! basicToAddress form  shp 
-    
+    basicNextIndex :: Form   lay contiguity rank -> Shape rank Int ->(Shape rank Int) 
+    basicNextIndex  = \form shp ->  basicToIndex form  $  (basicNextAddress form  $! basicToAddress form  shp )
     {-# INLINE  basicNextIndex #-}
+
+
     basicToIndex :: Form   lay contiguity rank -> Address -> Shape rank Int 
-    {-# MINIMAL transposedLayout, basicToIndex, basicToAddress #-}
+
+    -- one of basicNextAddress and basicNextIndex must always be implemented
+    {-# MINIMAL transposedLayout, basicToIndex, basicToAddress, (basicNextIndex | basicNextAddress ) #-}
 
 -----
 -----
@@ -104,13 +124,16 @@ instance Layout Direct Contiguous (S Z)   where
 
 
     transposedLayout = id 
+
     {-#INLINE basicToAddress#-}
     basicToAddress   (FormDirectContiguous _) (j :* Nil )= Address j 
 
     --basicNextIndex=  undefined -- \ _ x ->  Just $! x + 1 
     --note its unchecked!
     {-# INLINE basicToIndex#-}
-    basicToIndex (FormDirectContiguous _) (Address ix) = (ix ) :* Nil 
+    basicToIndex =  \ (FormDirectContiguous _) (Address ix)  -> (ix ) :* Nil 
+    
+    basicNextAddress = \ _ addr -> addr + 1
 
 
 
@@ -124,12 +147,12 @@ instance Layout Direct Strided (S Z)   where
 
     transposedLayout = id 
     {-#INLINE basicToAddress#-}
-    basicToAddress   (FormDirectStrided _ strid) (j :* Nil )= Address (strid * j) 
+    basicToAddress   = \ (FormDirectStrided _ strid) (j :* Nil )->  Address (strid * j) 
 
     --basicNextIndex=  undefined -- \ _ x ->  Just $! x + 1 
     --note its unchecked!
     {-# INLINE basicToIndex#-}
-    basicToIndex (FormDirectStrided _ stride) (Address ix) = (ix `div` stride ) :* Nil 
+    basicToIndex = \ (FormDirectStrided _ stride) (Address ix)  -> (ix `div` stride ) :* Nil 
 
 -----
 -----
@@ -158,31 +181,32 @@ instance  Layout Row  Contiguous rank where
                                 (ix,error "impossible remainder access in Row Contiguous basicToIndex") striderShape
 
 
---data instance  Form  Row  InnerContiguous rank  = 
---        FormRowInnerContig {boundsFormRowIC :: !(Shape rank Int), strideFormRowIC:: !(Shape rank Int)} 
----- strideRow :: Shape rank Int,
---instance  Layout Row  Contiguous rank where
---    type Tranposed Row = Column 
+data instance  Form  Row  InnerContiguous rank  = 
+        FormRowInnerContiguous {boundsFormRowInnerContig :: !(Shape rank Int), strideFormRowInnerContig:: !(Shape rank Int)} 
+-- strideRow :: Shape rank Int,
+instance  Layout Row  InnerContiguous rank where
+    type Tranposed Row = Column 
 
 
 
---    transposedLayout = \(FormRow shp) -> FormRowInnerContig $ reverseShape shp
---    {-# INLINE basicToAddress #-}
---    basicToAddress = \rs tup ->   Address $! S.foldl'  (+) 0 $! map2 (*) (strideFormRowIC rs ) tup 
---    {-# INLINE basicToIndex #-}
---    basicToIndex  =   \ rs (Address ix) -> case boundsFormRowIC rs of 
---          Nil -> Nil 
---          (_:*_)->
---              S.map  fst $!
---                S.scanl1 (\(q,r) strid -> r `quotRem`  strid) 
---                    (ix,error "impossible remainder access in Row Contiguous basicToIndex") (strideFormRowIC rs )
+    transposedLayout = \(FormRowInnerContiguous shp stride) -> 
+        FormColumnInnerContiguous  (reverseShape shp)  (reverseShape stride)
+    {-# INLINE basicToAddress #-}
+    basicToAddress = \rs tup ->   Address $! S.foldl'  (+) 0 $! map2 (*) (strideFormRowInnerContig rs ) tup 
+    {-# INLINE basicToIndex #-}
+    basicToIndex  =   \ rs (Address ix) -> case boundsFormRowInnerContig rs of 
+          Nil -> Nil 
+          (_:*_)->
+              S.map  fst $!
+                S.scanl1 (\(q,r) strid -> r `quotRem`  strid) 
+                    (ix,error "impossible remainder access in Row Contiguous basicToIndex") (strideFormRowInnerContig rs )
 
 
 -----
 -----
 -----
 
-data instance  Form  Column Contiguous rank  = FormColumnContiguous {boundsColumn :: !(Shape rank Int)}
+data instance  Form  Column Contiguous rank  = FormColumnContiguous {boundsColumnContig :: !(Shape rank Int)}
  -- strideRow :: Shape rank Int,
 instance  Layout Column  Contiguous rank where
     type Tranposed Column = Row  
@@ -190,17 +214,41 @@ instance  Layout Column  Contiguous rank where
 
     transposedLayout = \(FormColumnContiguous shp)-> FormRowContiguous $ reverseShape shp 
     {-# INLINE basicToAddress #-}
-    basicToAddress    =   \ rs tup -> let !strider =  takeSuffix $! S.scanl (*) 1 (boundsColumn rs) 
+    basicToAddress    =   \ rs tup -> let !strider =  takeSuffix $! S.scanl (*) 1 (boundsColumnContig rs) 
                                 in Address $! foldl' (+) 0  $! map2 (*) strider tup 
 
     {-# INLINE  basicToIndex#-}                                
-    basicToIndex  = \ rs (Address ix) -> case boundsColumn rs of 
+    basicToIndex  = \ rs (Address ix) -> case boundsColumnContig rs of 
           Nil -> Nil 
           (_:*_)->
-              let !striderShape  =takeSuffix $! S.scanl (*) 1 (boundsColumn rs) 
+              let !striderShape  =takeSuffix $! S.scanl (*) 1 (boundsColumnContig rs) 
                   in S.map  fst  $! 
                         S.scanr1 (\ strid (q,r)  -> r `quotRem`  strid) 
                             (ix,error "impossible remainder access in Column Contiguous basicToIndex") striderShape
+
+
+
+
+data instance  Form Column InnerContiguous rank  = FormColumnInnerContiguous {boundsColumnInnerContig :: !(Shape rank Int), strideFormColumnInnerContig:: !(Shape rank Int)}
+ -- strideRow :: Shape rank Int,
+instance  Layout Column  InnerContiguous rank where
+    type Tranposed Column = Row  
+
+
+    transposedLayout = \(FormColumnInnerContiguous shp stride)->
+         FormRowInnerContiguous (reverseShape shp) (reverseShape stride) 
+
+    {-# INLINE basicToAddress #-}
+    basicToAddress    =   \ form tup -> let !strider =   strideFormColumnInnerContig form 
+                                in Address $! foldl' (+) 0  $! map2 (*) strider tup 
+
+    {-# INLINE  basicToIndex#-}                                
+    basicToIndex  = \ form (Address ix) -> case boundsColumnInnerContig form  of 
+          Nil -> Nil 
+          (_:*_)->
+              let !striderShape  = strideFormColumnInnerContig form  
+                  in S.map  fst  $!   S.scanr1 (\ stride (q,r)  -> r `quotRem`  stride) 
+                        (ix,error "impossible remainder access in Column Contiguous basicToIndex") striderShape
 
 
 

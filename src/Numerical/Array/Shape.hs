@@ -285,6 +285,8 @@ TODO: abstract out all the different unrolled cases i have
 
 -}
 
+
+
   
 {-# INLINE map2 #-}    
 map2 :: forall a b c r .   (a->b ->c) -> (Shape r a) -> (Shape r b) -> (Shape r c )  
@@ -332,13 +334,15 @@ foldr f = let
 
 
 
-                
+
+
+--yes i'm making foldl strict :) 
 {-# INLINE  foldl #-}
 foldl :: forall a b r. (b-> a -> b) -> b -> Shape r a -> b 
 foldl f = let 
             go:: b  -> Shape h a -> b 
-            go init Nil = init
-            go init (a:* as) = go (f init  a) as
+            go !init Nil = init
+            go !init (a:* as) = go (f init  a) as
             in  \init theShape -> 
                 case theShape of 
                     Nil -> init 
@@ -432,10 +436,26 @@ scanr f  = let
                 _ -> snd   $! go init shs 
 --should try out unboxed tuples once benchmarking starts
 
+{-for now lets not unroll these two-}
+{-# INLINE  scanr1Zip #-}
+scanr1Zip  ::   forall a b c r . (a -> b -> c-> c ) -> c -> Shape r a ->Shape r b ->  Shape  r c
+scanr1Zip f =
+    let   
+        go   ::  c -> Shape h a -> Shape h b -> (c  ,Shape  h c )
+        go !init Nil Nil = (init ,Nil)         
+        go  !init (a:* as) (b:* bs) = (res, res :*  suffix)
+            where 
+                !(!accum,!suffix)= go  init as bs 
+                !res =  f a b accum
+        in \ init as bs -> snd $! go init as bs  
+
+
+
 {-# INLINE cons  #-}
 cons :: a -> Shape n a -> Shape (S n) a 
 cons = \ a as -> a :* as 
 
+{-# INLINE snoc #-}
 snoc ::  Shape n a -> a -> Shape (S n) a
 snoc = let 
             go ::  Shape r a -> a -> Shape (S r) a
@@ -452,7 +472,21 @@ snoc = let
                         _ -> go shp val 
 
 
--- a sort of uncons
+uncons :: Shape (S n)  a -> (a,Shape n a )
+uncons = \(a:* as) -> (a , as )
+
+unsnoc :: Shape (S n) a -> (Shape n a, a)
+unsnoc = let 
+        go :: Shape (S n) a -> (Shape n a, a  )
+        go (a:* Nil) = (Nil,a) 
+        go (a:* bs@(_ :* _)) = (a:*  (fst res), snd res ) 
+            where res = go bs 
+        in 
+            go 
+
+
+
+
 {-#INLINE takeSuffix#-}
 takeSuffix :: Shape (S n) a -> Shape n a 
 takeSuffix = \ (a:* as) -> as 

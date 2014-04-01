@@ -13,7 +13,12 @@ import qualified Data.Vector.Mutable as BM
 -- up into a multi dimensional setting.
 --
 -- the tentative design is to have something like
-\begin{code}
+
+
+
+you'd think that the following array type is ``right''
+but then you'll hit problems supporting 
+\begin{verbatim}
 
 data MArray world rep lay (view:: Locality) rank elm where
      MArray
@@ -21,7 +26,7 @@ data MArray world rep lay (view:: Locality) rank elm where
          ,_marrForm :: {-# UNPACK #-} !(Form lay view rank) 
          --,_marrShift :: {-# UNPACK #-} !Address 
          }
-\end{code}
+\end{verbatim}
 
 shift will be zero for most reps i'll ever care about, but in certain cases,
 might not be. So for now not including it, but might be needed later,
@@ -42,8 +47,15 @@ because we to sometimes have things that are world parametric
 type family MArrayElem world  rep el :: Constraint
 type instance MArrayElem
 
-class  MutableArray world rep lay  where
-    data  MBuffer world rep lay
+data family MArray world rep lay (view::Locality) rank elem 
+
+{-
+data instance MArray Native Storable lay  view 
+
+-}
+--instance Unbox el =>  mutableArray (MArray Native Unboxed) RowMajor (S(S Z)) el 
+class  MutableArray marray locality layout  rank   el  where
+    --data  MBuffer world rep lay
 
 
 
