@@ -191,8 +191,13 @@ instance  Layout Row  InnerContiguous rank where
 
     transposedLayout = \(FormRowInnerContiguous shp stride) -> 
         FormColumnInnerContiguous  (reverseShape shp)  (reverseShape stride)
+
     {-# INLINE basicToAddress #-}
     basicToAddress = \rs tup ->   Address $! S.foldl'  (+) 0 $! map2 (*) (strideFormRowInnerContig rs ) tup 
+
+    basicNextIndex = \ (FormRowInnerContiguous shape _) ix -> 
+        S.map snd $! S.scanl1Zip (\( carry, oldval ) ixv shpv   -> divMod (carry + ixv) shpv ) (1,error "nextAddress init value accessed")  ix shape 
+
     {-# INLINE basicToIndex #-}
     basicToIndex  =   \ rs (Address ix) -> case boundsFormRowInnerContig rs of 
           Nil -> Nil 
@@ -201,6 +206,33 @@ instance  Layout Row  InnerContiguous rank where
                 S.scanl1 (\(q,r) strid -> r `quotRem`  strid) 
                     (ix,error "impossible remainder access in Row Contiguous basicToIndex") (strideFormRowInnerContig rs )
 
+
+
+data instance  Form  Row  Strided rank  = 
+        FormRowStrided {boundsFormRowStrided:: !(Shape rank Int), strideFormRowStrided:: !(Shape rank Int)} 
+-- strideRow :: Shape rank Int,
+instance  Layout Row  Strided rank where
+    type Tranposed Row = Column 
+
+
+
+    transposedLayout = \(FormRowStrided shp stride) -> 
+        FormColumnStrided  (reverseShape shp)  (reverseShape stride)
+
+    {-# INLINE basicToAddress #-}
+    basicToAddress = \rs tup ->   Address $! S.foldl'  (+) 0 $! map2 (*) (strideFormRowStrided rs ) tup 
+
+    basicNextIndex = \ (FormRowStrided shape _) ix -> 
+        S.map snd $! S.scanl1Zip (\( carry, oldval ) ixv shpv   -> divMod (carry + ixv) shpv ) (1,error "nextAddress init value accessed")  ix shape 
+
+    {-# INLINE basicToIndex #-}
+    basicToIndex  =   \ rs (Address ix) -> case boundsFormRowStrided rs of 
+          Nil -> Nil 
+          (_:*_)->
+              S.map  fst $!
+                S.scanl1 (\(q,r) strid -> r `quotRem`  strid) 
+                    (ix,error "impossible remainder access in Row Contiguous basicToIndex") 
+                    (strideFormRowStrided rs )
 
 -----
 -----
@@ -242,6 +274,8 @@ instance  Layout Column  InnerContiguous rank where
     basicToAddress    =   \ form tup -> let !strider =   strideFormColumnInnerContig form 
                                 in Address $! foldl' (+) 0  $! map2 (*) strider tup 
 
+    basicNextIndex = \ (FormColumnInnerContiguous shape _) ix -> 
+        S.map snd $! S.scanr1Zip (\ ixv shpv ( carry, oldval ) -> divMod (carry + ixv) shpv) (1,error "nextAddress init value accessed")  ix shape 
     {-# INLINE  basicToIndex#-}                                
     basicToIndex  = \ form (Address ix) -> case boundsColumnInnerContig form  of 
           Nil -> Nil 
@@ -251,6 +285,28 @@ instance  Layout Column  InnerContiguous rank where
                         (ix,error "impossible remainder access in Column Contiguous basicToIndex") striderShape
 
 
+data instance  Form Column Strided rank  = FormColumnStrided {boundsColumnStrided :: !(Shape rank Int), strideFormColumnStrided:: !(Shape rank Int)}
+ -- strideRow :: Shape rank Int,
+instance  Layout Column  Strided rank where
+    type Tranposed Column = Row  
+
+
+    transposedLayout = \(FormColumnStrided shp stride)->
+         FormRowStrided (reverseShape shp) (reverseShape stride) 
+
+    {-# INLINE basicToAddress #-}
+    basicToAddress    =   \ form tup -> let !strider =   strideFormColumnStrided form 
+                                in Address $! foldl' (+) 0  $! map2 (*) strider tup 
+
+    basicNextIndex = \ (FormColumnStrided shape _) ix -> 
+        S.map snd $! S.scanr1Zip (\ ixv shpv ( carry, oldval ) -> divMod (carry + ixv) shpv) (1,error "nextAddress init value accessed")  ix shape 
+    {-# INLINE  basicToIndex#-}                                
+    basicToIndex  = \ form (Address ix) -> case boundsColumnStrided form  of 
+          Nil -> Nil 
+          (_:*_)->
+              let !striderShape  = strideFormColumnStrided form  
+                  in S.map  fst  $!   S.scanr1 (\ stride (q,r)  -> r `quotRem`  stride) 
+                        (ix,error "impossible remainder access in Column Contiguous basicToIndex") striderShape
 
 
 

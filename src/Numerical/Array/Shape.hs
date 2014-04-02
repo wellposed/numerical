@@ -23,6 +23,8 @@ module Numerical.Array.Shape(Shape(..)
     ,scanl
     ,scanl1
     ,scanr1
+    ,scanr1Zip
+    ,scanl1Zip 
     ,map
     ,map2
     ,reverseShape
@@ -34,6 +36,9 @@ module Numerical.Array.Shape(Shape(..)
     ,strictlyDominates
     ,cons
     ,snoc
+    ,unsnoc
+    ,uncons 
+
     ,takeSuffix
     ,takePrefix) 
     where
@@ -449,7 +454,16 @@ scanr1Zip f =
                 !res =  f a b accum
         in \ init as bs -> snd $! go init as bs  
 
-
+{-# INLINE  scanl1Zip #-}
+scanl1Zip  ::   forall a b c r . (c->a -> b -> c ) -> c -> Shape r a ->Shape r b ->  Shape  r c
+scanl1Zip f =
+    let   
+        go   ::  c -> Shape h a -> Shape h b -> Shape  h c 
+        go !init Nil Nil = Nil         
+        go  !init (a:* as) (b:* bs) = res :*  go res as bs 
+            where                  
+                !res =  f init  a b 
+        in \ init as bs ->  go init as bs  
 
 {-# INLINE cons  #-}
 cons :: a -> Shape n a -> Shape (S n) a 
