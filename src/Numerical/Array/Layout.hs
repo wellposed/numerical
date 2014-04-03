@@ -154,10 +154,10 @@ instance Layout Direct Strided (S Z)   where
     {-# INLINE basicNextAddress #-}
     basicNextAddress = \ (FormDirectStrided _ strid) addr ->  addr + Address strid 
 
-
+    {-# INLINE basicNextIndex#-}
     basicNextIndex =  \ _  (i:* Nil ) ->  (i + 1 :* Nil )
-    --basicNextIndex=  undefined -- \ _ x ->  Just $! x + 1 
-    --note its unchecked!
+    
+
     {-# INLINE basicToIndex#-}
     basicToIndex = \ (FormDirectStrided _ stride) (Address ix)  -> (ix `div` stride ) :* Nil 
 
@@ -172,12 +172,14 @@ data instance  Form  Row  Contiguous rank  = FormRowContiguous {boundsFormRow ::
 instance  Layout Row  Contiguous rank where
     type Tranposed Row = Column 
 
-
-
     transposedLayout = \(FormRowContiguous shp) -> FormColumnContiguous $ reverseShape shp
+
     {-# INLINE basicToAddress #-}
     basicToAddress = \rs tup -> let !strider =takePrefix $! S.scanr (*) 1 (boundsFormRow rs) 
                                 in Address $! S.foldl'  (+) 0 $! map2 (*) strider tup 
+    {-# INLINE basicNextAddress#-}                                
+    basicNextAddress = \rs addr -> addr + 1 
+
     {-# INLINE basicToIndex #-}
     basicToIndex  =   \ rs (Address ix) -> case boundsFormRow rs of 
           Nil -> Nil 
@@ -206,6 +208,7 @@ instance  Layout Row  InnerContiguous rank where
     {-# INLINE basicToAddress #-}
     basicToAddress = \rs tup ->   Address $! S.foldl'  (+) 0 $! map2 (*) (strideFormRowInnerContig rs ) tup 
 
+    {-# INLINE basicNextIndex #-}
     basicNextIndex = \ (FormRowInnerContiguous shape _) ix -> 
         S.map snd $! S.scanl1Zip (\( carry, oldval ) ixv shpv   -> divMod (carry + ixv) shpv ) (1,error "nextAddress init value accessed")  ix shape 
 
@@ -234,6 +237,7 @@ instance  Layout Row  Strided rank where
     {-# INLINE basicToAddress #-}
     basicToAddress = \rs tup ->   Address $! S.foldl'  (+) 0 $! map2 (*) (strideFormRowStrided rs ) tup 
 
+    {-#INLINE basicNextIndex#-}
     basicNextIndex = \ (FormRowStrided shape _) ix -> 
         S.map snd $! S.scanl1Zip (\( carry, oldval ) ixv shpv   -> divMod (carry + ixv) shpv ) (1,error "nextAddress init value accessed")  ix shape 
 
@@ -260,6 +264,8 @@ instance  Layout Column  Contiguous rank where
     {-# INLINE basicToAddress #-}
     basicToAddress    =   \ rs tup -> let !strider =  takeSuffix $! S.scanl (*) 1 (boundsColumnContig rs) 
                                 in Address $! foldl' (+) 0  $! map2 (*) strider tup 
+    {-# INLINE basicNextAddress #-}                                
+    basicNextAddress = \ _ addr -> addr + 1                         
 
     {-# INLINE  basicToIndex#-}                                
     basicToIndex  = \ rs (Address ix) -> case boundsColumnContig rs of 
@@ -285,9 +291,11 @@ instance  Layout Column  InnerContiguous rank where
     {-# INLINE basicToAddress #-}
     basicToAddress    =   \ form tup -> let !strider =   strideFormColumnInnerContig form 
                                 in Address $! foldl' (+) 0  $! map2 (*) strider tup 
-
+    {-#INLINE basicNextIndex #-}                                
     basicNextIndex = \ (FormColumnInnerContiguous shape _) ix -> 
         S.map snd $! S.scanr1Zip (\ ixv shpv ( carry, oldval ) -> divMod (carry + ixv) shpv) (1,error "nextAddress init value accessed")  ix shape 
+
+
     {-# INLINE  basicToIndex#-}                                
     basicToIndex  = \ form (Address ix) -> case boundsColumnInnerContig form  of 
           Nil -> Nil 
@@ -309,9 +317,10 @@ instance  Layout Column  Strided rank where
     {-# INLINE basicToAddress #-}
     basicToAddress    =   \ form tup -> let !strider =   strideFormColumnStrided form 
                                 in Address $! foldl' (+) 0  $! map2 (*) strider tup 
-
+    {-# INLINE basicNextIndex#-}                                
     basicNextIndex = \ (FormColumnStrided shape _) ix -> 
         S.map snd $! S.scanr1Zip (\ ixv shpv ( carry, oldval ) -> divMod (carry + ixv) shpv) (1,error "nextAddress init value accessed")  ix shape 
+
     {-# INLINE  basicToIndex#-}                                
     basicToIndex  = \ form (Address ix) -> case boundsColumnStrided form  of 
           Nil -> Nil 
