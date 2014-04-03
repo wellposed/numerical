@@ -38,28 +38,41 @@ For now any ``Address'' shift will need to be via the buffer
 
 
 
-we need to have ``MArrayElem'' be decoupled from the type classe instances
+we need to have ``RepConstraint'' be decoupled from the type classe instances
 because we to sometimes have things that are world parametric
+
+indexing should be oblivious to locality,
+
 
 \begin{code}
 
 
-type family MArrayElem world  rep el :: Constraint
+type family RepConstraint world  rep el :: Constraint
 type instance MArrayElem
 
-data family MArray world rep lay (view::Locality) rank elem 
+data family MArray world rep lay (view::Locality) rank el
 
 {-
 data instance MArray Native Storable lay  view 
 
 -}
 --instance Unbox el =>  mutableArray (MArray Native Unboxed) RowMajor (S(S Z)) el 
-class  MutableArray marray locality layout  rank   el  where
+class  MutableArray marr loc   rank   el  where
     --data  MBuffer world rep lay
+    basicShape :: ma s loc  rank el -> Shape rank Int 
+    basicOverlaps :: ma s loc rank el -> ma s loc rank el -> Bool 
 
+    -- can't express basic unSafeNew 
+    {-
+    basicUnsafeNew:: PrimMonad m => Shape rank Int -> m (ma (PrimState m) Contiguous rank el)
+    -}
 
 
 \end{code}
+
+
+
+
 
 
 \begin{verbatim}

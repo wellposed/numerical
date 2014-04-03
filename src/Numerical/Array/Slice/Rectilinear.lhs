@@ -21,5 +21,5 @@ class Array arr world rep lay local rank el=> RectlinearSlice  a where
     majorAxSlice :: Array world rep lay local rank el  ->Range -> 
 
 class MutArray marr => MutRectlinearSlice  a where 
-
+    
 \end{code}

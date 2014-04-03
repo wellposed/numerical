@@ -101,6 +101,7 @@ class Layout lay (contiguity:: Locality) (rank :: Nat)  where
     basicNextAddress :: Form   lay contiguity rank -> Address ->  Address 
 
     basicNextAddress =  \form shp ->  basicToAddress form $  (basicNextIndex form  $! basicToIndex form  shp )
+    {-# INLINE basicNextAddress #-}
     
     basicNextIndex :: Form   lay contiguity rank -> Shape rank Int ->(Shape rank Int) 
     basicNextIndex  = \form shp ->  basicToIndex form  $  (basicNextAddress form  $! basicToAddress form  shp )
@@ -146,9 +147,15 @@ instance Layout Direct Strided (S Z)   where
 
 
     transposedLayout = id 
+
     {-#INLINE basicToAddress#-}
     basicToAddress   = \ (FormDirectStrided _ strid) (j :* Nil )->  Address (strid * j) 
 
+    {-# INLINE basicNextAddress #-}
+    basicNextAddress = \ (FormDirectStrided _ strid) addr ->  addr + Address strid 
+
+
+    basicNextIndex =  \ _  (i:* Nil ) ->  (i + 1 :* Nil )
     --basicNextIndex=  undefined -- \ _ x ->  Just $! x + 1 
     --note its unchecked!
     {-# INLINE basicToIndex#-}
@@ -181,6 +188,10 @@ instance  Layout Row  Contiguous rank where
                                 (ix,error "impossible remainder access in Row Contiguous basicToIndex") striderShape
 
 
+
+
+-----
+-----
 data instance  Form  Row  InnerContiguous rank  = 
         FormRowInnerContiguous {boundsFormRowInnerContig :: !(Shape rank Int), strideFormRowInnerContig:: !(Shape rank Int)} 
 -- strideRow :: Shape rank Int,
@@ -207,7 +218,8 @@ instance  Layout Row  InnerContiguous rank where
                     (ix,error "impossible remainder access in Row Contiguous basicToIndex") (strideFormRowInnerContig rs )
 
 
-
+---
+---
 data instance  Form  Row  Strided rank  = 
         FormRowStrided {boundsFormRowStrided:: !(Shape rank Int), strideFormRowStrided:: !(Shape rank Int)} 
 -- strideRow :: Shape rank Int,
