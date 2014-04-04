@@ -46,10 +46,8 @@ indexing should be oblivious to locality,
 
 
 
-NB: set, copy,  move and clear really need to be in a derived class that gives a 
-recursion principle. Why? Because Except when dealing with 1dim contiguous case,
-we can't just call the underlying vector operation! We need to recursively reduce 
-dimensions until we go down to rank 1, and then we can easily handle the 
+set and copy and move  require "structured" matrices, where 
+ clear really 
 
 \begin{verbatim}
     -- | Set all elements of the vector to the given value. This method should
@@ -68,10 +66,7 @@ dimensions until we go down to rank 1, and then we can easily handle the
                               -> v (PrimState m) a   -- ^ source
                               -> m ()
 
-    -- | Reset all elements of the vector to some undefined value, clearing all
-    -- references to external objects. This is usually a noop for unboxed
-    -- vectors. This method should not be called directly, use 'clear' instead.
-    basicClear       :: PrimMonad m => marr (PrimState m) rank  a -> m ()
+
 
     
 \end{verbatim}
@@ -117,12 +112,25 @@ class MutableArrayBuilder marr rank a where
 class  MutableArray marr   rank   a  where
     --data  MBuffer world rep lay
 
+    basicIndexToAddress :: ma s  rank a -> Shape rank Int -> Address 
+    basicAddressToIndex :: ma s  rank a -> Address -> Shape rank Int 
+
+    -- return the least and greatest valid logical addresses
+    basicSmallestAddress :: ma s rank a -> m Address 
+    basicGreatestAddress :: ma s rank a -> m Address 
+
+    -- return the least and greatest valid array index
+    basicSmallestIndex :: ma s rank a -> m (Shape rank Int)
+    basicGreatestIndex :: ma s rank a -> m (Shape rank Int)
+
+    basicNextAddress :: ma s rank a -> Address -> m Address 
+
+    basicNextIndex :: ma s rank a -> (Shape rank Int) -> m (Shape rank Int )
 
 
+    basicShape :: ma s   rank a -> Shape rank Int 
 
-    basicShape :: ma s loc  rank a -> Shape rank Int 
-
-    basicOverlaps :: ma s loc rank el -> ma s loc rank a -> Bool 
+    basicOverlaps :: ma s  rank el -> ma s  rank a -> Bool 
   
     -- | Yield the element at the given position. This method should not be
     -- called directly, use 'unsafeRead' instead.
@@ -132,7 +140,10 @@ class  MutableArray marr   rank   a  where
     -- called directly, use 'unsafeWrite' instead.
     basicUnsafeWrite :: PrimMonad m => marr (PrimState m)  rank a -> Shape rank Int  -> a -> m ()
 
-
+    -- | Reset all elements of the vector to some undefined value, clearing all
+    -- references to external objects. This is usually a noop for unboxed
+    -- vectors. This method should not be called directly, use 'clear' instead.
+    basicClear       :: PrimMonad m => marr (PrimState m) rank  a -> m ()
 
 
 
