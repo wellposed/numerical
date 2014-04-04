@@ -8,10 +8,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 {-#  LANGUAGE GADTs #-}
--- do i need flexible instances really?
 {-# LANGUAGE FlexibleInstances #-}
-
-{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 
@@ -23,11 +20,6 @@ module Numerical.Array.Layout(
   ,Layout(..)) where
 
 
-
-{-| RowMajor will be defined by a foldRight  over the  ix :^ ixes list
-ColumnMajor
-
--}
 
 import Numerical.Nat
 import Numerical.Array.Shape as S 
