@@ -4,6 +4,7 @@ module Numerical.Array.Generic.Mutable(MArray(..)) where
 
 import Control.Monad.Primitive ( PrimMonad, PrimState )
 import Numerical.Array.Layout
+import Numerical.Array.Shape 
 import qualified Data.Vector.Storable.Mutable as SM
 import qualified Data.Vector.Unboxed.Mutable as UM
 import qualified Data.Vector.Mutable as BM
@@ -23,7 +24,7 @@ but then you'll hit problems supporting
 data MArray world rep lay (view:: Locality) rank elm where
      MArray
          {_marrBuffer :: {-# UNPACK #-}!(MBuffer  world rep elm)
-         ,_marrForm :: {-# UNPACK #-} !(Form lay view rank) 
+         ,_marrForm :: {-# UNPACK #-} !(Form lay loc rank) 
          --,_marrShift :: {-# UNPACK #-} !Address 
          }
 \end{verbatim}
@@ -44,28 +45,96 @@ because we to sometimes have things that are world parametric
 indexing should be oblivious to locality,
 
 
+
+NB: set, copy,  move and clear really need to be in a derived class that gives a 
+recursion principle. Why? Because Except when dealing with 1dim contiguous case,
+we can't just call the underlying vector operation! We need to recursively reduce 
+dimensions until we go down to rank 1, and then we can easily handle the 
+
+\begin{verbatim}
+    -- | Set all elements of the vector to the given value. This method should
+    -- not be called directly, use 'set' instead.
+    basicSet         :: PrimMonad m => marr (PrimState m)  rank  a -> a -> m ()
+
+    -- | Copy a vector. The two vectors may not overlap. This method should not
+    -- be called directly, use 'unsafeCopy' instead.
+    basicUnsafeCopy  :: PrimMonad m => marr (PrimState m)  rank a   -- ^ target
+                              -> marr (PrimState m)  rank a   -- ^ source
+                              -> m ()
+
+    -- | Move the contents of a vector. The two vectors may overlap. This method
+    -- should not be called directly, use 'unsafeMove' instead.
+    basicUnsafeMove  :: PrimMonad m => marr (PrimState m) a   -- ^ target
+                              -> v (PrimState m) a   -- ^ source
+                              -> m ()
+
+    -- | Reset all elements of the vector to some undefined value, clearing all
+    -- references to external objects. This is usually a noop for unboxed
+    -- vectors. This method should not be called directly, use 'clear' instead.
+    basicClear       :: PrimMonad m => marr (PrimState m) rank  a -> m ()
+
+    
+\end{verbatim}
+
+
 \begin{code}
 
 
 type family RepConstraint world  rep el :: Constraint
-type instance MArrayElem
+--type instance MArrayElem
 
-data family MArray world rep lay (view::Locality) rank el
+data family MArray world rep lay (view::Locality) st rank el
+
+type family  MArrayLocality marr :: Locality where
+    MArrayLocality (MArray world rep lay (view::Locality) st rank el) = view 
+
+type family  MArrayLayout marr where 
+    MArrayLayout (MArray world rep lay (view::Locality) st rank el)  = lay 
+
+type family MarrayRep marr where
+    MArrayRep (MArray world rep lay (view::Locality) st rank el) = rep 
+
 
 {-
 data instance MArray Native Storable lay  view 
 
 -}
 --instance Unbox el =>  mutableArray (MArray Native Unboxed) RowMajor (S(S Z)) el 
-class  MutableArray marr loc   rank   el  where
-    --data  MBuffer world rep lay
-    basicShape :: ma s loc  rank el -> Shape rank Int 
-    basicOverlaps :: ma s loc rank el -> ma s loc rank el -> Bool 
 
-    -- can't express basic unSafeNew 
-    {-
-    basicUnsafeNew:: PrimMonad m => Shape rank Int -> m (ma (PrimState m) Contiguous rank el)
-    -}
+
+{-
+
+Mutable Array Builder will only have contiguous instances 
+and only makes sense for dense arrays afaik
+-}
+class MutableArrayBuilder marr rank a where 
+    basicUnsafeNew :: PrimMonad m => Shape rank Int -> m (marr (PrimState m)  rank a)
+    basicUnsafeReplicate :: PrimMonad m => Shape rank Int -> a -> m (marr (PrimState m) rank a)
+
+
+
+
+class  MutableArray marr   rank   a  where
+    --data  MBuffer world rep lay
+
+
+
+
+    basicShape :: ma s loc  rank a -> Shape rank Int 
+
+    basicOverlaps :: ma s loc rank el -> ma s loc rank a -> Bool 
+  
+    -- | Yield the element at the given position. This method should not be
+    -- called directly, use 'unsafeRead' instead.
+    basicUnsafeRead  :: PrimMonad m => marr  (PrimState m)  rank a -> Shape rank Int -> m a
+
+    -- | Replace the element at the given position. This method should not be
+    -- called directly, use 'unsafeWrite' instead.
+    basicUnsafeWrite :: PrimMonad m => marr (PrimState m)  rank a -> Shape rank Int  -> a -> m ()
+
+
+
+
 
 
 \end{code}
