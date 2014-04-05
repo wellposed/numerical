@@ -17,7 +17,7 @@ module Numerical.Array.Layout(
   ,Row(..)
   ,Column(..)
   ,Direct(..)
-  ,Layout(..)) where
+  ,Layout(..),Address(..)) where
 
 
 
@@ -36,9 +36,9 @@ make it easy to define new dense array layouts
 -}
 data  Locality = Contiguous | Strided  | InnerContiguous
 
-data PrimLay a  
-data StaticLay a 
-data Lay a 
+--data PrimLay a  
+--data StaticLay a 
+--data Lay a 
 
 
 data Direct 
@@ -83,7 +83,10 @@ class Layout lay (contiguity:: Locality) (rank :: Nat)  where
     transposedLayout ::  (lay ~ Tranposed l2,l2~Tranposed lay)=> Form lay contiguity rank -> Form l2 contiguity rank 
     --shapeOf 
     
-    basicToAddress :: Form lay contiguity rank -> Shape rank Int -> Address  
+    basicToAddress :: Form lay contiguity rank -> Shape rank Int -> Address 
+
+     
+    basicToIndex :: Form   lay contiguity rank -> Address -> Shape rank Int 
 
     --unchecked
     --nextAddress --- not sure if this should even exist for contiguous ones..
@@ -91,7 +94,6 @@ class Layout lay (contiguity:: Locality) (rank :: Nat)  where
     --validAddress::Form   lay contiguity rank -> Int -> Either String (Shape rank Int)
     --validIndex ::Form   lay contiguity rank -> Shape rank Int -> Either String Int 
     basicNextAddress :: Form   lay contiguity rank -> Address ->  Address 
-
     basicNextAddress =  \form shp ->  basicToAddress form $  (basicNextIndex form  $! basicToIndex form  shp )
     {-# INLINE basicNextAddress #-}
     
@@ -100,7 +102,7 @@ class Layout lay (contiguity:: Locality) (rank :: Nat)  where
     {-# INLINE  basicNextIndex #-}
 
 
-    basicToIndex :: Form   lay contiguity rank -> Address -> Shape rank Int 
+    
 
     -- one of basicNextAddress and basicNextIndex must always be implemented
     {-# MINIMAL transposedLayout, basicToIndex, basicToAddress, (basicNextIndex | basicNextAddress ) #-}

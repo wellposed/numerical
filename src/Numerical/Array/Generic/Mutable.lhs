@@ -1,10 +1,28 @@
 %
 \begin{code}
+-- {-# LANGUAGE PolyKinds   #-}
+{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE ScopedTypeVariables#-}
+-- {-#  LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE ConstraintKinds #-}
+{-#  LANGUAGE GADTs #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-#  LANGUAGE FlexibleContexts #-}
+
+
 module Numerical.Array.Generic.Mutable(MArray(..)) where
 
 import Control.Monad.Primitive ( PrimMonad, PrimState )
-import Numerical.Array.Layout
+import qualified Numerical.Array.Layout as L 
+import Numerical.Array.Layout (Address(..),Locality(..),Direct(..))
 import Numerical.Array.Shape 
+import GHC.Prim(Constraint)
+
 import qualified Data.Vector.Storable.Mutable as SM
 import qualified Data.Vector.Unboxed.Mutable as UM
 import qualified Data.Vector.Mutable as BM
@@ -80,13 +98,16 @@ type family RepConstraint world  rep el :: Constraint
 
 data family MArray world rep lay (view::Locality) st rank el
 
+data NativeWorld 
+
+
 type family  MArrayLocality marr :: Locality where
     MArrayLocality (MArray world rep lay (view::Locality) st rank el) = view 
 
 type family  MArrayLayout marr where 
     MArrayLayout (MArray world rep lay (view::Locality) st rank el)  = lay 
 
-type family MarrayRep marr where
+type family MArrayRep marr where
     MArrayRep (MArray world rep lay (view::Locality) st rank el) = rep 
 
 
@@ -112,25 +133,45 @@ class MutableArrayBuilder marr rank a where
 class  MutableArray marr   rank   a  where
     --data  MBuffer world rep lay
 
-    basicIndexToAddress :: ma s  rank a -> Shape rank Int -> Address 
-    basicAddressToIndex :: ma s  rank a -> Address -> Shape rank Int 
-
-    -- return the least and greatest valid logical addresses
-    basicSmallestAddress :: ma s rank a -> m Address 
-    basicGreatestAddress :: ma s rank a -> m Address 
-
-    -- return the least and greatest valid array index
-    basicSmallestIndex :: ma s rank a -> m (Shape rank Int)
-    basicGreatestIndex :: ma s rank a -> m (Shape rank Int)
-
-    basicNextAddress :: ma s rank a -> Address -> m Address 
-
-    basicNextIndex :: ma s rank a -> (Shape rank Int) -> m (Shape rank Int )
+    basicIndexToAddress ::  marr s  rank a -> Shape rank Int -> Address 
 
 
-    basicShape :: ma s   rank a -> Shape rank Int 
+    basicAddressToIndex :: marr s  rank a -> Address -> Shape rank Int 
 
-    basicOverlaps :: ma s  rank el -> ma s  rank a -> Bool 
+    -- return the least valid logical addresses
+    basicSmallestAddress :: marr (PrimState m) rank a -> m Address 
+
+    basicGreatestAddress :: marr (PrimState m ) rank a -> m Address 
+
+    -- |  return the smallest valid array index
+    --  should be weakly dominated by every other valid index
+    basicSmallestIndex :: PrimMonad m => marr (PrimState m) rank a -> m (Shape rank Int)
+
+    -- | return the greatest valid array index
+    -- should weakly dominate every 
+    basicGreatestIndex ::PrimMonad m =>  marr (PrimState m) rank a -> m (Shape rank Int)
+
+    -- | gives the next valid logical address 
+    -- undefined on invalid addresses and the greatest valid address.
+    -- Note that for invalid addresses in between minAddress and maxAddress,
+    -- will return the next valid address 
+    basicNextAddress :: PrimMonad m => marr (PrimState m) rank a -> Address -> m Address 
+
+    -- | gives the next valid array index
+    -- undefined on invalid indices and the greatest valid index 
+    basicNextIndex ::PrimMonad m =>  marr (PrimState m) rank a -> (Shape rank Int) -> m (Shape rank Int )
+
+    -- | gives the shape, a 'rank' length list of the dimensions
+    basicShape :: marr st   rank a -> Shape rank Int 
+
+
+    basicOverlaps :: marr st  rank a -> marr st  rank a -> Bool 
+
+    -- | 
+    basicUnsafeAddressRead  :: PrimMonad m => marr  (PrimState m)  rank a -> Address-> m a
+
+    -- | 
+    basicUnsafeAddressWrite :: PrimMonad m => marr  (PrimState m)  rank a -> Address -> a -> m ()
   
     -- | Yield the element at the given position. This method should not be
     -- called directly, use 'unsafeRead' instead.
@@ -145,8 +186,52 @@ class  MutableArray marr   rank   a  where
     -- vectors. This method should not be called directly, use 'clear' instead.
     basicClear       :: PrimMonad m => marr (PrimState m) rank  a -> m ()
 
+--instance MutableArrayBuilder  (MArray NativeWorld ) where
+--    func = 
 
 
+
+
+generalizedMatrixDenseVectorProduct ::  forall m a mvect loc marr. 
+                        (MutableArrayBuilder (mvect Direct 'Contiguous) ('S 'Z) a
+                        ,(MutableArray  (mvect Direct 'Contiguous) ('S 'Z) a)
+                        , MutableArray marr (S(S Z)) a
+                        , Num a 
+                        , PrimMonad m
+                        , MutableArray (mvect Direct loc) (S Z) a)=> 
+    marr (PrimState m) (S(S Z)) a ->  mvect Direct loc (PrimState m) (S Z) a -> m (mvect Direct Contiguous  (PrimState m) (S Z) a )
+generalizedMatrixDenseVectorProduct mat vect = do
+            (x:* y :* Nil )<- return $! basicShape mat 
+
+            resultVector <- basicUnsafeReplicate (y:* Nil ) 0  
+            firstIx <- basicSmallestIndex mat  
+            lastIx <- basicGreatestIndex mat 
+            go  firstIx  lastIx resultVector
+            return resultVector
+        where 
+            go ::(MutableArray
+                        (mvect Direct Contiguous) (S Z) a) =>  Shape (S (S Z)) Int -> Shape (S (S Z)) Int ->  (mvect Direct Contiguous  (PrimState m) (S Z) a )->m ()
+            go ix@(ix_x :*ix_y :* Nil) last resVector |  last == ix = do   
+                                                    matval <- basicUnsafeRead mat ix 
+                                                    inVectval <- basicUnsafeRead vect (ix_x :* Nil)
+                                                    resVectVal <- basicUnsafeRead resVector (ix_y :* Nil)
+                                                    basicUnsafeWrite resVector (ix_y :* Nil) (resVectVal + (inVectval * matval))
+                                                    nextIx  <- basicNextIndex  mat ix 
+                                                    go nextIx last resVector 
+
+
+                       | last `weaklyDominates` ix = do   
+                                                    matval <- basicUnsafeRead mat ix 
+                                                    inVectval <- basicUnsafeRead vect (ix_x :* Nil)
+                                                    resVectVal <- basicUnsafeRead resVector (ix_y :* Nil)
+                                                    basicUnsafeWrite resVector (ix_y :* Nil) (resVectVal + (inVectval * matval))
+                                                    return  () 
+                       | otherwise = error "impossible thingy with matrixvector product, send help"
+
+
+
+
+    --(x,y)  resV_y +=  m_(x,y) * v_x  
 
 \end{code}
 
@@ -155,8 +240,10 @@ class  MutableArray marr   rank   a  where
 
 
 
+
+
 \begin{verbatim}
-#include "vector.h"
+ #include "vector.h"
 
 -- | Class of mutable vectors parametrised with a primitive state token.
 --
