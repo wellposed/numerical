@@ -14,6 +14,8 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-#  LANGUAGE FlexibleContexts #-}
 
+{-# LANGUAGE CPP #-}
+
 
 module Numerical.Array.Generic.Mutable(MArray(..)) where
 
