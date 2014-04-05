@@ -101,6 +101,7 @@ data family MArray world rep lay (view::Locality) st rank el
 data NativeWorld 
 
 
+#if defined(__GLASGOW_HASKELL_) && __GLASGOW_HASKELL__ >= 707
 type family  MArrayLocality marr :: Locality where
     MArrayLocality (MArray world rep lay (view::Locality) st rank el) = view 
 
@@ -109,6 +110,21 @@ type family  MArrayLayout marr where
 
 type family MArrayRep marr where
     MArrayRep (MArray world rep lay (view::Locality) st rank el) = rep 
+#else 
+type family  MArrayLocality marr :: Locality 
+
+type instance     MArrayLocality (MArray world rep lay (view::Locality) st rank el) = view 
+
+type family  MArrayLayout marr  
+
+type instance     MArrayLayout (MArray world rep lay (view::Locality) st rank el)  = lay 
+
+type family MArrayRep marr 
+
+type instance    MArrayRep (MArray world rep lay (view::Locality) st rank el) = rep     
+
+#endif
+
 
 
 {-
