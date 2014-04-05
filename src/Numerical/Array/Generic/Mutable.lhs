@@ -234,8 +234,7 @@ generalizedMatrixDenseVectorProduct mat vect = do
                                                     inVectval <- basicUnsafeRead vect (ix_x :* Nil)
                                                     resVectVal <- basicUnsafeRead resVector (ix_y :* Nil)
                                                     basicUnsafeWrite resVector (ix_y :* Nil) (resVectVal + (inVectval * matval))
-                                                    nextIx  <- basicNextIndex  mat ix 
-                                                    go nextIx last resVector 
+                                                    return () 
 
 
                        | last `weaklyDominates` ix = do   
@@ -243,7 +242,8 @@ generalizedMatrixDenseVectorProduct mat vect = do
                                                     inVectval <- basicUnsafeRead vect (ix_x :* Nil)
                                                     resVectVal <- basicUnsafeRead resVector (ix_y :* Nil)
                                                     basicUnsafeWrite resVector (ix_y :* Nil) (resVectVal + (inVectval * matval))
-                                                    return  () 
+                                                    nextIx  <- basicNextIndex  mat ix 
+                                                    go nextIx last resVector  
                        | otherwise = error "impossible thingy with matrixvector product, send help"
 
 
