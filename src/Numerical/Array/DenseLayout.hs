@@ -12,7 +12,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 
-module Numerical.Array.Layout(
+module Numerical.Array.DenseLayout(
   Locality(..)
   ,Row(..)
   ,Column(..)
@@ -20,12 +20,15 @@ module Numerical.Array.Layout(
   ,Layout(..),Address(..)) where
 
 
-
-import Numerical.Nat
-import Numerical.Array.Shape as S 
 import Data.Data
-import qualified Data.Foldable as F 
+import Numerical.Nat
 import Control.Applicative
+import Numerical.Array.Address 
+import Numerical.Array.Locality 
+import Numerical.Array.Shape as S 
+
+import qualified Data.Foldable as F 
+
 import Prelude hiding (foldr,foldl,foldl',map,scanl,scanr,scanl1,scanr1,scanl')
 
 {-|  A major design goal with the Layout module is to 
@@ -34,7 +37,7 @@ make it easy to define new dense array layouts
 
 
 -}
-data  Locality = Contiguous | Strided  | InnerContiguous
+
 
 --data PrimLay a  
 --data StaticLay a 
@@ -66,17 +69,23 @@ https://ghc.haskell.org/trac/ghc/ticket/5928
 -}
 
 
-getAddress :: Address -> Int 
-getAddress (Address ix)=ix
+{-
+note also that this is in practice a *dense* only 
+layout module, though a derived api can interpret those 
+formats sparsely
 
-newtype Address = Address  Int 
-  deriving (Eq,Ord,Show,Read,Typeable,Data,Num)
+
+
+-}
+
+
+
 
 
 data family Form lay (contiguity:: Locality)  (rank :: Nat)
 
 
-class Layout lay (contiguity:: Locality) (rank :: Nat)  where
+class DenseLayout lay (contiguity:: Locality) (rank :: Nat)  where
     type Tranposed lay 
 
     
@@ -114,7 +123,7 @@ class Layout lay (contiguity:: Locality) (rank :: Nat)  where
 data instance Form  Direct Contiguous (S Z) = 
             FormDirectContiguous { logicalShapeDirectContiguous :: {-#UNPACK#-} !Int }
 
-instance Layout Direct Contiguous (S Z)   where
+instance DenseLayout Direct Contiguous (S Z)   where
     type Tranposed Direct = Direct
 
 
@@ -136,7 +145,7 @@ data instance Form  Direct Strided (S Z) =
         FormDirectStrided { logicalShapeDirectStrided :: {-#UNPACK#-}!Int
                     , logicalStrideDirectStrided:: {-#UNPACK#-}!Int}
 
-instance Layout Direct Strided (S Z)   where
+instance DenseLayout Direct Strided (S Z)   where
     type Tranposed Direct = Direct
 
 
@@ -163,7 +172,7 @@ instance Layout Direct Strided (S Z)   where
 
 data instance  Form  Row  Contiguous rank  = FormRowContiguous {boundsFormRow :: !(Shape rank Int)} 
 -- strideRow :: Shape rank Int,
-instance  Layout Row  Contiguous rank where
+instance  DenseLayout Row  Contiguous rank where
     type Tranposed Row = Column 
 
     transposedLayout = \(FormRowContiguous shp) -> FormColumnContiguous $ reverseShape shp
@@ -191,7 +200,7 @@ instance  Layout Row  Contiguous rank where
 data instance  Form  Row  InnerContiguous rank  = 
         FormRowInnerContiguous {boundsFormRowInnerContig :: !(Shape rank Int), strideFormRowInnerContig:: !(Shape rank Int)} 
 -- strideRow :: Shape rank Int,
-instance  Layout Row  InnerContiguous rank where
+instance  DenseLayout Row  InnerContiguous rank where
     type Tranposed Row = Column 
 
 
@@ -220,7 +229,7 @@ instance  Layout Row  InnerContiguous rank where
 data instance  Form  Row  Strided rank  = 
         FormRowStrided {boundsFormRowStrided:: !(Shape rank Int), strideFormRowStrided:: !(Shape rank Int)} 
 -- strideRow :: Shape rank Int,
-instance  Layout Row  Strided rank where
+instance  DenseLayout Row  Strided rank where
     type Tranposed Row = Column 
 
 
@@ -250,7 +259,7 @@ instance  Layout Row  Strided rank where
 
 data instance  Form  Column Contiguous rank  = FormColumnContiguous {boundsColumnContig :: !(Shape rank Int)}
  -- strideRow :: Shape rank Int,
-instance  Layout Column  Contiguous rank where
+instance  DenseLayout Column  Contiguous rank where
     type Tranposed Column = Row  
 
 
@@ -275,7 +284,7 @@ instance  Layout Column  Contiguous rank where
 
 data instance  Form Column InnerContiguous rank  = FormColumnInnerContiguous {boundsColumnInnerContig :: !(Shape rank Int), strideFormColumnInnerContig:: !(Shape rank Int)}
  -- strideRow :: Shape rank Int,
-instance  Layout Column  InnerContiguous rank where
+instance  DenseLayout Column  InnerContiguous rank where
     type Tranposed Column = Row  
 
 
@@ -301,7 +310,7 @@ instance  Layout Column  InnerContiguous rank where
 
 data instance  Form Column Strided rank  = FormColumnStrided {boundsColumnStrided :: !(Shape rank Int), strideFormColumnStrided:: !(Shape rank Int)}
  -- strideRow :: Shape rank Int,
-instance  Layout Column  Strided rank where
+instance  DenseLayout Column  Strided rank where
     type Tranposed Column = Row  
 
 
