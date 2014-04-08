@@ -17,7 +17,7 @@ module Numerical.Array.DenseLayout(
   ,Row(..)
   ,Column(..)
   ,Direct(..)
-  ,Layout(..),Address(..)) where
+  ,DenseLayout(..),Address(..)) where
 
 
 import Data.Data

@@ -61,7 +61,7 @@ source-repository head
 library
     -- Modules exported by the library.
     exposed-modules:     
-        Numerical.Array.Layout
+        Numerical.Array.DenseLayout
         Numerical.Array
         --Control.Monad.State.ReallyStrict
         --Numerical.Array.Operations

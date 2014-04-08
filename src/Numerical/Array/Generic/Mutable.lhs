@@ -13,15 +13,14 @@
 {-#  LANGUAGE GADTs #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-#  LANGUAGE FlexibleContexts #-}
-
 {-# LANGUAGE CPP #-}
 
 
 module Numerical.Array.Generic.Mutable(MArray(..)) where
 
 import Control.Monad.Primitive ( PrimMonad, PrimState )
-import qualified Numerical.Array.Layout as L 
-import Numerical.Array.Layout (Address(..),Locality(..),Direct(..))
+import qualified Numerical.Array.DenseLayout as L 
+import Numerical.Array.DenseLayout (Address(..),Locality(..),Direct(..))
 import Numerical.Array.Shape 
 import GHC.Prim(Constraint)
 
@@ -92,6 +91,9 @@ set and copy and move  require "structured" matrices, where
 \end{verbatim}
 
 
+NB: one important assumption we'll have for now, is that every 
+
+
 \begin{code}
 
 
@@ -114,15 +116,12 @@ type family MArrayRep marr where
     MArrayRep (MArray world rep lay (view::Locality) st rank el) = rep 
 #else 
 type family  MArrayLocality marr :: Locality 
-
 type instance     MArrayLocality (MArray world rep lay (view::Locality) st rank el) = view 
 
 type family  MArrayLayout marr  
-
 type instance     MArrayLayout (MArray world rep lay (view::Locality) st rank el)  = lay 
 
 type family MArrayRep marr 
-
 type instance    MArrayRep (MArray world rep lay (view::Locality) st rank el) = rep     
 
 #endif
@@ -219,32 +218,33 @@ generalizedMatrixDenseVectorProduct ::  forall m a mvect loc marr.
                         , MutableArray (mvect Direct loc) (S Z) a)=> 
     marr (PrimState m) (S(S Z)) a ->  mvect Direct loc (PrimState m) (S Z) a -> m (mvect Direct Contiguous  (PrimState m) (S Z) a )
 generalizedMatrixDenseVectorProduct mat vect = do
-            (x:* y :* Nil )<- return $! basicShape mat 
+    (x:* y :* Nil )<- return $! basicShape mat 
+    resultVector <- basicUnsafeReplicate (y:* Nil ) 0  
+    firstIx <- basicSmallestIndex mat  
+    lastIx <- basicGreatestIndex mat 
+    go  firstIx  lastIx resultVector
+    return resultVector
+    where 
+        go ::(MutableArray (mvect Direct Contiguous) (S Z) a) =>  
+            Shape (S (S Z)) Int -> Shape (S (S Z)) Int -> 
+                (mvect Direct Contiguous  (PrimState m) (S Z) a )->m ()
+        go ix@(ix_x :*ix_y :* Nil) last resVector 
+            |  last == ix = do   
+                    matval <- basicUnsafeRead mat ix 
+                    inVectval <- basicUnsafeRead vect (ix_x :* Nil)
+                    resVectVal <- basicUnsafeRead resVector (ix_y :* Nil)
+                    basicUnsafeWrite resVector (ix_y :* Nil) (resVectVal + (inVectval * matval))
+                    return () 
 
-            resultVector <- basicUnsafeReplicate (y:* Nil ) 0  
-            firstIx <- basicSmallestIndex mat  
-            lastIx <- basicGreatestIndex mat 
-            go  firstIx  lastIx resultVector
-            return resultVector
-        where 
-            go ::(MutableArray
-                        (mvect Direct Contiguous) (S Z) a) =>  Shape (S (S Z)) Int -> Shape (S (S Z)) Int ->  (mvect Direct Contiguous  (PrimState m) (S Z) a )->m ()
-            go ix@(ix_x :*ix_y :* Nil) last resVector |  last == ix = do   
-                                                    matval <- basicUnsafeRead mat ix 
-                                                    inVectval <- basicUnsafeRead vect (ix_x :* Nil)
-                                                    resVectVal <- basicUnsafeRead resVector (ix_y :* Nil)
-                                                    basicUnsafeWrite resVector (ix_y :* Nil) (resVectVal + (inVectval * matval))
-                                                    return () 
 
-
-                       | last `weaklyDominates` ix = do   
-                                                    matval <- basicUnsafeRead mat ix 
-                                                    inVectval <- basicUnsafeRead vect (ix_x :* Nil)
-                                                    resVectVal <- basicUnsafeRead resVector (ix_y :* Nil)
-                                                    basicUnsafeWrite resVector (ix_y :* Nil) (resVectVal + (inVectval * matval))
-                                                    nextIx  <- basicNextIndex  mat ix 
-                                                    go nextIx last resVector  
-                       | otherwise = error "impossible thingy with matrixvector product, send help"
+            | last `weaklyDominates` ix = do   
+                    matval <- basicUnsafeRead mat ix 
+                    inVectval <- basicUnsafeRead vect (ix_x :* Nil)
+                    resVectVal <- basicUnsafeRead resVector (ix_y :* Nil)
+                    basicUnsafeWrite resVector (ix_y :* Nil) (resVectVal + (inVectval * matval))
+                    nextIx  <- basicNextIndex  mat ix 
+                    go nextIx last resVector  
+            | otherwise = error "impossible thingy with matrixvector product, send help"
 
 
 
