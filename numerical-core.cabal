@@ -68,7 +68,8 @@ library
         Numerical.Array.Shape
         Numerical.Nat 
         Numerical.Array.Generic.Mutable
-
+        Numerical.Array.Locality
+        Numerical.Array.Address 
     ghc-options: 
     -- -O2 
     -- Modules included in this library but not exported.
