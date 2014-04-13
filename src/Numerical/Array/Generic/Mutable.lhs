@@ -127,6 +127,10 @@ type instance    MArrayRep (MArray world rep lay (view::Locality) st rank el) = 
 #endif
 
 
+-- | MutableInnerContigArray is the "meet" (minimum) of the locality level of marr and InnerContiguous.
+-- Thus both Contiguous and InnerContiguous are made InnerContiguous, and Strided stays Strided
+type family  MutableInnerContigArray (marr :: * -> Nat -> * -> *) st (rank :: Nat) a 
+
 
 {-
 data instance MArray Native Storable lay  view 
@@ -139,12 +143,40 @@ data instance MArray Native Storable lay  view
 
 Mutable Array Builder will only have contiguous instances 
 and only makes sense for dense arrays afaik
+
+BE VERY THOUGHTFUL about what instances you write, or i'll be mad
 -}
 class MutableArrayBuilder marr rank a where 
     basicUnsafeNew :: PrimMonad m => Shape rank Int -> m (marr (PrimState m)  rank a)
     basicUnsafeReplicate :: PrimMonad m => Shape rank Int -> a -> m (marr (PrimState m) rank a)
 
 
+{-
+Mutable
+
+-}
+
+class MutableRectilinear marr rank a where 
+
+
+
+
+    -- | basicSliceMajorAxis arr (x,y) returns the sub array of the same rank,
+    -- with the outermost (ie major axis) dimension of arr restricted to the  
+    -- (x,y) is an inclusive interval, MUST satisfy x<y , and be a valid
+    -- subinterval of the major axis of arr.
+    basicSliceMajorAxis :: PrimMonad m => marr (PrimState m) rank a -> (Int,Int)-> m (marr (PrimState m) rank a)
+
+    --  |  semantically, basicProjectMajorAxis arr ix, is the rank reducing version of what 
+    -- basicSliceMajorAxis arr (ix,ix) would mean _if_ the (ix,ix) tuple was a legal major axis slice
+    -- there exist Array Formats and Ranks where you will not be able to apply basicProjectMajorAxis 
+    -- For now i'm leaving it in this class, because it will not be possible to 
+    -- use the "illegal" projections in a manner that will type check.
+    -- BUT Perhaps this should be revisited in a subsequent de
+    basicProjectMajorAxis :: PrimMonad m => marr (PrimState m) (S rank) a -> Int -> m (arr (PrimState m) rank a )
+
+    basicSlice :: PrimMonad m => marr (PrimState m) rank a -> Shape rank Int -> Shape rank Int  
+        -> m (MutableInnerContigArray marr (PrimState m) rank a )
 
 
 class  MutableArray marr   rank   a  where
@@ -181,6 +213,9 @@ class  MutableArray marr   rank   a  where
     -- | gives the shape, a 'rank' length list of the dimensions
     basicShape :: marr st   rank a -> Shape rank Int 
 
+    --  | basicManifestIndex checks if a index is present or not
+    -- helpful primitive for authoring codes for (un)structure sparse array format
+    basicManifestIndex :: PrimMonad m => marr (PrimState m) rank a -> Shape rank Int -> m (Maybe Address)
 
     basicOverlaps :: marr st  rank a -> marr st  rank a -> Bool 
 
@@ -260,120 +295,3 @@ generalizedMatrixDenseVectorProduct mat vect = do
 
 
 
-\begin{verbatim}
- #include "vector.h"
-
--- | Class of mutable vectors parametrised with a primitive state token.
---
-class MVector v a where
-  -- | Length of the mutable vector. This method should not be
-  -- called directly, use 'length' instead.
-  basicLength       :: v s a -> Int
-
-  -- | Yield a part of the mutable vector without copying it. This method
-  -- should not be called directly, use 'unsafeSlice' instead.
-  basicUnsafeSlice :: Int  -- ^ starting index
-                   -> Int  -- ^ length of the slice
-                   -> v s a
-                   -> v s a
-
-  -- Check whether two vectors overlap. This method should not be
-  -- called directly, use 'overlaps' instead.
-  basicOverlaps    :: v s a -> v s a -> Bool
-
-  -- | Create a mutable vector of the given length. This method should not be
-  -- called directly, use 'unsafeNew' instead.
-  basicUnsafeNew   :: PrimMonad m => Int -> m (v (PrimState m) a)
-
-  -- | Create a mutable vector of the given length and fill it with an
-  -- initial value. This method should not be called directly, use
-  -- 'replicate' instead.
-  basicUnsafeReplicate :: PrimMonad m => Int -> a -> m (v (PrimState m) a)
-
-  -- | Yield the element at the given position. This method should not be
-  -- called directly, use 'unsafeRead' instead.
-  basicUnsafeRead  :: PrimMonad m => v (PrimState m) a -> Int -> m a
-
-  -- | Replace the element at the given position. This method should not be
-  -- called directly, use 'unsafeWrite' instead.
-  basicUnsafeWrite :: PrimMonad m => v (PrimState m) a -> Int -> a -> m ()
-
-  -- | Reset all elements of the vector to some undefined value, clearing all
-  -- references to external objects. This is usually a noop for unboxed
-  -- vectors. This method should not be called directly, use 'clear' instead.
-  basicClear       :: PrimMonad m => v (PrimState m) a -> m ()
-
-  -- | Set all elements of the vector to the given value. This method should
-  -- not be called directly, use 'set' instead.
-  basicSet         :: PrimMonad m => v (PrimState m) a -> a -> m ()
-
-  -- | Copy a vector. The two vectors may not overlap. This method should not
-  -- be called directly, use 'unsafeCopy' instead.
-  basicUnsafeCopy  :: PrimMonad m => v (PrimState m) a   -- ^ target
-                                  -> v (PrimState m) a   -- ^ source
-                                  -> m ()
-
-  -- | Move the contents of a vector. The two vectors may overlap. This method
-  -- should not be called directly, use 'unsafeMove' instead.
-  basicUnsafeMove  :: PrimMonad m => v (PrimState m) a   -- ^ target
-                                  -> v (PrimState m) a   -- ^ source
-                                  -> m ()
-
-  -- | Grow a vector by the given number of elements. This method should not be
-  -- called directly, use 'unsafeGrow' instead.
-  basicUnsafeGrow  :: PrimMonad m => v (PrimState m) a -> Int
-                                                       -> m (v (PrimState m) a)
-
-  {-# INLINE basicUnsafeReplicate #-}
-  basicUnsafeReplicate n x
-    = do
-        v <- basicUnsafeNew n
-        basicSet v x
-        return v
-
-  {-# INLINE basicClear #-}
-  basicClear _ = return ()
-
-  {-# INLINE basicSet #-}
-  basicSet !v x
-    | n == 0    = return ()
-    | otherwise = do
-                    basicUnsafeWrite v 0 x
-                    do_set 1
-    where
-      !n = basicLength v
-
-      do_set i | 2*i < n = do basicUnsafeCopy (basicUnsafeSlice i i v)
-                                              (basicUnsafeSlice 0 i v)
-                              do_set (2*i)
-               | otherwise = basicUnsafeCopy (basicUnsafeSlice i (n-i) v)
-                                             (basicUnsafeSlice 0 (n-i) v)
-
-  {-# INLINE basicUnsafeCopy #-}
-  basicUnsafeCopy !dst !src = do_copy 0
-    where
-      !n = basicLength src
-
-      do_copy i | i < n = do
-                            x <- basicUnsafeRead src i
-                            basicUnsafeWrite dst i x
-                            do_copy (i+1)
-                | otherwise = return ()
-
-  {-# INLINE basicUnsafeMove #-}
-  basicUnsafeMove !dst !src
-    | basicOverlaps dst src = do
-        srcCopy <- basicUnsafeNew (basicLength src)
-        basicUnsafeCopy srcCopy src
-        basicUnsafeCopy dst srcCopy
-    | otherwise = basicUnsafeCopy dst src
-
-  {-# INLINE basicUnsafeGrow #-}
-  basicUnsafeGrow v by
-    = do
-        v' <- basicUnsafeNew (n+by)
-        basicUnsafeCopy (basicUnsafeSlice 0 n v') v
-        return v'
-    where
-      n = basicLength v
-\end{verbatim}

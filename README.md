@@ -1,4 +1,4 @@
-[![Wellposed](http://www.wellposed.com/mini.png)](http://www.wellposed.com)® 
+[![Wellposed](http://www.wellposed.com/mini.png)](http://www.wellposed.com)™
 
 # NOT READY FOR PUBLIC READING, LET ALONE USE. PLEASE (AS yet) DONT SHARE/PUBLICIZE
 (though help doing so later will be great :) ) 
