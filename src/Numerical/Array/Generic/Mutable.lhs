@@ -22,6 +22,7 @@ import Control.Monad.Primitive ( PrimMonad, PrimState )
 import qualified Numerical.Array.DenseLayout as L 
 import Numerical.Array.DenseLayout (Address(..),Locality(..),Direct(..))
 import Numerical.Array.Shape 
+import Numerical.Nat 
 import GHC.Prim(Constraint)
 
 import qualified Data.Vector.Storable.Mutable as SM
@@ -241,22 +242,30 @@ class  MutableArray marr   rank   a  where
 --instance MutableArrayBuilder  (MArray NativeWorld ) where
 --    func = 
 
+\end{code}
 
+
+Now lets write down a bunch of really really simple examples!
+note that these example do not have the right error handling logic currently
+
+
+\begin{code}
 
 
 generalizedMatrixDenseVectorProduct ::  forall m a mvect loc marr. 
-                        (MutableArrayBuilder (mvect Direct 'Contiguous) ('S 'Z) a
-                        ,(MutableArray  (mvect Direct 'Contiguous) ('S 'Z) a)
-                        , MutableArray marr (S(S Z)) a
+                        (MutableArrayBuilder (mvect Direct 'Contiguous) N1 a
+                        ,(MutableArray  (mvect Direct 'Contiguous) N1 a)
+                        , MutableArray marr N2 a
                         , Num a 
                         , PrimMonad m
-                        , MutableArray (mvect Direct loc) (S Z) a)=> 
-    marr (PrimState m) (S(S Z)) a ->  mvect Direct loc (PrimState m) (S Z) a -> m (mvect Direct Contiguous  (PrimState m) (S Z) a )
+                        , MutableArray (mvect Direct loc) N1 a)=> 
+    marr (PrimState m) N2 a ->  mvect Direct loc (PrimState m) N1 a -> m (mvect Direct Contiguous  (PrimState m) N1 a )
 generalizedMatrixDenseVectorProduct mat vect = do
-    (x:* y :* Nil )<- return $! basicShape mat 
+    -- FIXME : check the dimensions match 
+    (x:* y :* Nil )<- return $ basicShape mat 
     resultVector <- basicUnsafeReplicate (y:* Nil ) 0  
     firstIx <- basicSmallestIndex mat  
-    lastIx <- basicGreatestIndex mat 
+    lastIx <- basicGreatestIndex mat
     go  firstIx  lastIx resultVector
     return resultVector
     where 
@@ -283,8 +292,24 @@ generalizedMatrixDenseVectorProduct mat vect = do
 
 
 
+generalizedMatrixOuterProduct :: forall m  a lvect rvect matv . (MutableArray lvect N1 a
+        ,MutableArray rvect N1 a
+        ,MutableArray matv N2 a
+        ,PrimMonad m
+        ,Num a) => lvect (PrimState m) N1 a -> rvect (PrimState m) N1 a -> matv (PrimState m)  N2  a -> m () 
+generalizedMatrixOuterProduct leftV rigthV matV = do 
+        (x:* y :* Nil )<- return $ basicShape matV 
+        -- use these x and y to check if shape matches the x and y vectors
+        firstIx <- basicSmallestIndex matV  
+        lastIx <- basicGreatestIndex matV
+        go firstIx lastIx
+        return ()  
+    where 
+        go :: Shape N2 Int -> Shape N2 Int -> m () 
+        go = undefined 
 
-    --(x,y)  resV_y +=  m_(x,y) * v_x  
+
+    
 
 \end{code}
 
