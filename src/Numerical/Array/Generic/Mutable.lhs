@@ -221,6 +221,8 @@ class  MutableArray marr   (rank:: Nat)   a |  marr -> rank   where
     -- will return the next valid address 
     basicNextAddress :: PrimMonad m => marr (PrimState m) rank a -> Address -> m Address 
 
+    -- I think the case could be made for a basicPreviousAddress opeeration
+
     -- | gives the next valid array index
     -- undefined on invalid indices and the greatest valid index 
     basicNextIndex ::PrimMonad m =>  marr (PrimState m) rank a -> (Shape rank Int) -> m (Shape rank Int )
@@ -228,26 +230,17 @@ class  MutableArray marr   (rank:: Nat)   a |  marr -> rank   where
 
 
     --  | basicManifestIndex checks if a index is present or not
-    -- helpful primitive for authoring codes for (un)structure sparse array format
+    -- helpful primitive for authoring codes for (un)structured sparse array format
     basicManifestIndex :: PrimMonad m => marr (PrimState m) rank a -> Shape rank Int -> m (Maybe Address)
 
+    -- | for a given valid address, @'basicAddressRegion' addr @ will return an AddressInterval  
+    -- that contains @addr@. This will be a singleton when the "maximal uniform stride interval"
+    -- containing @addr@ has strictly less than 3 elements. Otherwise 
+    basicAddressRegion :: PrimMonad m => marr (PrimState m) rank a -> Address -> m AddressInterval 
+
+
+    -- | this doesn't fit in this class, but thats ok, will deal with that later
     basicOverlaps :: marr st  rank a -> marr st  rank a -> Bool 
-
-{-
-i think these *could* be derived
--}
-    basicIndexedUpdateFoldM :: PrimMonad m => marr (PrimState m) rank a -> c ->
-         (a->(Shape rank Int)-> c-> m (a,c) )-> m c 
-
-
-    basicIndexedFoldM  :: PrimMonad m => marr (PrimState m) rank a -> c ->
-         (a->(Shape rank Int)-> c-> m c )-> m c  
-
-    basicIndexedMapM ::  PrimMonad m => marr (PrimState m) rank a -> 
-         (a->(Shape rank Int)-> m a )-> m ()
-    basicIndexedMapM_ ::  PrimMonad m => marr (PrimState m) rank a -> 
-         (a->(Shape rank Int)-> m () )-> m ()
-    basicIndexedMap 
 
 
 
@@ -258,8 +251,6 @@ i think these *could* be derived
     -- vectors. This method should not be called directly, use 'clear' instead.
     basicClear       :: PrimMonad m => marr (PrimState m) rank  a -> m ()
 
---- these aren't well defined for sparse 
---- will get split
 
     ---- | Yield the element at the given position. This method should not be
     ---- called directly, use 'unsafeRead' instead.
@@ -269,6 +260,11 @@ i think these *could* be derived
     ---- called directly, use 'unsafeWrite' instead.
     basicUnsafeAddressWrite :: PrimMonad m => marr  (PrimState m)  rank a -> Address -> a -> m ()
   
+
+
+    --note  the sparsewrite and sparse read are "fused" versions of basicManifestAddress
+    -- and address read and write. probably needs to be benchmarked!
+
     -- | Yield the element at the given position. This method should not be
     -- called directly, use 'unsafeSparseRead' instead.
     basicUnsafeSparseRead  :: PrimMonad m => marr  (PrimState m)  rank a -> Shape rank Int -> m (Maybe a)
@@ -279,7 +275,24 @@ i think these *could* be derived
 
 
 
+{-
+i think these *could* be derived
+-}
+{-
+basicIndexedUpdateFoldM :: PrimMonad m => marr (PrimState m) rank a -> c ->
+     (a->(Shape rank Int)-> c-> m (a,c) )-> m c 
 
+
+basicIndexedFoldM  :: PrimMonad m => marr (PrimState m) rank a -> c ->
+     (a->(Shape rank Int)-> c-> m c )-> m c  
+
+basicIndexedMapM ::  PrimMonad m => marr (PrimState m) rank a -> 
+     (a->(Shape rank Int)-> m a )-> m ()
+basicIndexedMapM_ ::  PrimMonad m => marr (PrimState m) rank a -> 
+     (a->(Shape rank Int)-> m () )-> m ()
+basicIndexedMap 
+
+-}
 --instance MutableArrayBuilder  (MArray NativeWorld ) where
 --    func = 
 
