@@ -14,6 +14,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverlappingInstances #-}
 
 module Numerical.Array.Shape(Shape(..)
     ,foldl
@@ -52,6 +53,7 @@ import qualified Data.Monoid  as M
 import qualified Data.Functor as Fun 
 import qualified  Data.Foldable as F
 import qualified Control.Applicative as A 
+import qualified Data.Traversable as T 
 
 import Numerical.Nat 
 
@@ -236,33 +238,49 @@ instance Shapeable N5   where
 
 instance Fun.Functor (Shape Z) where
     fmap  = \ _ Nil -> Nil 
-    {-# INLINEABLE fmap #-}
+    {-# INLINE  fmap #-}
 
 instance  (Fun.Functor (Shape r)) => Fun.Functor (Shape (S r)) where
-    fmap  = \ f (a :* rest) -> f a :* (  (inline (Fun.fmap)) f rest )
-    {-# INLINEABLE fmap  #-}
+    fmap  = \ f (a :* rest) -> f a :* ( Fun.fmap f rest )
+    {-# INLINE  fmap  #-}
 instance  A.Applicative (Shape Z) where 
     pure = \ _ -> Nil
-    {-# INLINEABLE pure  #-}
+    {-# INLINE  pure  #-}
     (<*>) = \ _  _ -> Nil 
-    {-# INLINEABLE (<*>) #-}
+    {-# INLINE  (<*>) #-}
 instance  A.Applicative (Shape r)=> A.Applicative (Shape (S r)) where     
     pure = \ a -> a :* (A.pure a)
-    {-# INLINEABLE pure #-}
+    {-# INLINE pure #-}
     (<*>) = \ (f:* fs) (a :* as) ->  f a :* (inline (A.<*>)) fs as 
-    {-# INLINEABLE (<*>) #-}
+    {-# INLINE  (<*>) #-}
 
-instance    F.Foldable (Shape  r) where
-    --foldMap = \f  (a:* as) -> f a M.<> F.foldMap f as 
-    foldl' = foldlPShape
-    --foldr' = \f !init (a :* as ) -> f a $!  F.foldr f init as               
-    foldl = foldlShape
-    foldr = foldrShape 
-    --{-# INLINE foldMap  #-}
-    --{-#  INLINE foldl #-}
-    --{-#  INLINE foldr  #-}
-    --{-# INLINE foldl' #-}
-    --{-#  INLINE foldr'  #-}
+
+
+instance    F.Foldable (Shape  (S Z)) where
+    foldl' = \ f !init (a:*Nil)->  f init a  
+    foldr'  = \ f !init (a:*Nil)->  f a init  
+    foldl  = \ f init (a:*Nil)->  f init a 
+    foldr  = \ f init (a:*Nil)->  f a init  
+    {-# INLINE foldMap  #-}
+    {-#  INLINE foldl #-}
+    {-#  INLINE foldr  #-}
+    {-# INLINE foldl' #-}
+    {-#  INLINE foldr'  #-}
+    foldr1 = \ f (a:* Nil) -> a 
+    foldl1 =  \ f (a:* Nil) -> a 
+    {-#  INLINE foldl1 #-}
+    {-#  INLINE foldr1 #-}
+instance  F.Foldable (Shape r)=> F.Foldable (Shape (S r)) where    
+    foldl' = \ f  init (a:* as) ->  
+    foldr' = \f !init (a :* as ) -> f a $!  F.foldr f init as               
+    foldl  = f  init (a:* as) ->
+    foldr  =  f  init (a:* as) ->  
+    {-# INLINE foldMap  #-}
+    {-#  INLINE foldl #-}
+    {-#  INLINE foldr  #-}
+    {-# INLINE foldl' #-}
+    {-#  INLINE foldr'  #-}
+
 
 
 indexedPure :: A.Applicative (Shape n)=> SNat n -> a -> Shape n a 
@@ -294,37 +312,18 @@ TODO: abstract out all the different unrolled cases i have
 
   
 {-# INLINE map2 #-}    
-map2 :: forall a b c r .   (a->b ->c) -> (Shape r a) -> (Shape r b) -> (Shape r c )  
-map2 f = let 
-        go :: (Shape h a) -> (Shape h b) -> (Shape h c ) 
-        go (a:* as) (b:* bs)= f a b :* go as bs
-        in \ shpa shpb ->
-            case (shpa,shpb) of
-                (Nil,Nil) -> Nil 
-                (a1:* Nil, b1:* Nil)-> f a1 b1 :* Nil
-                (a1:* a2 :* Nil, b1:* b2 :* Nil) -> f a1 b1 :* f a2 b2 :* Nil
-                (a1:* a2 :* a3:* Nil, b1:* b2 :* b3 :* Nil) -> f a1 b1 :* f a2 b2 :* f a3 b3 :* Nil
-                _ -> go shpa shpb 
+map2 :: forall a b c r . (A.Applicative (Shape r))=>   (a->b ->c) -> (Shape r a) -> (Shape r b) -> (Shape r c )  
+map2  = \ f shpa shpb -> f A.<$> shpa  A.<*> shpb 
 
 
 {-# INLINE map #-}
-map:: forall a b r . (a->b) -> (Shape r a )->( Shape r b)        
-map f = let 
-        go :: (Shape h a )->( Shape h b) 
-        go (a:*as) = f a :* go as 
-        go Nil = Nil 
-        in \ shp ->
-            case shp of
-                Nil -> Nil
-                (a:* Nil)->  f a :*Nil
-                (a1 :* a2:* Nil) ->  f a1 :* f a2 :* Nil
-                (a1:* a2 :* a3 :* Nil) -> f a1 :* f a2 :* f a3 :* Nil 
-                _ -> go shp 
+map:: forall a b r . (A.Applicative (Shape r))=> (a->b) -> (Shape r a )->( Shape r b)        
+map  =  \ f shp -> f A.<$> shp 
 
 
 
 {-# INLINE  foldr #-}
-foldr :: forall a b r .  (a->b-> b) -> b -> Shape r a -> b 
+foldr :: forall a b r . (A.Applicative (Shape r))=>  (a->b-> b) -> b -> Shape r a -> b 
 foldr f = let
             go :: b -> Shape h a -> b 
             go start Nil = start 
