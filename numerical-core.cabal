@@ -119,7 +119,7 @@ library
 
 Test-suite hspec-suite 
    default-language: Haskell2010
-   type: exitcode-stdio-1
+   type: exitcode-stdio-1.0
    build-depends: base >=4 && < 5
        ,hspec >= 1.9 && < 2
        --,tasty-quickchec
