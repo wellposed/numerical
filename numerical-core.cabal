@@ -121,12 +121,14 @@ Test-suite hspec-suite
    default-language: Haskell2010
    type: exitcode-stdio-1.0
    build-depends: base >=4 && < 5
-       ,hspec >= 1.9 && < 2
-       --,tasty-quickchec
-       ,QuickCheck >=  2.7 && < 2.8 
+        --,hspec  >= 1.9 && < 1.10
+       ,tasty >= 0.8 && < 0.9 
+       ,tasty-hunit >= 0.8 && < 0.9
+       ,HUnit  >= 1.2.5 && < 1.3
+       --,QuickCheck >=  2.7 && < 2.8 
        ,numerical-core
-   hs-source-dirs: tests/HSpec 
-   main-is: MainHSpec.hs
+   hs-source-dirs: tests 
+   main-is: MainSpec.hs
 
 
 

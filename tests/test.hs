@@ -1,7 +1,7 @@
 import Test.Tasty
 --import Test.Tasty.QuickCheck as QC
-import PropShape
-import PropLayout 
+--import PropShape
+--import PropLayout 
 
 import Data.List
 import Data.Ord
