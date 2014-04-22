@@ -6,7 +6,7 @@
 {-#  LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-
+{-# LANGUAGE FlexibleContexts #-}
 {-#  LANGUAGE GADTs #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -86,6 +86,7 @@ data family Form lay (contiguity:: Locality)  (rank :: Nat)
 
 
 class DenseLayout lay (contiguity:: Locality) (rank :: Nat)  where
+
     type Tranposed lay 
 
     
@@ -172,7 +173,9 @@ instance DenseLayout Direct Strided (S Z)   where
 
 data instance  Form  Row  Contiguous rank  = FormRowContiguous {boundsFormRow :: !(Shape rank Int)} 
 -- strideRow :: Shape rank Int,
-instance  DenseLayout Row  Contiguous rank where
+instance   (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)
+    =>DenseLayout Row  Contiguous rank where
+ 
     type Tranposed Row = Column 
 
     transposedLayout = \(FormRowContiguous shp) -> FormColumnContiguous $ reverseShape shp
@@ -200,7 +203,7 @@ instance  DenseLayout Row  Contiguous rank where
 data instance  Form  Row  InnerContiguous rank  = 
         FormRowInnerContiguous {boundsFormRowInnerContig :: !(Shape rank Int), strideFormRowInnerContig:: !(Shape rank Int)} 
 -- strideRow :: Shape rank Int,
-instance  DenseLayout Row  InnerContiguous rank where
+instance   (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)=> DenseLayout Row  InnerContiguous rank where
     type Tranposed Row = Column 
 
 
@@ -229,7 +232,7 @@ instance  DenseLayout Row  InnerContiguous rank where
 data instance  Form  Row  Strided rank  = 
         FormRowStrided {boundsFormRowStrided:: !(Shape rank Int), strideFormRowStrided:: !(Shape rank Int)} 
 -- strideRow :: Shape rank Int,
-instance  DenseLayout Row  Strided rank where
+instance  (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)=> DenseLayout Row  Strided rank where
     type Tranposed Row = Column 
 
 
@@ -259,7 +262,7 @@ instance  DenseLayout Row  Strided rank where
 
 data instance  Form  Column Contiguous rank  = FormColumnContiguous {boundsColumnContig :: !(Shape rank Int)}
  -- strideRow :: Shape rank Int,
-instance  DenseLayout Column  Contiguous rank where
+instance  (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)=> DenseLayout Column  Contiguous rank where
     type Tranposed Column = Row  
 
 
@@ -284,7 +287,7 @@ instance  DenseLayout Column  Contiguous rank where
 
 data instance  Form Column InnerContiguous rank  = FormColumnInnerContiguous {boundsColumnInnerContig :: !(Shape rank Int), strideFormColumnInnerContig:: !(Shape rank Int)}
  -- strideRow :: Shape rank Int,
-instance  DenseLayout Column  InnerContiguous rank where
+instance  (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)=> DenseLayout Column  InnerContiguous rank where
     type Tranposed Column = Row  
 
 
@@ -310,7 +313,7 @@ instance  DenseLayout Column  InnerContiguous rank where
 
 data instance  Form Column Strided rank  = FormColumnStrided {boundsColumnStrided :: !(Shape rank Int), strideFormColumnStrided:: !(Shape rank Int)}
  -- strideRow :: Shape rank Int,
-instance  DenseLayout Column  Strided rank where
+instance   (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)=>DenseLayout Column  Strided rank where
     type Tranposed Column = Row  
 
 

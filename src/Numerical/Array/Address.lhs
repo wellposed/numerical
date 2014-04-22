@@ -6,7 +6,7 @@ module Numerical.Array.Address(Address(..),AddressInterval(..)) where
 
 
 import Data.Data
-
+import Data.Word 
 
 
 
