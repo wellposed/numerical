@@ -41,7 +41,9 @@ module Numerical.Array.Shape(Shape(..)
     ,uncons 
     ,Scannable
     ,takeSuffix
-    ,takePrefix) 
+    ,takePrefix
+    ,shapeToList
+    ) 
     where
 
 import GHC.Magic 
@@ -91,7 +93,8 @@ move to using that instead.
 
 
 infixr 3 :*
-    
+  
+  
 
 data Shape (rank :: Nat) a where 
     Nil  :: Shape Z a
@@ -125,6 +128,11 @@ instance (Show a, Show (Shape s a))=> Show (Shape (S s) a) where
 shapeSize :: Shape n a -> SNat n 
 shapeSize Nil = SZero
 shapeSize (a:* as) = SSucc (shapeSize as)
+
+shapeToList :: Shape n a -> [a]
+shapeToList Nil = []
+shapeToList (a:* as) = a : (shapeToList as )
+
 
 {- when you lift a toral order onto vectors, you get
 interesting partial order -}
@@ -183,18 +191,18 @@ lets try having rank 0 anyways, i'll be happier if i can support it
 
 -}
 
---instance    F.Foldable (Shape  Z) where
---    foldl' = \ _  !init _->  init 
---    foldr'  = \ _ !init _ ->  init  
---    foldl  = \ _ init _->  init 
---    foldr  = \ _ init _->   init  
---    # INLINE foldMap  #
---    {-#  INLINE foldl #-}
---    {-#  INLINE foldr  #-}
---    {-# INLINE foldl' #-}
---    {-#  INLINE foldr'  #-}
---    foldr1 = \ _ _ -> error "you can't call foldr1 on a rank Z(ero) Shape"
---    foldl1 =  \_ _  ->  error "you can't call foldl1 on a rank Z(ero) Shape"
+instance    F.Foldable (Shape  Z) where
+    foldl' = \ _  !init _->  init 
+    foldr'  = \ _ !init _ ->  init  
+    foldl  = \ _ init _->  init 
+    foldr  = \ _ init _->   init  
+    {-# INLINE foldMap  #-}
+    {-#  INLINE foldl #-}
+    {-#  INLINE foldr  #-}
+    {-# INLINE foldl' #-}
+    {-#  INLINE foldr'  #-}
+    foldr1 = \ _ _ -> error "you can't call foldr1 on a rank Z(ero) Shape"
+    foldl1 =  \_ _  ->  error "you can't call foldl1 on a rank Z(ero) Shape"
 
 
 instance    F.Foldable (Shape  (S Z)) where
@@ -211,7 +219,7 @@ instance    F.Foldable (Shape  (S Z)) where
     foldl1 =  \ f (a:* Nil) -> a 
     {-#  INLINE foldl1 #-}
     {-#  INLINE foldr1 #-}
-instance  F.Foldable (Shape r)=> F.Foldable (Shape (S r)) where    
+instance ( F.Foldable (Shape (S r)) )=> F.Foldable (Shape (S (S r))) where    
     foldl' = \ f  init (a:* as) -> F.foldl' f (f init a) as   
     foldr' = \f !init (a :* as ) -> f a $!  F.foldr' f init as               
     foldl  = \ f  init (a:* as) -> F.foldl' f (f init a) as 
