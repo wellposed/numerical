@@ -197,30 +197,39 @@ class MutableRectilinear marr rank a | marr -> rank   where
 class  MutableArray marr   (rank:: Nat)   a |  marr -> rank   where
      
     -- | gives the shape, a 'rank' length list of the dimensions
-    basicMutableShape :: marr st    a -> Shape rank Int 
+    basicShape :: marr st    a -> Shape rank Int 
+
+    -- | 'basicCardinality' reports the number of manifest addresses/entries are 
+    -- in the array.
+    basicCardinality :: marr st a -> Int
 
     --basicUnsafeRead  :: PrimMonad m => marr  (PrimState m)   a -> Shape rank Int -> m (Maybe a)
 
     --  | basicMutableSparseIndexToAddres checks if a index is present or not
     -- helpful primitive for authoring codes for (un)structured sparse array format
-    basicMutableSparseIndexToAddress ::  marr s   a -> Shape rank Int -> m  (Maybe Address) 
+    basicSparseIndexToAddress ::  marr s   a -> Shape rank Int -> m  (Maybe Address) 
 
-    -- | 
-    basicMutableAddressToIndex :: marr s   a -> Address ->   m (Shape rank Int )
+    -- | 'basicMutableAddressToIndex' assumes you only give it legal manifest addresses
+    basicAddressToIndex :: marr s   a -> Address ->   m (Shape rank Int )
 
     -- |  return the smallest valid logical address
-    basicMutableSmallestAddress ::  marr st   a ->  Address 
+    basicSmallestAddress ::  marr st   a ->  Address 
 
-    --  | return the largest valid logical ad
-    basicMutableGreatestAddress ::  marr st   a ->  Address 
+    --  | return the largest valid logical adress
+    basicGreatestAddress ::  marr st   a ->  Address 
 
     -- |  return the smallest valid array index
     --  should be weakly dominated by every other valid index
-    basicMutableSmallestIndex :: (PrimMonad m) => marr (PrimState m)   a -> m (Shape rank Int)
+    basicSmallestIndex :: (PrimMonad m) => marr (PrimState m)   a -> m (Shape rank Int)
+    basicSmallestIndex = \ marr -> basicAddressToIndex marr $ basicSmallestAddress marr 
+    {-# INLINE basicSmallestIndex #-}
 
     -- | return the greatest valid array index
     -- should weakly dominate every 
-    basicMutableGreatestIndex ::(PrimMonad m )=>  marr (PrimState m)   a -> m (Shape rank Int)
+    basicGreatestIndex ::(PrimMonad m )=>  marr (PrimState m)   a -> m (Shape rank Int)
+    basicGreatestIndex = \ marr -> basicAddressToIndex marr $ basicGreatestAddress marr 
+    {-# INLINE basicGreatestIndex #-}
+
 
     -- | gives the next valid logical address 
     -- undefined on invalid addresses and the greatest valid address.
@@ -242,7 +251,7 @@ class  MutableArray marr   (rank:: Nat)   a |  marr -> rank   where
     -- that contains @addr@. This will be a singleton when the "maximal uniform stride interval"
     -- containing @addr@ has strictly less than 3 elements. Otherwise will return an Address range
     -- covering the maximal interval that will have cardinality at least 3.
-    basicAddressRegion :: PrimMonad m => marr (PrimState m)  a -> Address ->  AddressInterval 
+    basicAddressRegion :: marr st  a -> Address ->  AddressInterval 
 
 
     -- | this doesn't fit in this class, but thats ok, will deal with that later

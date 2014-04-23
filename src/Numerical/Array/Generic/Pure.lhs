@@ -1,6 +1,27 @@
 % 
 \begin{code}
+
+{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE ScopedTypeVariables#-}
+-- {-#  LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE ConstraintKinds #-}
+{-#  LANGUAGE GADTs #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-#  LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE FunctionalDependencies #-}
+
 module Numerical.Array.Generic.Pure      where 
+
+
+import Numerical.Array.Address 
+import Numerical.Array.DenseLayout (Address(..),Locality(..),Direct(..))
+import Numerical.Array.Shape 
 
 
 class  Array arr   (rank:: Nat)   a |  arr -> rank   where
