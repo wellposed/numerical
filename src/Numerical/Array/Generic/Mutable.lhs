@@ -27,6 +27,8 @@ import Numerical.Array.Shape
 import Numerical.Nat 
 import GHC.Prim(Constraint)
 
+import qualified Numerical.Array.Generic.Pure as A 
+
 import qualified Data.Vector.Storable.Mutable as SM
 import qualified Data.Vector.Unboxed.Mutable as UM
 import qualified Data.Vector.Mutable as BM
@@ -150,7 +152,7 @@ and only makes sense for dense arrays afaik
 
 BE VERY THOUGHTFUL about what instances you write, or i'll be mad
 -}
-class MutableArrayBuilder marr rank a where 
+class MutableArrayDenseBuilder marr rank a where 
     basicUnsafeNew :: PrimMonad m => Shape rank Int -> m (marr (PrimState m)  rank a)
     basicUnsafeReplicate :: PrimMonad m => Shape rank Int -> a -> m (marr (PrimState m) rank a)
 
@@ -177,7 +179,7 @@ class MutableRectilinear marr rank a | marr -> rank   where
     -- with the outermost (ie major axis) dimension of arr restricted to the  
     -- (x,y) is an inclusive interval, MUST satisfy x<y , and be a valid
     -- subinterval of the major axis of arr.
-    basicSliceMajorAxis :: PrimMonad m => marr (PrimState m)  a -> (Int,Int)-> m (marr (PrimState m)  a)
+    basicMutableSliceMajorAxis :: PrimMonad m => marr (PrimState m)  a -> (Int,Int)-> m (marr (PrimState m)  a)
 
     --  |  semantically, basicProjectMajorAxis arr ix, is the rank reducing version of what 
     -- basicSliceMajorAxis arr (ix,ix) would mean _if_ the (ix,ix) tuple was a legal major axis slice
@@ -186,37 +188,39 @@ class MutableRectilinear marr rank a | marr -> rank   where
     -- use the "illegal" projections in a manner that will type check.
     -- BUT Perhaps this should be revisited in a subsequent design
     -- IT is the biggest wart in the api 
-    basicProjectMajorAxis :: PrimMonad m =>MutableArrayUpRank marr (PrimState m)  a -> Int -> m (marr (PrimState m)  a )
+    basicMutableProjectMajorAxis :: PrimMonad m =>MutableArrayUpRank marr (PrimState m)  a -> Int -> m (marr (PrimState m)  a )
 
-    basicSlice :: PrimMonad m => marr (PrimState m)  a -> Shape rank Int -> Shape rank Int  
+    basicMutableSlice :: PrimMonad m => marr (PrimState m)  a -> Shape rank Int -> Shape rank Int  
         -> m (MutableInnerContigArray marr (PrimState m)  a )
 
 
 class  MutableArray marr   (rank:: Nat)   a |  marr -> rank   where
      
     -- | gives the shape, a 'rank' length list of the dimensions
-    basicShape :: marr st    a -> Shape rank Int 
+    basicMutableShape :: marr st    a -> Shape rank Int 
 
     --basicUnsafeRead  :: PrimMonad m => marr  (PrimState m)   a -> Shape rank Int -> m (Maybe a)
 
-    basicSparseIndexToAddress ::  marr s   a -> Shape rank Int -> Address 
+    --  | basicMutableSparseIndexToAddres checks if a index is present or not
+    -- helpful primitive for authoring codes for (un)structured sparse array format
+    basicMutableSparseIndexToAddress ::  marr s   a -> Shape rank Int -> m  (Maybe Address) 
 
     -- | 
-    basicAddressToIndex :: marr s   a -> Address -> Shape rank Int 
+    basicMutableAddressToIndex :: marr s   a -> Address ->   m (Shape rank Int )
 
     -- |  return the smallest valid logical address
-    basicSmallestAddress :: (PrimMonad m)=> marr (PrimState m)   a -> m Address 
+    basicMutableSmallestAddress ::  marr st   a ->  Address 
 
     --  | return the largest valid logical ad
-    basicGreatestAddress :: (PrimMonad m )=> marr (PrimState m )  a -> m Address 
+    basicMutableGreatestAddress ::  marr st   a ->  Address 
 
     -- |  return the smallest valid array index
     --  should be weakly dominated by every other valid index
-    basicSmallestIndex :: (PrimMonad m) => marr (PrimState m)   a -> m (Shape rank Int)
+    basicMutableSmallestIndex :: (PrimMonad m) => marr (PrimState m)   a -> m (Shape rank Int)
 
     -- | return the greatest valid array index
     -- should weakly dominate every 
-    basicGreatestIndex ::(PrimMonad m )=>  marr (PrimState m)   a -> m (Shape rank Int)
+    basicMutableGreatestIndex ::(PrimMonad m )=>  marr (PrimState m)   a -> m (Shape rank Int)
 
     -- | gives the next valid logical address 
     -- undefined on invalid addresses and the greatest valid address.
@@ -232,14 +236,13 @@ class  MutableArray marr   (rank:: Nat)   a |  marr -> rank   where
 
 
 
-    --  | basicManifestIndex checks if a index is present or not
-    -- helpful primitive for authoring codes for (un)structured sparse array format
-    basicManifestIndex :: PrimMonad m => marr (PrimState m)  a -> Shape rank Int -> m (Maybe Address)
+    
 
     -- | for a given valid address, @'basicAddressRegion' addr @ will return an AddressInterval  
     -- that contains @addr@. This will be a singleton when the "maximal uniform stride interval"
-    -- containing @addr@ has strictly less than 3 elements. Otherwise 
-    basicAddressRegion :: PrimMonad m => marr (PrimState m)  a -> Address -> m AddressInterval 
+    -- containing @addr@ has strictly less than 3 elements. Otherwise will return an Address range
+    -- covering the maximal interval that will have cardinality at least 3.
+    basicAddressRegion :: PrimMonad m => marr (PrimState m)  a -> Address ->  AddressInterval 
 
 
     -- | this doesn't fit in this class, but thats ok, will deal with that later
@@ -321,7 +324,12 @@ class MutableArrayDense marr rank a | marr -> rank   where
 --- will break that assumption post alpha release
 
 
+now lets write some super generic combinators 
+\begin{code}
 
+
+    
+\end{code}
 
 
 Now lets write down a bunch of really really simple examples!
@@ -358,7 +366,8 @@ note that these example do not have the right error handling logic currently
 note, needs to be modified to work with sparse arrays
 -}
 
-generalizedMatrixOuterProduct :: forall m  a lvect rvect matv . (MutableArray lvect N1 a
+generalizedMatrixOuterProduct :: forall m  a lvect rvect matv . 
+        (MutableArray lvect N1 a
         ,MutableArray rvect N1 a
         ,MutableArray matv N2 a
         ,PrimMonad m

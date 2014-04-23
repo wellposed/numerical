@@ -15,8 +15,16 @@ import Data.Word
 newtype Address = Address  Int 
   deriving (Eq,Ord,Show,Read,Typeable,Data)   
 
-data AddressInterval = OneAddr !Address 
-            |  RangeAddr {low :: !Address, high:: !Address , stride :: !Word}
+{-
+At some point decouple logical and physical address
+Logical Address should always be Int64
+physical address should be native IntPtr (aka Int)
+
+-}
+
+
+data AddressInterval = AddressOne !Address 
+            |  AddressRange {low :: !Address, high:: !Address , stride :: !Word}
 
 
 instance Num Address where 
