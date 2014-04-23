@@ -1,6 +1,6 @@
 
 
-module Numerical.Types.Phased where
+module Numerical.Array.Phased where
 
 {-
 An array storage type + world pair is said to have Phased instance
@@ -18,3 +18,4 @@ NB, however, could we always assume that if we have a mutable array type,
 that theres always a corresponding immutable type?
 
 -}
+
