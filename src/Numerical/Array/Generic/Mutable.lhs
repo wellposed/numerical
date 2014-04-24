@@ -17,7 +17,13 @@
 {-# LANGUAGE FunctionalDependencies #-}
 
 
-module Numerical.Array.Generic.Mutable(MArray(..)) where
+module Numerical.Array.Generic.Mutable(
+    MArray(..)
+    ,MutableArray(..)
+    ,MutableRectilinear(..)
+    ,MutableDenseArrayBuilder(..)
+    ,MutableDenseArray(..)
+    ) where
 
 import Control.Monad.Primitive ( PrimMonad, PrimState )
 import qualified Numerical.Array.DenseLayout as L 
@@ -152,7 +158,7 @@ and only makes sense for dense arrays afaik
 
 BE VERY THOUGHTFUL about what instances you write, or i'll be mad
 -}
-class MutableArrayDenseBuilder marr rank a where 
+class MutableDenseArrayBuilder marr rank a where 
     basicUnsafeNew :: PrimMonad m => Index rank -> m (marr (PrimState m)   a)
     basicUnsafeReplicate :: PrimMonad m => Index rank  -> a -> m (marr (PrimState m)  a)
 

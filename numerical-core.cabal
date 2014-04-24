@@ -71,7 +71,7 @@ library
         Numerical.Array.Generic.Pure
         Numerical.Array.Locality
         Numerical.Array.Address 
-    ghc-options: 
+    ghc-options: -Wall 
     -- -O2 
     -- Modules included in this library but not exported.
     -- other-modules:       

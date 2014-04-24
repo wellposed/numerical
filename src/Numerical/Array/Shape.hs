@@ -128,7 +128,7 @@ instance (Show a, Show (Shape s a))=> Show (Shape (S s) a) where
 -- may want to typeclassify this?
 shapeSize :: Shape n a -> SNat n 
 shapeSize Nil = SZero
-shapeSize (a:* as) = SSucc (shapeSize as)
+shapeSize (_ :* as) = SSucc (shapeSize as)
 
 shapeToList :: Shape n a -> [a]
 shapeToList Nil = []
@@ -148,7 +148,7 @@ strictlyDominates  = \major minor -> foldl (&&) True $! map2 (>)  major minor
 {-# INLINE reverseShape #-}
 reverseShape :: Shape n a -> Shape n a 
 reverseShape Nil = Nil
-reverseShape r@(a :* Nil)= r
+reverseShape r@(_ :* Nil)= r
 reverseShape (a:* b :* Nil) = b:* a :* Nil
 reverseShape (a:* b :* c:* Nil )=  c :* b :* a :* Nil
 reverseShape (a:* b :* c :* d :* Nil)= d :* c :* b :* a :* Nil 

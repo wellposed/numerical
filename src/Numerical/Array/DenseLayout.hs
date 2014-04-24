@@ -14,10 +14,12 @@
 
 module Numerical.Array.DenseLayout(
   Locality(..)
-  ,Row(..)
-  ,Column(..)
-  ,Direct(..)
-  ,DenseLayout(..),Address(..),AddressInterval(..)) where
+  ,Row
+  ,Column
+  ,Direct
+  ,DenseLayout(..)
+  ,Address(..)
+  ,AddressInterval(..)) where
 
 
 import Data.Data
@@ -216,7 +218,7 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)=> 
 
     {-# INLINE basicNextIndex #-}
     basicNextIndex = \ (FormRowInnerContiguous shape _) ix -> 
-        S.map snd $! S.scanl1Zip (\( carry, oldval ) ixv shpv   -> divMod (carry + ixv) shpv ) (1,error "nextAddress init value accessed")  ix shape 
+        S.map snd $! S.scanl1Zip (\( carry, _ ) ixv shpv   -> divMod (carry + ixv) shpv ) (1,error "nextAddress init value accessed")  ix shape 
 
     {-# INLINE basicToIndex #-}
     basicToIndex  =   \ rs (Address ix) -> case boundsFormRowInnerContig rs of 
@@ -245,7 +247,7 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)=> D
 
     {-#INLINE basicNextIndex#-}
     basicNextIndex = \ (FormRowStrided shape _) ix -> 
-        S.map snd $! S.scanl1Zip (\( carry, oldval ) ixv shpv   -> divMod (carry + ixv) shpv ) (1,error "nextAddress init value accessed")  ix shape 
+        S.map snd $! S.scanl1Zip (\( carry, _ ) ixv shpv   -> divMod (carry + ixv) shpv ) (1,error "nextAddress init value accessed")  ix shape 
 
     {-# INLINE basicToIndex #-}
     basicToIndex  =   \ rs (Address ix) -> case boundsFormRowStrided rs of 
@@ -299,7 +301,7 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)=> D
                                 in Address $! foldl' (+) 0  $! map2 (*) strider tup 
     {-#INLINE basicNextIndex #-}                                
     basicNextIndex = \ (FormColumnInnerContiguous shape _) ix -> 
-        S.map snd $! S.scanr1Zip (\ ixv shpv ( carry, oldval ) -> divMod (carry + ixv) shpv) (1,error "nextAddress init value accessed")  ix shape 
+        S.map snd $! S.scanr1Zip (\ ixv shpv ( carry, _ ) -> divMod (carry + ixv) shpv) (1,error "nextAddress init value accessed")  ix shape 
 
 
     {-# INLINE  basicToIndex#-}                                
@@ -325,7 +327,7 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)=>D
                                 in Address $! foldl' (+) 0  $! map2 (*) strider tup 
     {-# INLINE basicNextIndex#-}                                
     basicNextIndex = \ (FormColumnStrided shape _) ix -> 
-        S.map snd $! S.scanr1Zip (\ ixv shpv ( carry, oldval ) -> divMod (carry + ixv) shpv) (1,error "nextAddress init value accessed")  ix shape 
+        S.map snd $! S.scanr1Zip (\ ixv shpv ( carry, _ ) -> divMod (carry + ixv) shpv) (1,error "nextAddress init value accessed")  ix shape 
 
     {-# INLINE  basicToIndex#-}                                
     basicToIndex  = \ form (Address ix) -> case boundsColumnStrided form  of 
