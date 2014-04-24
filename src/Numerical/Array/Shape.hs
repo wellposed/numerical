@@ -43,6 +43,7 @@ module Numerical.Array.Shape(Shape(..)
     ,takeSuffix
     ,takePrefix
     ,shapeToList
+    ,Index
     ) 
     where
 
@@ -94,7 +95,7 @@ move to using that instead.
 
 infixr 3 :*
   
-  
+type Index rank = Shape rank Int 
 
 data Shape (rank :: Nat) a where 
     Nil  :: Shape Z a

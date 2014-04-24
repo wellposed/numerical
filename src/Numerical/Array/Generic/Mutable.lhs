@@ -153,8 +153,8 @@ and only makes sense for dense arrays afaik
 BE VERY THOUGHTFUL about what instances you write, or i'll be mad
 -}
 class MutableArrayDenseBuilder marr rank a where 
-    basicUnsafeNew :: PrimMonad m => Shape rank Int -> m (marr (PrimState m)  rank a)
-    basicUnsafeReplicate :: PrimMonad m => Shape rank Int -> a -> m (marr (PrimState m) rank a)
+    basicUnsafeNew :: PrimMonad m => Index rank -> m (marr (PrimState m)   a)
+    basicUnsafeReplicate :: PrimMonad m => Index rank  -> a -> m (marr (PrimState m)  a)
 
 
 {-
@@ -190,27 +190,42 @@ class MutableRectilinear marr rank a | marr -> rank   where
     -- IT is the biggest wart in the api 
     basicMutableProjectMajorAxis :: PrimMonad m =>MutableArrayUpRank marr (PrimState m)  a -> Int -> m (marr (PrimState m)  a )
 
-    basicMutableSlice :: PrimMonad m => marr (PrimState m)  a -> Shape rank Int -> Shape rank Int  
+    basicMutableSlice :: PrimMonad m => marr (PrimState m)  a -> Index rank -> Index rank 
         -> m (MutableInnerContigArray marr (PrimState m)  a )
 
 
-class  MutableArray marr   (rank:: Nat)   a |  marr -> rank   where
+class A.Array (ArrPure marr)  rank a => MutableArray marr   (rank:: Nat)   a |  marr -> rank   where
      
+    type family ( ArrPure marr ) :: * -> * 
+    type family ( ArrMutable ( arr :: * -> * ) ) :: * -> * -> *   
+
+    -- | Unsafely convert a mutable Array to its immutable version without copying. 
+    -- The mutable Array may not be used after this operation. Assumed O(1) complexity
+    basicUnsafeFreeze :: (PrimMonad m, arr ~ ArrPure marr, marr ~ ArrMutable arr) 
+        => marr (PrimState m) a -> m (arr a) 
+
+    -- | Unsafely convert a pure Array to its mutable version without copying.
+    -- the pure array may not be used after this operation. Assumed O(1) complexity
+    basicUnsafeThaw :: (PrimMonad m, marr ~ ArrMutable arr, arr ~ ArrPure marr ) 
+        => arr a -> m (marr (PrimState m) a)
+
     -- | gives the shape, a 'rank' length list of the dimensions
-    basicShape :: marr st    a -> Shape rank Int 
+    basicShape :: marr st    a -> Index rank  
 
     -- | 'basicCardinality' reports the number of manifest addresses/entries are 
-    -- in the array.
+    -- in the array. 
+    -- This is useful for determining when to switch from a recursive algorithm
+    -- to a direct algorithm.
     basicCardinality :: marr st a -> Int
 
     --basicUnsafeRead  :: PrimMonad m => marr  (PrimState m)   a -> Shape rank Int -> m (Maybe a)
 
     --  | basicMutableSparseIndexToAddres checks if a index is present or not
     -- helpful primitive for authoring codes for (un)structured sparse array format
-    basicSparseIndexToAddress ::  marr s   a -> Shape rank Int -> m  (Maybe Address) 
+    basicSparseIndexToAddress ::  marr s   a -> Index rank  -> m  (Maybe Address) 
 
     -- | 'basicMutableAddressToIndex' assumes you only give it legal manifest addresses
-    basicAddressToIndex :: marr s   a -> Address ->   m (Shape rank Int )
+    basicAddressToIndex :: marr s   a -> Address ->   m (Index rank  )
 
     -- |  return the smallest valid logical address
     basicSmallestAddress ::  marr st   a ->  Address 
@@ -220,13 +235,13 @@ class  MutableArray marr   (rank:: Nat)   a |  marr -> rank   where
 
     -- |  return the smallest valid array index
     --  should be weakly dominated by every other valid index
-    basicSmallestIndex :: (PrimMonad m) => marr (PrimState m)   a -> m (Shape rank Int)
+    basicSmallestIndex :: (PrimMonad m) => marr (PrimState m)   a -> m (Index rank )
     basicSmallestIndex = \ marr -> basicAddressToIndex marr $ basicSmallestAddress marr 
     {-# INLINE basicSmallestIndex #-}
 
     -- | return the greatest valid array index
     -- should weakly dominate every 
-    basicGreatestIndex ::(PrimMonad m )=>  marr (PrimState m)   a -> m (Shape rank Int)
+    basicGreatestIndex ::(PrimMonad m )=>  marr (PrimState m)   a -> m (Index rank )
     basicGreatestIndex = \ marr -> basicAddressToIndex marr $ basicGreatestAddress marr 
     {-# INLINE basicGreatestIndex #-}
 
@@ -234,14 +249,16 @@ class  MutableArray marr   (rank:: Nat)   a |  marr -> rank   where
     -- | gives the next valid logical address 
     -- undefined on invalid addresses and the greatest valid address.
     -- Note that for invalid addresses in between minAddress and maxAddress,
-    -- will return the next valid address 
+    -- will return the next valid address.
+
     basicNextAddress :: PrimMonad m => marr (PrimState m)  a -> Address -> m Address 
+    -- FIXME / TODO/ can basicNextAddress be considered pure?
 
     -- I think the case could be made for a basicPreviousAddress opeeration
 
     -- | gives the next valid array index
     -- undefined on invalid indices and the greatest valid index 
-    basicNextIndex ::PrimMonad m =>  marr (PrimState m)  a -> (Shape rank Int) -> m (Shape rank Int )
+    basicNextIndex ::PrimMonad m =>  marr (PrimState m)  a -> Index rank  -> m (Index rank )
 
 
 
@@ -251,7 +268,7 @@ class  MutableArray marr   (rank:: Nat)   a |  marr -> rank   where
     -- that contains @addr@. This will be a singleton when the "maximal uniform stride interval"
     -- containing @addr@ has strictly less than 3 elements. Otherwise will return an Address range
     -- covering the maximal interval that will have cardinality at least 3.
-    basicAddressRegion :: marr st  a -> Address ->  AddressInterval 
+    basicAddressRegion :: PrimMonad m =>  marr (PrimState m)  a ->Address ->  m  AddressInterval 
 
 
     -- | this doesn't fit in this class, but thats ok, will deal with that later
@@ -282,11 +299,11 @@ class  MutableArray marr   (rank:: Nat)   a |  marr -> rank   where
 
     -- | Yield the element at the given position. This method should not be
     -- called directly, use 'unsafeSparseRead' instead.
-    basicUnsafeSparseRead  :: PrimMonad m => marr  (PrimState m)   a -> Shape rank Int -> m (Maybe a)
+    basicUnsafeSparseRead  :: PrimMonad m => marr  (PrimState m)   a -> Index rank -> m (Maybe a)
 
     -- | Replace the element at the given position. This method should not be
     -- called directly, use 'unsafeWrite' instead. 
-    basicUnsafeSparseWrite :: PrimMonad m => marr (PrimState m)   a -> Shape rank Int  -> m( Maybe (a -> m ()))
+    basicUnsafeSparseWrite :: PrimMonad m => marr (PrimState m)   a -> Index rank   -> m( Maybe (a -> m ()))
 
 
 
@@ -312,20 +329,27 @@ basicIndexedMap
 --    func = 
 
 
-class MutableArrayDense marr rank a | marr -> rank   where 
-    -- | 
-    basicUnsafeAddressDenseRead  :: PrimMonad m => marr  (PrimState m)   a -> Address-> m a
 
-    -- | 
-    basicUnsafeAddressDenseWrite :: PrimMonad m => marr  (PrimState m)   a -> Address -> a -> m ()
+
+class ( MutableArray marr rank a, A.DenseArray (ArrPure marr) rank a  )=>  
+            MutableDenseArray marr rank a | marr -> rank   where 
+    -- | for Dense arrays, it is always easy to check if a given index is valid. 
+    -- this operation better have  O(1) complexity or else! 
+    basicIndexInBounds :: marr st a -> Index rank  -> Bool 
+
+    
+    --basicUnsafeAddressDenseRead  :: PrimMonad m => marr  (PrimState m)   a -> Address-> m a
+
+    -- i already have dense address indexing ?
+    --basicUnsafeAddressDenseWrite :: PrimMonad m => marr  (PrimState m)   a -> Address -> a -> m ()
   
     -- | Yield the element at the given position. This method should not be
     -- called directly, use 'unsafeRead' instead.
-    basicUnsafeDenseRead  :: PrimMonad m => marr  (PrimState m)   a -> Shape rank Int -> m a
+    basicUnsafeDenseRead  :: PrimMonad m => marr  (PrimState m)   a -> Index rank -> m a
 
     -- | Replace the element at the given position. This method should not be
     -- called directly, use 'unsafeWrite' instead.
-    basicUnsafeDenseWrite :: PrimMonad m => marr (PrimState m)   a -> Shape rank Int  -> a -> m ()
+    basicUnsafeDenseWrite :: PrimMonad m => marr (PrimState m)   a -> Index rank   -> a -> m ()
 
 \end{code}
 
@@ -390,7 +414,7 @@ generalizedMatrixOuterProduct leftV rigthV matV = do
         go firstIx lastIx
         return ()  
     where 
-        go :: Shape N2 Int -> Shape N2 Int -> m () 
+        go :: Index N2  -> Index N2  -> m () 
         go ix@(x:* y :* _)  lst@(xl:* yl :* _) 
             | x == xl && y==yl =  do  step x y 
             | otherwise = do step x y ; nextIx  <- basicNextIndex  matV ix ; go nextIx lst 
