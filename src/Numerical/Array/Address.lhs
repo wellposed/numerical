@@ -2,7 +2,7 @@
 {-# LANGUAGE DataKinds #-}
 {-#  LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DeriveDataTypeable #-}
-module Numerical.Array.Address(Address(..),AddressInterval(..)) where 
+module Numerical.Array.Address(Address(..),UniformAddressInterval(..)) where 
 
 
 import Data.Data
@@ -22,8 +22,8 @@ physical address should be native IntPtr (aka Int)
 
 -}
 
-
-data AddressInterval = AddressOne !Address 
+-- | 'UniformAddressInterval' describes a set of 
+data UniformAddressInterval = AddressOne !Address 
             |  AddressRange {low :: !Address, high:: !Address , stride :: !Word}
 
 

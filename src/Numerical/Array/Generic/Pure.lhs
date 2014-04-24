@@ -86,7 +86,7 @@ class  Array arr   (rank:: Nat)   a |  arr -> rank   where
     -- that contains @addr@. This will be a singleton when the "maximal uniform stride interval"
     -- containing @addr@ has strictly less than 3 elements. Otherwise will return an Address range
     -- covering the maximal interval that will have cardinality at least 3.
-    basicAddressRegion ::  arr   a -> Address ->  AddressInterval 
+    basicAddressRegion ::  arr   a -> Address ->  UniformAddressInterval 
 
 
 

@@ -202,8 +202,8 @@ class MutableRectilinear marr rank a | marr -> rank   where
 
 class A.Array (ArrPure marr)  rank a => MutableArray marr   (rank:: Nat)   a |  marr -> rank   where
      
-    type family ( ArrPure marr ) :: * -> * 
-    type family ( ArrMutable ( arr :: * -> * ) ) :: * -> * -> *   
+    type family  ArrPure marr  :: * -> * 
+    type family  ArrMutable ( arr :: * -> * )  :: * -> * -> *   
 
     -- | Unsafely convert a mutable Array to its immutable version without copying. 
     -- The mutable Array may not be used after this operation. Assumed O(1) complexity
@@ -274,7 +274,7 @@ class A.Array (ArrPure marr)  rank a => MutableArray marr   (rank:: Nat)   a |  
     -- that contains @addr@. This will be a singleton when the "maximal uniform stride interval"
     -- containing @addr@ has strictly less than 3 elements. Otherwise will return an Address range
     -- covering the maximal interval that will have cardinality at least 3.
-    basicAddressRegion :: PrimMonad m =>  marr (PrimState m)  a ->Address ->  m  AddressInterval 
+    basicAddressRegion :: PrimMonad m =>  marr (PrimState m)  a ->Address ->  m  UniformAddressInterval 
 
 
     -- | this doesn't fit in this class, but thats ok, will deal with that later

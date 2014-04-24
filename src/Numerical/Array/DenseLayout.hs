@@ -19,7 +19,7 @@ module Numerical.Array.DenseLayout(
   ,Direct
   ,DenseLayout(..)
   ,Address(..)
-  ,AddressInterval(..)) where
+  ,UniformAddressInterval(..)) where
 
 
 import Data.Data
