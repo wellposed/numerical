@@ -24,7 +24,7 @@ physical address should be native IntPtr (aka Int)
 
 -- | 'UniformAddressInterval' describes a set of 
 data UniformAddressInterval = AddressOne !Address 
-            |  AddressRange {low :: !Address, high:: !Address , stride :: !Word}
+            |  AddressRange {uniformLow :: !Address, uniformHigh:: !Address , uniformStride :: !Word}
 
 
 instance Num Address where 

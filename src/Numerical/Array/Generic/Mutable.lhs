@@ -153,7 +153,7 @@ data instance MArray Native Storable lay  view
 
 {-
 
-Mutable Array Builder will only have contiguous instances 
+Mutable Dense Array Builder will only have contiguous instances 
 and only makes sense for dense arrays afaik
 
 BE VERY THOUGHTFUL about what instances you write, or i'll be mad
@@ -202,8 +202,8 @@ class MutableRectilinear marr rank a | marr -> rank   where
 
 class A.Array (ArrPure marr)  rank a => MutableArray marr   (rank:: Nat)   a |  marr -> rank   where
      
-    type family  ArrPure marr  :: * -> * 
-    type family  ArrMutable ( arr :: * -> * )  :: * -> * -> *   
+    type   ArrPure marr  :: * -> * 
+    type   ArrMutable ( arr :: * -> * )  :: * -> * -> *   
 
     -- | Unsafely convert a mutable Array to its immutable version without copying. 
     -- The mutable Array may not be used after this operation. Assumed O(1) complexity
