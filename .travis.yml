@@ -33,7 +33,8 @@ install:
 script:
  - cabal-1.18 configure --enable-tests --enable-benchmarks -v2  # -v2 provides useful information for debugging
  - cabal-1.18 build   # this builds all libraries and executables (including tests/benchmarks)
- - cabal-1.18 test  --show-details=always
+ - ./runTestsAndCoverage
+ # - cabal-1.18 test  --show-details=always
  - cabal-1.18 check
  - cabal-1.18 sdist   # tests that a source-distribution can be generated
 
