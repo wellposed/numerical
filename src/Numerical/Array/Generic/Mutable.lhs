@@ -202,7 +202,7 @@ class MutableRectilinear marr rank a | marr -> rank   where
     -- | MutableInnerContigArray is the "meet" (minimum) of the locality level of marr and InnerContiguous.
     -- Thus both Contiguous and InnerContiguous are made InnerContiguous, and Strided stays Strided
     -- for now this makes sense to have in the MutableRectilinear class, though that may change
-    type family  MutableInnerContigArray (marr :: * ->  * -> *)  st  a 
+    type MutableInnerContigArray (marr :: * ->  * -> *)  st  a 
 
     -- | @'basicSliceMajorAxis' arr (x,y)@ returns the sub array of the same rank,
     -- with the outermost (ie major axis) dimension of arr restricted to the  
