@@ -20,6 +20,8 @@ module Numerical.Array.Shape(Shape(..)
     ,foldl
     ,foldr
     ,foldl'
+    ,foldl1
+    ,foldr1
     ,scanr
     ,scanl
     ,scanl1
@@ -47,20 +49,18 @@ module Numerical.Array.Shape(Shape(..)
     ) 
     where
 
-import GHC.Magic 
 import Data.Data 
 import Data.Typeable()
 
 
-import qualified Data.Monoid  as M 
 import qualified Data.Functor as Fun 
 import qualified  Data.Foldable as F
 import qualified Control.Applicative as A 
-import qualified Data.Traversable as T 
+--import qualified Data.Traversable as T 
 
 import Numerical.Nat 
 
-import Prelude hiding  (map,foldl,foldr,init,scanl,scanr,scanl1,scanr1)
+import Prelude hiding  (map,foldl,foldr,init,scanl,scanr,scanl1,scanr1,foldl1,foldr1)
 
 
 
@@ -216,8 +216,8 @@ instance    F.Foldable (Shape  (S Z)) where
     {-#  INLINE foldr  #-}
     {-# INLINE foldl' #-}
     {-#  INLINE foldr'  #-}
-    foldr1 = \ f (a:* Nil) -> a 
-    foldl1 =  \ f (a:* Nil) -> a 
+    foldr1 = \ _ (a:* Nil) -> a 
+    foldl1 =  \ _ (a:* Nil) -> a 
     {-#  INLINE foldl1 #-}
     {-#  INLINE foldr1 #-}
 instance ( F.Foldable (Shape (S r)) )=> F.Foldable (Shape (S (S r))) where    
@@ -236,9 +236,6 @@ instance ( F.Foldable (Shape (S r)) )=> F.Foldable (Shape (S (S r))) where
 
 
 
-indexedPure :: A.Applicative (Shape n)=> SNat n -> a -> Shape n a 
-indexedPure _ = \val -> A.pure val 
-{-# INLINE indexedPure #-}
     
 
 
@@ -278,6 +275,18 @@ foldl  = \ f init shp -> F.foldl f init shp
 {-# INLINE foldl' #-}                     
 foldl' :: forall a b r . (F.Foldable (Shape r))=> (b-> a -> b) -> b -> Shape r a -> b 
 foldl' = \ f init shp -> F.foldl' f init shp  
+
+{-# INLINE  foldr1 #-}
+foldr1 :: forall b r . (F.Foldable (Shape (S r)))=>  (b->b-> b)  -> Shape (S r) b -> b 
+foldr1  = \ f  shp -> F.foldr1  f  shp 
+
+
+
+
+{-# INLINE  foldl1 #-}
+foldl1 :: forall  b r. (F.Foldable (Shape (S r)))=> (b-> b -> b)  -> Shape (S r) b -> b 
+foldl1  = \ f  shp -> F.foldl1 f  shp 
+
 
 
 --instance T.Traversable (Shape Z) where 
@@ -319,6 +328,7 @@ class Scannable (r:: Nat) where
     snoc :: forall a . Shape r a -> a -> Shape (S r) a
     snoc = \ shp init ->  scanr (\ a _ -> a) init shp 
 
+    {-# INLINE cons #-}
     cons :: forall a . a -> Shape r a -> Shape (S r) a
     cons = \a as -> a :* as 
     {-# MINIMAL scanl,scanl1,scanl1Zip,scanrTup,scanr1Tup, scanr1ZipTup, unsnoc #-}
@@ -336,8 +346,8 @@ instance Scannable  Z  where
     {-# INLINE scanr1ZipTup #-}
     {-# INLINE uncons #-}
     {-# INLINE unsnoc #-}
-    {-# INLINE snoc #-}
-    {-# INLINE cons #-}
+    
+    
 
     scanl = \ _ init _ ->init  :* Nil 
     scanr =  \ _ init _ ->  init :* Nil 
@@ -361,6 +371,8 @@ instance Scannable r => Scannable (S r)  where
     {-# INLINE scanrTup #-}
     {-# INLINE scanr1Tup #-} 
     {-# INLINE scanr1ZipTup #-}
+    {-# INLINE unsnoc #-}
+
     scanl = \ f init (a:* as)  ->  init :* scanl f (f init a) as 
     scanr =  \ f init shp  -> snd $! scanrTup f init shp 
     scanl1 = \ f init (a:* as) -> scanl f (f init a) as 
@@ -393,7 +405,7 @@ instance Scannable r => Scannable (S r)  where
 
 {-#INLINE takeSuffix#-}
 takeSuffix :: Shape (S n) a -> Shape n a 
-takeSuffix = \ (a:* as) -> as 
+takeSuffix = \ (_:* as) -> as 
 
 -- a sort of unsnoc
 {-# INLINE takePrefix #-}

@@ -14,15 +14,16 @@
 
 module Numerical.Array.DenseLayout(
   Locality(..)
+  ,Form(..)
   ,Row
   ,Column
-  ,Direct
+  ,Direct 
   ,DenseLayout(..)
   ,Address(..)
   ,UniformAddressInterval(..)) where
 
 
-import Data.Data
+
 import Numerical.Nat
 import Control.Applicative
 import Numerical.Array.Address 
@@ -31,7 +32,7 @@ import Numerical.Array.Shape as S
 
 import qualified Data.Foldable as F 
 
-import Prelude hiding (foldr,foldl,foldl',map,scanl,scanr,scanl1,scanr1,scanl')
+import Prelude hiding (foldr,foldl,map,scanl,scanr,scanl1,scanr1)
 
 {-|  A major design goal with the Layout module is to 
 make it easy to define new dense array layouts
@@ -133,7 +134,7 @@ instance DenseLayout Direct Contiguous (S Z)   where
     transposedLayout = id 
 
     {-#INLINE basicToAddress#-}
-    basicToAddress   (FormDirectContiguous _) (j :* Nil )= Address j 
+    basicToAddress   (FormDirectContiguous _) (j :* _ )= Address j 
 
     --basicNextIndex=  undefined -- \ _ x ->  Just $! x + 1 
     --note its unchecked!
@@ -186,7 +187,7 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)
     basicToAddress = \rs tup -> let !strider =takePrefix $! S.scanr (*) 1 (boundsFormRow rs) 
                                 in Address $! S.foldl'  (+) 0 $! map2 (*) strider tup 
     {-# INLINE basicNextAddress#-}                                
-    basicNextAddress = \rs addr -> addr + 1 
+    basicNextAddress = \_ addr -> addr + 1 
 
     {-# INLINE basicToIndex #-}
     basicToIndex  =   \ rs (Address ix) -> case boundsFormRow rs of 
@@ -194,7 +195,7 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)
           (_:*_)->
             let !striderShape  =takePrefix $! S.scanr (*) 1 (boundsFormRow rs) 
                 in  S.map  fst $!
-                            S.scanl1 (\(q,r) strid -> r `quotRem`  strid) 
+                            S.scanl1 (\(_,r) strid -> r `quotRem`  strid) 
                                 (ix,error "impossible remainder access in Row Contiguous basicToIndex") striderShape
 
 
@@ -225,7 +226,7 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)=> 
           Nil -> Nil 
           (_:*_)->
               S.map  fst $!
-                S.scanl1 (\(q,r) strid -> r `quotRem`  strid) 
+                S.scanl1 (\(_,r) strid -> r `quotRem`  strid) 
                     (ix,error "impossible remainder access in Row Contiguous basicToIndex") (strideFormRowInnerContig rs )
 
 
@@ -254,7 +255,7 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)=> D
           Nil -> Nil 
           (_:*_)->
               S.map  fst $!
-                S.scanl1 (\(q,r) strid -> r `quotRem`  strid) 
+                S.scanl1 (\(_,r) strid -> r `quotRem`  strid) 
                     (ix,error "impossible remainder access in Row Contiguous basicToIndex") 
                     (strideFormRowStrided rs )
 
@@ -281,7 +282,7 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)=> D
           (_:*_)->
               let !striderShape  =takeSuffix $! S.scanl (*) 1 (boundsColumnContig rs) 
                   in S.map  fst  $! 
-                        S.scanr1 (\ strid (q,r)  -> r `quotRem`  strid) 
+                        S.scanr1 (\ strid (_,r)  -> r `quotRem`  strid) 
                             (ix,error "impossible remainder access in Column Contiguous basicToIndex") striderShape
 
 
@@ -309,7 +310,7 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)=> D
           Nil -> Nil 
           (_:*_)->
               let !striderShape  = strideFormColumnInnerContig form  
-                  in S.map  fst  $!   S.scanr1 (\ stride (q,r)  -> r `quotRem`  stride) 
+                  in S.map  fst  $!   S.scanr1 (\ stride (_,r)  -> r `quotRem`  stride) 
                         (ix,error "impossible remainder access in Column Contiguous basicToIndex") striderShape
 
 
@@ -334,7 +335,7 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)=>D
           Nil -> Nil 
           (_:*_)->
               let !striderShape  = strideFormColumnStrided form  
-                  in S.map  fst  $!   S.scanr1 (\ stride (q,r)  -> r `quotRem`  stride) 
+                  in S.map  fst  $!   S.scanr1 (\ stride (_,r)  -> r `quotRem`  stride) 
                         (ix,error "impossible remainder access in Column Contiguous basicToIndex") striderShape
 
 

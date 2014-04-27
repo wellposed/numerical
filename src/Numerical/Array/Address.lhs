@@ -33,11 +33,11 @@ instance Num Address where
     {-# INLINE (-) #-}
     (-) (Address a) (Address b) =  Address (a-b)
 
-    (*) a b = error "you cant  multiply Addresses"
-    negate (Address a) = error "you cant Apply Negate to An Address"
-    signum x = error "error you cant take signum of an Address"
-    abs x = error "error you cant take abs of an Address"
-    fromInteger x = error "you cant use Integer Literals or fromInteger to form an Address"
+    (*) _ _ = error "you cant  multiply Addresses"
+    negate _ = error "you cant Apply Negate to An Address"
+    signum _ = error "error you cant take signum of an Address"
+    abs _ = error "error you cant take abs of an Address"
+    fromInteger _ = error "you cant use Integer Literals or fromInteger to form an Address"
 
 {-
 note that 

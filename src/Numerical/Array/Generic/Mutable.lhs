@@ -23,15 +23,17 @@ module Numerical.Array.Generic.Mutable(
     ,MutableRectilinear(..)
     ,MutableDenseArrayBuilder(..)
     ,MutableDenseArray(..)
+    ,MBuffer(..)
     ) where
 
 import Control.Monad.Primitive ( PrimMonad, PrimState )
 import qualified Numerical.Array.DenseLayout as L 
 import Numerical.Array.Address 
-import Numerical.Array.DenseLayout (Address(..),Locality(..),Direct(..))
+import Numerical.Array.DenseLayout (Locality(..))
 import Numerical.Array.Shape 
-import Numerical.Nat 
+--import Numerical.Nat 
 import GHC.Prim(Constraint)
+import Numerical.World  
 
 import qualified Numerical.Array.Generic.Pure as A 
 
@@ -112,9 +114,26 @@ NB: one important assumption we'll have for now, is that every
 type family RepConstraint world  rep el :: Constraint
 --type instance MArrayElem
 
-data family MArray world rep lay (view::Locality) rank st  el
+--data family MArray world rep lay (view::Locality) rank st  el
+data MArray world rep lay (view:: Locality) rank st elm = 
+     MArray
+         {_marrBuffer :: !(MBuffer  world rep st elm)
+         ,_marrForm ::  !(L.Form lay view rank) 
+         --,_marrShift :: {-# UNPACK #-} !Address 
+         }
 
-data NativeWorld 
+data Boxed 
+data Unboxed
+data Stored 
+
+data family  MBuffer world rep st el 
+
+newtype instance MBuffer Native Boxed st el= MBufferNativeBoxed (BM.MVector st el)
+newtype instance MBuffer Native Unboxed st el= MBufferNativeUnboxed (UM.MVector st el)
+newtype instance MBuffer Native Stored st el= MBufferNativeStored (SM.MVector st el)
+--data instance MArray Native rep lay loc rank st al = 
+
+--data NativeWorld 
 
 
 #if defined(__GLASGOW_HASKELL_) && __GLASGOW_HASKELL__ >= 707
@@ -139,9 +158,7 @@ type instance    MArrayRep (MArray world rep lay (view::Locality) rank st  el) =
 #endif
 
 
--- | MutableInnerContigArray is the "meet" (minimum) of the locality level of marr and InnerContiguous.
--- Thus both Contiguous and InnerContiguous are made InnerContiguous, and Strided stays Strided
-type family  MutableInnerContigArray (marr :: * ->  * -> *)  st  a 
+
 
 
 {-
@@ -181,21 +198,30 @@ class MutableRectilinear marr rank a | marr -> rank   where
 
     type MutableArrayUpRank  marr ( st:: * ) a 
 
+
+    -- | MutableInnerContigArray is the "meet" (minimum) of the locality level of marr and InnerContiguous.
+    -- Thus both Contiguous and InnerContiguous are made InnerContiguous, and Strided stays Strided
+    -- for now this makes sense to have in the MutableRectilinear class, though that may change
+    type family  MutableInnerContigArray (marr :: * ->  * -> *)  st  a 
+
     -- | @'basicSliceMajorAxis' arr (x,y)@ returns the sub array of the same rank,
     -- with the outermost (ie major axis) dimension of arr restricted to the  
     -- (x,y) is an inclusive interval, MUST satisfy x<y , and be a valid
     -- subinterval of the major axis of arr.
     basicMutableSliceMajorAxis :: PrimMonad m => marr (PrimState m)  a -> (Int,Int)-> m (marr (PrimState m)  a)
 
-    --  |  semantically, basicProjectMajorAxis arr ix, is the rank reducing version of what 
+    --  |  semantically, 'basicProjectMajorAxis' arr ix, is the rank reducing version of what 
     -- basicSliceMajorAxis arr (ix,ix) would mean _if_ the (ix,ix) tuple was a legal major axis slice
     -- there exist Array Formats and Ranks where you will not be able to apply basicProjectMajorAxis 
     -- For now i'm leaving it in this class, because it will not be possible to 
     -- use the "illegal" projections in a manner that will type check.
     -- BUT Perhaps this should be revisited in a subsequent design
     -- IT is the biggest wart in the api 
-    basicMutableProjectMajorAxis :: PrimMonad m =>MutableArrayUpRank marr (PrimState m)  a -> Int -> m (marr (PrimState m)  a )
+    basicMutableProjectMajorAxis :: PrimMonad m =>MutableArrayUpRank marr (PrimState m)  a 
+        -> Int -> m (marr (PrimState m)  a )
 
+    -- | @'basicMutableSlice' arr ix1 ix2@  picks out the (hyper) rectangle in dimension @rank@
+    -- where ix1 is the minimal corner and ix2
     basicMutableSlice :: PrimMonad m => marr (PrimState m)  a -> Index rank -> Index rank 
         -> m (MutableInnerContigArray marr (PrimState m)  a )
 
@@ -405,28 +431,28 @@ note that these example do not have the right error handling logic currently
 note, needs to be modified to work with sparse arrays
 -}
 
-generalizedMatrixOuterProduct :: forall m  a lvect rvect matv . 
-        (MutableArray lvect N1 a
-        ,MutableArray rvect N1 a
-        ,MutableArray matv N2 a
-        ,PrimMonad m
-        ,Num a) => lvect (PrimState m)  a -> rvect (PrimState m)  a -> matv (PrimState m)    a -> m () 
-generalizedMatrixOuterProduct leftV rigthV matV = do 
-        (x:* y :* Nil )<- return $ basicShape matV 
-        -- use these x and y to check if shape matches the x and y vectors
-        -- or if theres somehow a zero dim and stop early 
-        firstIx <- basicSmallestIndex matV  
-        lastIx <- basicGreatestIndex matV
-        go firstIx lastIx
-        return ()  
-    where 
-        go :: Index N2  -> Index N2  -> m () 
-        go ix@(x:* y :* _)  lst@(xl:* yl :* _) 
-            | x == xl && y==yl =  do  step x y 
-            | otherwise = do step x y ; nextIx  <- basicNextIndex  matV ix ; go nextIx lst 
-            where
-            --{-#INLINE #-}
-            step x y = undefined 
+--generalizedMatrixOuterProduct :: forall m  a lvect rvect matv . 
+--        (MutableArray lvect N1 a
+--        ,MutableArray rvect N1 a
+--        ,MutableArray matv N2 a
+--        ,PrimMonad m
+--        ,Num a) => lvect (PrimState m)  a -> rvect (PrimState m)  a -> matv (PrimState m)    a -> m () 
+--generalizedMatrixOuterProduct leftV rigthV matV = do 
+--        (x:* y :* Nil )<- return $ basicShape matV 
+--        -- use these x and y to check if shape matches the x and y vectors
+--        -- or if theres somehow a zero dim and stop early 
+--        firstIx <- basicSmallestIndex matV  
+--        lastIx <- basicGreatestIndex matV
+--        go firstIx lastIx
+--        return ()  
+--    where 
+--        go :: Index N2  -> Index N2  -> m () 
+--        go ix@(x:* y :* _)  lst@(xl:* yl :* _) 
+--            | x == xl && y==yl =  do  step x y 
+--            | otherwise = do step x y ; nextIx  <- basicNextIndex  matV ix ; go nextIx lst 
+--            where
+--            --{-#INLINE #-}
+--            step x y = undefined 
 
 
     

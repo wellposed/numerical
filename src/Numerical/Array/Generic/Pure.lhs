@@ -20,7 +20,7 @@ module Numerical.Array.Generic.Pure      where
 
 
 import Numerical.Array.Address 
-import Numerical.Array.DenseLayout (Address(..),Locality(..),Direct(..))
+import Numerical.Array.DenseLayout (Address(..),Locality(..),Direct)
 import Numerical.Array.Shape 
 
 

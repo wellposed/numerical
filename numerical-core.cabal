@@ -63,6 +63,7 @@ library
     exposed-modules:     
         Numerical.Array.DenseLayout
         Numerical.Array
+        Numerical.World
         --Control.Monad.State.ReallyStrict
         --Numerical.Array.Operations
         Numerical.Array.Shape
@@ -107,16 +108,6 @@ library
     -- Base language which the package is written in.
     default-language:    Haskell2010
 
---Test-suite test
---    default-language: Haskell2010
---    type: exitcode-stdio-1.0
---    build-depends: base >= 4 && < 5
---        ,tasty >= 0.8 &&  < 0.9
---        --,tasty-quickcheck >= 0.8.0.3 && < 0.9
---        ,QuickCheck >=  2.7.3 && < 2.8
---        ,numerical-core
---    hs-source-dirs: tests
---    main-is: test.hs
 
 Test-suite testsuite  
    default-language: Haskell2010
@@ -141,6 +132,7 @@ Test-suite testsuite
         --Numerical.Array.Operations
         Numerical.Array.Shape
         Numerical.Nat 
+        Numerical.World
         Numerical.Array.Generic.Mutable
         Numerical.Array.Generic.Pure
         Numerical.Array.Locality
