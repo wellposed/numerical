@@ -129,7 +129,8 @@ instance (Show a, Show (Shape s a))=> Show (Shape (S s) a) where
 -- may want to typeclassify this?
 
 
--- It doesn't really make sense to 
+
+
 instance Store.Storable a =>Store.Storable (Shape (S Z) a) where
     {-#INLINE sizeOf#-}
     sizeOf = \ _ ->  (Store.sizeOf (undefined :: a))  
@@ -142,7 +143,7 @@ instance Store.Storable a =>Store.Storable (Shape (S Z) a) where
     poke = \ptr (a:*_) -> Store.poke (Ptr.castPtr ptr) a
     {-# INLINE pokeElemOff #-}
     {-# INLINE peekElemOff #-}
-    peekElemOff = \ ptr off -> Store.peekByteOff ptr (off * Store.sizeOf (undefined :: (Shape (S Z) a) ))
+    peekElemOff = \ ptr off -> Store.peekByteOff ptr (off * Store.sizeOf (undefined ::  a ))
     pokeElemOff ptr off val = Store.pokeByteOff ptr (off * Store.sizeOf val) val
 
     peekByteOff ptr off = Store.peek (ptr `Ptr.plusPtr` off)
@@ -168,7 +169,7 @@ instance (Store.Storable a,Store.Storable (Shape (S n) a)) =>Store.Storable (Sha
                         Store.poke (ptr `Ptr.plusPtr` Store.sizeOf (undefined :: a )) as 
     {-# INLINE pokeElemOff #-}
     {-# INLINE peekElemOff #-}
-    peekElemOff = \ ptr off -> Store.peekByteOff ptr (off * Store.sizeOf (undefined :: (Shape (S Z) a) ))
+    peekElemOff = \ ptr off -> Store.peekByteOff ptr (off * Store.sizeOf (undefined :: (Shape (S (S n)) a) ))
     pokeElemOff ptr off val = Store.pokeByteOff ptr (off * Store.sizeOf val) val
 
     peekByteOff ptr off = Store.peek (ptr `Ptr.plusPtr` off)
