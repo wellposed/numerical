@@ -3,3 +3,4 @@ cabal.sandbox.config
 report.html
 *.dyn_hi
 *.dyn_o
+.hpc
