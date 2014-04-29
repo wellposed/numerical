@@ -62,7 +62,8 @@ import Numerical.Nat
 
 import Prelude hiding  (map,foldl,foldr,init,scanl,scanr,scanl1,scanr1,foldl1,foldr1)
 
-
+import qualified Foreign.Storable  as Store 
+import qualified Foreign.Ptr as Ptr
 
 {-
 Shape may get renamed to Index in the near future! 
@@ -126,9 +127,82 @@ instance (Show a, Show (Shape s a))=> Show (Shape (S s) a) where
 --data Strided r a lay = Strided {   getStrides :: Shape r a   }
 
 -- may want to typeclassify this?
-shapeSize :: Shape n a -> SNat n 
-shapeSize Nil = SZero
-shapeSize (_ :* as) = SSucc (shapeSize as)
+
+
+-- It doesn't really make sense to 
+instance Store.Storable a =>Store.Storable (Shape (S Z) a) where
+    {-#INLINE sizeOf#-}
+    sizeOf = \ _ ->  (Store.sizeOf (undefined :: a))  
+    -- might want to boost the alignment, but ignore for now
+    {-# INLINE alignment #-}
+    alignment = \ _ -> Store.alignment (undefined :: a )
+    {-# INLINE peek #-}
+    peek = \ptr -> do  res <- Store.peek (Ptr.castPtr ptr) ; return (res :* Nil)
+    {-# INLINE poke #-}
+    poke = \ptr (a:*_) -> Store.poke (Ptr.castPtr ptr) a
+    {-# INLINE pokeElemOff #-}
+    {-# INLINE peekElemOff #-}
+    peekElemOff = \ ptr off -> Store.peekByteOff ptr (off * Store.sizeOf (undefined :: (Shape (S Z) a) ))
+    pokeElemOff ptr off val = Store.pokeByteOff ptr (off * Store.sizeOf val) val
+
+    peekByteOff ptr off = Store.peek (ptr `Ptr.plusPtr` off)
+    pokeByteOff ptr off = Store.poke (ptr `Ptr.plusPtr` off)    
+    {-# INLINE peekByteOff #-}
+    {-# INLINE pokeByteOff #-}
+
+
+instance (Store.Storable a,Store.Storable (Shape (S n) a)) =>Store.Storable (Shape (S (S n)) a) where
+    {-#INLINE sizeOf#-}
+    sizeOf = \ _ ->  Store.sizeOf (undefined :: a)  + Store.sizeOf (undefined :: (Shape (S n) a ))
+    -- might want to boost the alignment, but ignore for now
+    {-# INLINE alignment #-}
+    alignment = \ _ -> Store.alignment (undefined :: a )
+    {-# INLINE peek #-}
+    peek = \ptr -> do  
+                a <- Store.peek (Ptr.castPtr ptr) ; 
+                as <- Store.peek (ptr `Ptr.plusPtr` Store.sizeOf (undefined :: a ))
+                return (a:* as)
+    {-# INLINE poke #-}
+    poke = \ptr (a:*as ) -> do 
+                        Store.poke (Ptr.castPtr ptr) a
+                        Store.poke (ptr `Ptr.plusPtr` Store.sizeOf (undefined :: a )) as 
+    {-# INLINE pokeElemOff #-}
+    {-# INLINE peekElemOff #-}
+    peekElemOff = \ ptr off -> Store.peekByteOff ptr (off * Store.sizeOf (undefined :: (Shape (S Z) a) ))
+    pokeElemOff ptr off val = Store.pokeByteOff ptr (off * Store.sizeOf val) val
+
+    peekByteOff ptr off = Store.peek (ptr `Ptr.plusPtr` off)
+    pokeByteOff ptr off = Store.poke (ptr `Ptr.plusPtr` off)    
+    {-# INLINE peekByteOff #-}
+    {-# INLINE pokeByteOff #-}
+
+-- this instance is a bit weird and should never be used
+-- but probably legal
+instance Store.Storable a =>Store.Storable (Shape Z a) where
+    {-#INLINE sizeOf#-}
+    sizeOf = \ _ ->  0
+    -- might want to boost the alignment, but ignore for now
+    {-# INLINE alignment #-}
+    alignment = \ _ -> Store.alignment (undefined :: a )
+    {-# INLINE peek #-}
+    peek = \ _  -> return Nil 
+    {-# INLINE poke #-}
+    poke = \ _  _-> return () 
+    {-# INLINE pokeElemOff #-}
+    {-# INLINE peekElemOff #-}
+    peekElemOff = \ _ _  -> return Nil 
+    pokeElemOff = \ _ _ _  -> return ()  
+
+    peekByteOff  = \ _ _ -> return Nil 
+    pokeByteOff  = \ _ _ _ -> return () 
+    {-# INLINE peekByteOff #-}
+    {-# INLINE pokeByteOff #-}
+
+{-# INLINE shapeSize #-}
+shapeSize :: F.Foldable (Shape n)=>Shape n a -> Int 
+shapeSize  = \ as -> ( F.foldl (\ct _ -> ct +1) 0 as )
+
+
 
 shapeToList :: Shape n a -> [a]
 shapeToList Nil = []

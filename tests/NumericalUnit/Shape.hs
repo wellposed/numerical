@@ -9,6 +9,7 @@ module NumericalUnit.Shape(unitTestShape) where
 
 import Test.HUnit
 import Numerical.Array.Shape as S 
+import qualified Data.Vector.Storable as SV 
 import Prelude as P
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -27,5 +28,11 @@ unitTestShape = testGroup "Shape Unit tests"
     , testCase "foldr1 on shape" $  S.foldr1 (+) (1:* 2:* 3 :* Nil )  @?=   P.foldr1  (+)  [1,2,3]  
     , testCase "Show on Nil shape" $ show Nil @?= "Nil"
     , testCase "Show on 1:* Nil"  $ show (1:* Nil) @?= "1 :* Nil" 
-
+    , testCase "storable on size 0 shape" $ 
+        do a <- return (SV.fromList [Nil,Nil :: Shape Z Int]) ; SV.toList a @?= [Nil,Nil]
+    , testCase "storable on size 1 shape" $ 
+        do a <- return (SV.fromList [1:*Nil,2:*Nil :: Shape (S Z) Int]) ; SV.toList a @?= [1:*Nil,2:*Nil]
+    , testCase "storable on size 2 shape" $ 
+        do  a <- return (SV.fromList [3:* 4:* Nil,1:*2:*Nil :: Shape (S (S Z)) Int]) ;
+            SV.toList a @?= [3:* 4:* Nil,1:*2:*Nil]
     ]
