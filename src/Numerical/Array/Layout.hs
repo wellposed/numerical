@@ -12,13 +12,13 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 
-module Numerical.Array.DenseLayout(
+module Numerical.Array.Layout(
   Locality(..)
-  ,Form(..)
+  ,Format(..)
   ,Row
   ,Column
   ,Direct 
-  ,DenseLayout(..)
+  ,Layout(..)
   ,Address(..)
   ,UniformAddressInterval(..)) where
 
@@ -85,32 +85,32 @@ formats sparsely
 
 
 
-data family Form lay (contiguity:: Locality)  (rank :: Nat)
+data family Format lay (contiguity:: Locality)  (rank :: Nat)
 
 
-class DenseLayout lay (contiguity:: Locality) (rank :: Nat)  where
+class Layout lay (contiguity:: Locality) (rank :: Nat)  where
 
     type Tranposed lay 
 
     
-    transposedLayout ::  (lay ~ Tranposed l2,l2~Tranposed lay)=> Form lay contiguity rank -> Form l2 contiguity rank 
+    transposedLayout ::  (lay ~ Tranposed l2,l2~Tranposed lay)=> Format lay contiguity rank -> Format l2 contiguity rank 
     --shapeOf 
     
-    basicToAddress :: Form lay contiguity rank -> Shape rank Int -> Address 
+    basicToAddress :: Format lay contiguity rank -> Shape rank Int -> Address 
 
      
-    basicToIndex :: Form   lay contiguity rank -> Address -> Shape rank Int 
+    basicToIndex :: Format   lay contiguity rank -> Address -> Shape rank Int 
 
     --unchecked
     --nextAddress --- not sure if this should even exist for contiguous ones..
     -- not sure if this is the right model for the valid ops
     --validAddress::Form   lay contiguity rank -> Int -> Either String (Shape rank Int)
     --validIndex ::Form   lay contiguity rank -> Shape rank Int -> Either String Int 
-    basicNextAddress :: Form   lay contiguity rank -> Address ->  Address 
+    basicNextAddress :: Format   lay contiguity rank -> Address ->  Address 
     basicNextAddress =  \form shp ->  basicToAddress form $  (basicNextIndex form  $! basicToIndex form  shp )
     {-# INLINE basicNextAddress #-}
     
-    basicNextIndex :: Form   lay contiguity rank -> Shape rank Int ->(Shape rank Int) 
+    basicNextIndex :: Format  lay contiguity rank -> Shape rank Int ->(Shape rank Int) 
     basicNextIndex  = \form shp ->  basicToIndex form  $  (basicNextAddress form  $! basicToAddress form  shp )
     {-# INLINE  basicNextIndex #-}
 
@@ -124,49 +124,49 @@ class DenseLayout lay (contiguity:: Locality) (rank :: Nat)  where
 -----
 -----
 
-data instance Form  Direct Contiguous (S Z) = 
-            FormDirectContiguous { logicalShapeDirectContiguous :: {-#UNPACK#-} !Int }
+data instance Format  Direct Contiguous (S Z) = 
+            FormatDirectContiguous { logicalShapeDirectContiguous :: {-#UNPACK#-} !Int }
 
-instance DenseLayout Direct Contiguous (S Z)   where
+instance Layout Direct Contiguous (S Z)   where
     type Tranposed Direct = Direct
 
 
     transposedLayout = id 
 
     {-#INLINE basicToAddress#-}
-    basicToAddress   (FormDirectContiguous _) (j :* _ )= Address j 
+    basicToAddress   (FormatDirectContiguous _) (j :* _ )= Address j 
 
     --basicNextIndex=  undefined -- \ _ x ->  Just $! x + 1 
     --note its unchecked!
     {-# INLINE basicToIndex#-}
-    basicToIndex =  \ (FormDirectContiguous _) (Address ix)  -> (ix ) :* Nil 
+    basicToIndex =  \ (FormatDirectContiguous _) (Address ix)  -> (ix ) :* Nil 
     
     basicNextAddress = \ _ addr -> addr + 1
 
 
 
-data instance Form  Direct Strided (S Z) = 
-        FormDirectStrided { logicalShapeDirectStrided :: {-#UNPACK#-}!Int
+data instance Format  Direct Strided (S Z) = 
+        FormatDirectStrided { logicalShapeDirectStrided :: {-#UNPACK#-}!Int
                     , logicalStrideDirectStrided:: {-#UNPACK#-}!Int}
 
-instance DenseLayout Direct Strided (S Z)   where
+instance Layout Direct Strided (S Z)   where
     type Tranposed Direct = Direct
 
 
     transposedLayout = id 
 
     {-#INLINE basicToAddress#-}
-    basicToAddress   = \ (FormDirectStrided _ strid) (j :* Nil )->  Address (strid * j) 
+    basicToAddress   = \ (FormatDirectStrided _ strid) (j :* Nil )->  Address (strid * j) 
 
     {-# INLINE basicNextAddress #-}
-    basicNextAddress = \ (FormDirectStrided _ strid) addr ->  addr + Address strid 
+    basicNextAddress = \ (FormatDirectStrided _ strid) addr ->  addr + Address strid 
 
     {-# INLINE basicNextIndex#-}
     basicNextIndex =  \ _  (i:* Nil ) ->  (i + 1 :* Nil )
     
 
     {-# INLINE basicToIndex#-}
-    basicToIndex = \ (FormDirectStrided _ stride) (Address ix)  -> (ix `div` stride ) :* Nil 
+    basicToIndex = \ (FormatDirectStrided _ stride) (Address ix)  -> (ix `div` stride ) :* Nil 
 
 -----
 -----
@@ -174,14 +174,14 @@ instance DenseLayout Direct Strided (S Z)   where
 
 
 
-data instance  Form  Row  Contiguous rank  = FormRowContiguous {boundsFormRow :: !(Shape rank Int)} 
+data instance  Format  Row  Contiguous rank  = FormatRowContiguous {boundsFormRow :: !(Shape rank Int)} 
 -- strideRow :: Shape rank Int,
 instance   (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)
-    =>DenseLayout Row  Contiguous rank where
+    => Layout Row  Contiguous rank where
  
     type Tranposed Row = Column 
 
-    transposedLayout = \(FormRowContiguous shp) -> FormColumnContiguous $ reverseShape shp
+    transposedLayout = \(FormatRowContiguous shp) -> FormatColumnContiguous $ reverseShape shp
 
     {-# INLINE basicToAddress #-}
     basicToAddress = \rs tup -> let !strider =takePrefix $! S.scanr (*) 1 (boundsFormRow rs) 
@@ -203,22 +203,22 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)
 
 -----
 -----
-data instance  Form  Row  InnerContiguous rank  = 
-        FormRowInnerContiguous {boundsFormRowInnerContig :: !(Shape rank Int), strideFormRowInnerContig:: !(Shape rank Int)} 
+data instance  Format  Row  InnerContiguous rank  = 
+        FormatRowInnerContiguous {boundsFormRowInnerContig :: !(Shape rank Int), strideFormRowInnerContig:: !(Shape rank Int)} 
 -- strideRow :: Shape rank Int,
-instance   (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)=> DenseLayout Row  InnerContiguous rank where
+instance   (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank) => Layout Row  InnerContiguous rank where
     type Tranposed Row = Column 
 
 
 
-    transposedLayout = \(FormRowInnerContiguous shp stride) -> 
-        FormColumnInnerContiguous  (reverseShape shp)  (reverseShape stride)
+    transposedLayout = \(FormatRowInnerContiguous shp stride) -> 
+        FormatColumnInnerContiguous  (reverseShape shp)  (reverseShape stride)
 
     {-# INLINE basicToAddress #-}
     basicToAddress = \rs tup ->   Address $! S.foldl'  (+) 0 $! map2 (*) (strideFormRowInnerContig rs ) tup 
 
     {-# INLINE basicNextIndex #-}
-    basicNextIndex = \ (FormRowInnerContiguous shape _) ix -> 
+    basicNextIndex = \ (FormatRowInnerContiguous shape _) ix -> 
         S.map snd $! S.scanl1Zip (\( carry, _ ) ixv shpv   -> divMod (carry + ixv) shpv ) (1,error "nextAddress init value accessed")  ix shape 
 
     {-# INLINE basicToIndex #-}
@@ -232,22 +232,22 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)=> 
 
 ---
 ---
-data instance  Form  Row  Strided rank  = 
-        FormRowStrided {boundsFormRowStrided:: !(Shape rank Int), strideFormRowStrided:: !(Shape rank Int)} 
+data instance  Format  Row  Strided rank  = 
+        FormatRowStrided {boundsFormRowStrided:: !(Shape rank Int), strideFormRowStrided:: !(Shape rank Int)} 
 -- strideRow :: Shape rank Int,
-instance  (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)=> DenseLayout Row  Strided rank where
+instance  (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)=> Layout Row  Strided rank where
     type Tranposed Row = Column 
 
 
 
-    transposedLayout = \(FormRowStrided shp stride) -> 
-        FormColumnStrided  (reverseShape shp)  (reverseShape stride)
+    transposedLayout = \(FormatRowStrided shp stride) -> 
+        FormatColumnStrided  (reverseShape shp)  (reverseShape stride)
 
     {-# INLINE basicToAddress #-}
     basicToAddress = \rs tup ->   Address $! S.foldl'  (+) 0 $! map2 (*) (strideFormRowStrided rs ) tup 
 
     {-#INLINE basicNextIndex#-}
-    basicNextIndex = \ (FormRowStrided shape _) ix -> 
+    basicNextIndex = \ (FormatRowStrided shape _) ix -> 
         S.map snd $! S.scanl1Zip (\( carry, _ ) ixv shpv   -> divMod (carry + ixv) shpv ) (1,error "nextAddress init value accessed")  ix shape 
 
     {-# INLINE basicToIndex #-}
@@ -263,13 +263,13 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)=> D
 -----
 -----
 
-data instance  Form  Column Contiguous rank  = FormColumnContiguous {boundsColumnContig :: !(Shape rank Int)}
+data instance  Format  Column Contiguous rank  = FormatColumnContiguous {boundsColumnContig :: !(Shape rank Int)}
  -- strideRow :: Shape rank Int,
-instance  (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)=> DenseLayout Column  Contiguous rank where
+instance  (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)=> Layout Column  Contiguous rank where
     type Tranposed Column = Row  
 
 
-    transposedLayout = \(FormColumnContiguous shp)-> FormRowContiguous $ reverseShape shp 
+    transposedLayout = \(FormatColumnContiguous shp)-> FormatRowContiguous $ reverseShape shp 
     {-# INLINE basicToAddress #-}
     basicToAddress    =   \ rs tup -> let !strider =  takeSuffix $! S.scanl (*) 1 (boundsColumnContig rs) 
                                 in Address $! foldl' (+) 0  $! map2 (*) strider tup 
@@ -288,20 +288,20 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)=> D
 
 
 
-data instance  Form Column InnerContiguous rank  = FormColumnInnerContiguous {boundsColumnInnerContig :: !(Shape rank Int), strideFormColumnInnerContig:: !(Shape rank Int)}
+data instance  Format Column InnerContiguous rank  = FormatColumnInnerContiguous {boundsColumnInnerContig :: !(Shape rank Int), strideFormColumnInnerContig:: !(Shape rank Int)}
  -- strideRow :: Shape rank Int,
-instance  (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)=> DenseLayout Column  InnerContiguous rank where
+instance  (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)=> Layout Column  InnerContiguous rank where
     type Tranposed Column = Row  
 
 
-    transposedLayout = \(FormColumnInnerContiguous shp stride)->
-         FormRowInnerContiguous (reverseShape shp) (reverseShape stride) 
+    transposedLayout = \(FormatColumnInnerContiguous shp stride)->
+         FormatRowInnerContiguous (reverseShape shp) (reverseShape stride) 
 
     {-# INLINE basicToAddress #-}
     basicToAddress    =   \ form tup -> let !strider =   strideFormColumnInnerContig form 
                                 in Address $! foldl' (+) 0  $! map2 (*) strider tup 
     {-#INLINE basicNextIndex #-}                                
-    basicNextIndex = \ (FormColumnInnerContiguous shape _) ix -> 
+    basicNextIndex = \ (FormatColumnInnerContiguous shape _) ix -> 
         S.map snd $! S.scanr1Zip (\ ixv shpv ( carry, _ ) -> divMod (carry + ixv) shpv) (1,error "nextAddress init value accessed")  ix shape 
 
 
@@ -314,20 +314,20 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)=> D
                         (ix,error "impossible remainder access in Column Contiguous basicToIndex") striderShape
 
 
-data instance  Form Column Strided rank  = FormColumnStrided {boundsColumnStrided :: !(Shape rank Int), strideFormColumnStrided:: !(Shape rank Int)}
+data instance  Format Column Strided rank  = FormatColumnStrided {boundsColumnStrided :: !(Shape rank Int), strideFormColumnStrided:: !(Shape rank Int)}
  -- strideRow :: Shape rank Int,
-instance   (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)=>DenseLayout Column  Strided rank where
+instance   (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)=> Layout Column  Strided rank where
     type Tranposed Column = Row  
 
 
-    transposedLayout = \(FormColumnStrided shp stride)->
-         FormRowStrided (reverseShape shp) (reverseShape stride) 
+    transposedLayout = \(FormatColumnStrided shp stride)->
+         FormatRowStrided (reverseShape shp) (reverseShape stride) 
 
     {-# INLINE basicToAddress #-}
     basicToAddress    =   \ form tup -> let !strider =   strideFormColumnStrided form 
                                 in Address $! foldl' (+) 0  $! map2 (*) strider tup 
     {-# INLINE basicNextIndex#-}                                
-    basicNextIndex = \ (FormColumnStrided shape _) ix -> 
+    basicNextIndex = \ (FormatColumnStrided shape _) ix -> 
         S.map snd $! S.scanr1Zip (\ ixv shpv ( carry, _ ) -> divMod (carry + ixv) shpv) (1,error "nextAddress init value accessed")  ix shape 
 
     {-# INLINE  basicToIndex#-}                                

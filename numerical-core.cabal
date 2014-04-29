@@ -32,15 +32,13 @@ author:              Carter Tazio Schonwald
 maintainer:          carter at wellposed dot com
 
 -- A copyright notice.
--- copyright:           
+ copyright:     Carter Schonwald      
 
 category:            Math
 
-build-type:          Custom    
-
--- Extra files to be distributed with the package, such as examples or a 
--- README.
--- extra-source-files:  
+build-type:          Simple     
+tested-with:   GHC == 7.6.3,  GHC == 7.8.2
+ 
 
 
 
@@ -61,7 +59,7 @@ source-repository head
 library
     -- Modules exported by the library.
     exposed-modules:     
-        Numerical.Array.DenseLayout
+        Numerical.Array.Layout
         Numerical.Array
         Numerical.World
         --Control.Monad.State.ReallyStrict
@@ -126,7 +124,7 @@ Test-suite testsuite
    --having an explicit list of other modules breaks hpc 
    ghc-options: -fhpc -O2  -threaded
    other-modules: 
-        Numerical.Array.DenseLayout
+        Numerical.Array.Layout
         Numerical.Array
         --Control.Monad.State.ReallyStrict
         --Numerical.Array.Operations

@@ -6,7 +6,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ScopedTypeVariables#-}
--- {-#  LANGUAGE GeneralizedNewtypeDeriving #-}
+
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ConstraintKinds #-}
@@ -23,13 +23,12 @@ module Numerical.Array.Generic.Mutable(
     ,MutableRectilinear(..)
     ,MutableDenseArrayBuilder(..)
     ,MutableDenseArray(..)
-    ,MBuffer(..)
     ) where
 
 import Control.Monad.Primitive ( PrimMonad, PrimState )
-import qualified Numerical.Array.DenseLayout as L 
+--import qualified Numerical.Array.DenseLayout as L 
 import Numerical.Array.Address 
-import Numerical.Array.DenseLayout (Locality(..))
+import Numerical.Array.Layout 
 import Numerical.Array.Shape 
 --import Numerical.Nat 
 import GHC.Prim(Constraint)
@@ -79,9 +78,9 @@ indexing should be oblivious to locality,
 
 
 
-set and copy and move  require "structured" matrices, where 
- clear really 
 
+not sure where  where to put the Array versions of these operation.
+Dont need them for the alpha, but should think about an
 \begin{verbatim}
     -- | Set all elements of the vector to the given value. This method should
     -- not be called directly, use 'set' instead.
@@ -98,6 +97,7 @@ set and copy and move  require "structured" matrices, where
     basicUnsafeMove  :: PrimMonad m => marr (PrimState m) a   -- ^ target
                               -> v (PrimState m) a   -- ^ source
                               -> m ()
+    basicUnsafeGrow:: PrimMonad m => v (PrimState m) a -> Int -> m (v (PrimState m) a)                          
 
 
 
@@ -114,23 +114,48 @@ NB: one important assumption we'll have for now, is that every
 type family RepConstraint world  rep el :: Constraint
 --type instance MArrayElem
 
---data family MArray world rep lay (view::Locality) rank st  el
-data MArray world rep lay (view:: Locality) rank st elm = 
-     MArray
-         {_marrBuffer :: !(MBuffer  world rep st elm)
-         ,_marrForm ::  !(L.Form lay view rank) 
-         --,_marrShift :: {-# UNPACK #-} !Address 
-         }
+{- | 'MArray' is the generic data family that 
+-}
+data family MArray world rep lay (view::Locality) (rank :: Nat ) st  el
+
+data instance  MArray Native Boxed layout locality rank st el =
+    MutableNativeBoxedArray {
+        nativeBoxedBuffer:: {-# UNPACK #-} !(BM.MVector st el)
+        ,nativeBoxedFormat ::  !(Format layout locality rank)  }
+
+data instance  MArray Native Stored layout locality rank st el =
+    MutableNativeStoredArray {
+        nativeStoredBuffer:: {-# UNPACK #-} !(SM.MVector st el)
+        ,nativeStoredFormat ::  !(Format layout locality rank)  }    
+
+data instance  MArray Native Unboxed layout locality rank st el =
+    MutableNativeUnboxedArray {
+        nativeUnboxedBuffer:: {-# UNPACK #-} !(UM.MVector st el)
+        ,nativeUnboxedFormat ::  !(Format layout locality rank)  }         
+        -- I have this slight worry that Unboxed arrays will have 
+        -- an extra indirection vs the storable class
+        -- but I think it wont matter in practice
+        -- alternatively, could add a PrimUnboxed storage choice
+
+--- would love to get the format to act unboxed
+
+    
+--data fam MArray world rep lay (view:: Locality) rank st elm = 
+--     MArray
+--         {_marrBuffer :: !(MBuffer  world rep st elm)
+--         ,_marrForm ::  !(L.Form lay view rank) 
+--         --,_marrShift :: {-# UNPACK #-} !Address 
+--         }
 
 data Boxed 
 data Unboxed
 data Stored 
 
-data family  MBuffer world rep st el 
+--data family  MBuffer world rep st el 
 
-newtype instance MBuffer Native Boxed st el= MBufferNativeBoxed (BM.MVector st el)
-newtype instance MBuffer Native Unboxed st el= MBufferNativeUnboxed (UM.MVector st el)
-newtype instance MBuffer Native Stored st el= MBufferNativeStored (SM.MVector st el)
+--newtype instance MBuffer Native Boxed st el= MBufferNativeBoxed (BM.MVector st el)
+--newtype instance MBuffer Native Unboxed st el= MBufferNativeUnboxed (UM.MVector st el)
+--newtype instance MBuffer Native Stored st el= MBufferNativeStored (SM.MVector st el)
 --data instance MArray Native rep lay loc rank st al = 
 
 --data NativeWorld 
@@ -196,13 +221,16 @@ class MutableRectilinear marr rank a | marr -> rank   where
     -- major formats. Such  as Row based forward/backward substitution (triangular solvers)
     type MutableRectilinearOrientation marr :: *
 
-    type MutableArrayUpRank  marr ( st:: * ) a 
+    type MutableArrayDownRank  marr ( st:: * ) a 
 
 
     -- | MutableInnerContigArray is the "meet" (minimum) of the locality level of marr and InnerContiguous.
     -- Thus both Contiguous and InnerContiguous are made InnerContiguous, and Strided stays Strided
     -- for now this makes sense to have in the MutableRectilinear class, though that may change
     type MutableInnerContigArray (marr :: * ->  * -> *)  st  a 
+
+    --type MutableArrayBuffer 
+    --not implementing this .. for now
 
     -- | @'basicSliceMajorAxis' arr (x,y)@ returns the sub array of the same rank,
     -- with the outermost (ie major axis) dimension of arr restricted to the  
@@ -212,13 +240,8 @@ class MutableRectilinear marr rank a | marr -> rank   where
 
     --  |  semantically, 'basicProjectMajorAxis' arr ix, is the rank reducing version of what 
     -- basicSliceMajorAxis arr (ix,ix) would mean _if_ the (ix,ix) tuple was a legal major axis slice
-    -- there exist Array Formats and Ranks where you will not be able to apply basicProjectMajorAxis 
-    -- For now i'm leaving it in this class, because it will not be possible to 
-    -- use the "illegal" projections in a manner that will type check.
-    -- BUT Perhaps this should be revisited in a subsequent design
-    -- IT is the biggest wart in the api 
-    basicMutableProjectMajorAxis :: PrimMonad m =>MutableArrayUpRank marr (PrimState m)  a 
-        -> Int -> m (marr (PrimState m)  a )
+    basicMutableProjectMajorAxis :: PrimMonad m =>marr (PrimState m)  a 
+        -> Int -> m (MutableArrayDownRank marr (PrimState m)  a )
 
     -- | @'basicMutableSlice' arr ix1 ix2@  picks out the (hyper) rectangle in dimension @rank@
     -- where ix1 is the minimal corner and ix2
@@ -229,7 +252,11 @@ class MutableRectilinear marr rank a | marr -> rank   where
 class A.Array (ArrPure marr)  rank a => MutableArray marr   (rank:: Nat)   a |  marr -> rank   where
      
     type   ArrPure marr  :: * -> * 
-    type   ArrMutable ( arr :: * -> * )  :: * -> * -> *   
+    type   ArrMutable ( arr :: * -> * )  :: * -> * -> *  
+
+    -- | Every 'MutableArray'  instance has a contiguous version 
+    -- of itself, This contiguous version will ALWAYS have a Builder instance.
+    type MutableArrayContiguous (marr :: * -> * -> *) :: * ->  * -> * 
 
     -- | Unsafely convert a mutable Array to its immutable version without copying. 
     -- The mutable Array may not be used after this operation. Assumed O(1) complexity
