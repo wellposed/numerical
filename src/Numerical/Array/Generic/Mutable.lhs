@@ -201,7 +201,7 @@ BE VERY THOUGHTFUL about what instances you write, or i'll be mad
 -}
 
 class MutableArray marr (rank:: Nat) a => MutableArrayBuilder marr rank a where
-    basicBuildArray:: Index rank ->
+    --basicBuildArray:: Index rank -> b 
 
 class MutableDenseArray marr rank a => MutableDenseArrayBuilder marr rank a where
     basicUnsafeNew :: PrimMonad m => Index rank -> m (marr (PrimState m)   a)
