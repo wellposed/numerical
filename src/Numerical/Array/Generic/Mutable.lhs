@@ -157,7 +157,7 @@ data Stored
 --data NativeWorld
 
 
-#if defined(__GLASGOW_HASKELL_) && __GLASGOW_HASKELL__ >= 707
+#if defined(__GLASGOW_HASKELL__) && ( __GLASGOW_HASKELL__ >= 707)
 type family  MArrayLocality marr :: Locality where
     MArrayLocality (MArray world rep lay (view::Locality) rank st  el) = view
 
@@ -166,7 +166,95 @@ type family  MArrayLayout marr where
 
 type family MArrayRep marr where
     MArrayRep (MArray world rep lay (view::Locality) rank st  el) = rep
+
+type family MArrayMaxLocality lmarr rmarr :: ( * -> * -> *) where
+  MArrayMaxLocality (MArray wld rep lay Contiguous rnk)
+                    (MArray wld rep lay  Contiguous rnk) = MArray wld rep lay Contiguous rnk
+  MArrayMaxLocality (MArray wld rep lay InnerContiguous rnk)
+                    (MArray wld rep lay Contiguous rnk) = MArray wld rep lay Contiguous rnk
+  MArrayMaxLocality (MArray wld rep lay  Contiguous rnk)
+                    (MArray wld rep lay InnerContiguous rnk) = MArray wld rep lay Contiguous rnk
+  MArrayMaxLocality (MArray wld rep lay Strided rnk)
+                    (MArray wld rep lay Contiguous rnk) = MArray wld rep lay Contiguous rnk
+  MArrayMaxLocality (MArray wld rep lay Contiguous rnk)
+                    (MArray wld rep lay Strided rnk) = MArray wld rep lay Contiguous rnk
+  MArrayMaxLocality (MArray wld rep lay InnerContiguous rnk)
+                    (MArray wld rep lay InnerContiguous rnk) = MArray wld rep lay InnerContiguous rnk
+  MArrayMaxLocality (MArray wld rep lay Strided rnk)
+                    (MArray wld rep lay InnerContiguous rnk) = MArray wld rep lay InnerContiguous rnk
+  MArrayMaxLocality (MArray wld rep lay  InnerContiguous rnk)
+                    (MArray wld rep lay Strided rnk) = MArray wld rep lay InnerContiguous rnk
+  MArrayMaxLocality (MArray wld rep lay  Strided rnk)
+                    (MArray wld rep lay Strided rnk) = MArray wld rep lay Strided rnk
+
+
+
+type family MArrayMinLocality lmarr rmarr :: ( * -> * -> *) where
+  MArrayMinLocality (MArray wld rep lay Strided rnk)
+                    (MArray wld rep lay Strided rnk) = MArray wld rep lay Strided rnk
+  MArrayMinLocality (MArray wld rep lay InnerContiguous rnk)
+                    (MArray wld rep lay Strided rnk) = MArray wld rep lay Strided rnk
+  MArrayMinLocality (MArray wld rep lay Contiguous rnk)
+                    (MArray wld rep lay Strided rnk) = MArray wld rep lay Strided rnk
+  MArrayMinLocality (MArray wld rep lay Strided rnk)
+                    (MArray wld rep lay InnerContiguous rnk) = MArray wld rep lay Strided rnk
+  MArrayMinLocality (MArray wld rep lay Strided rnk)
+                    (MArray wld rep lay Contiguous rnk) = MArray wld rep lay Strided rnk
+  MArrayMinLocality (MArray wld rep lay InnerContiguous rnk)
+                    (MArray wld rep lay InnerContiguous rnk) = MArray wld rep lay InnerContiguous rnk
+  MArrayMinLocality (MArray wld rep lay Contiguous rnk)
+                    (MArray wld rep lay InnerContiguous rnk) = MArray wld rep lay InnerContiguous rnk
+  MArrayMinLocality (MArray wld rep lay InnerContiguous rnk)
+                    (MArray wld rep lay Contiguous rnk) = MArray wld rep lay InnerContiguous rnk
+  MArrayMinLocality (MArray wld rep lay Contiguous rnk)
+                    (MArray wld rep lay Contiguous rnk) = MArray wld rep lay Contiguous rnk
+
+
 #else
+
+
+type family MArrayMaxLocality lmarr rmarr :: ( * -> * -> *)
+type instance MArrayMaxLocality (MArray wld rep lay Contiguous rnk)
+                                (MArray wld rep lay Contiguous rnk) = MArray wld rep lay Contiguous rnk
+type instance MArrayMaxLocality (MArray wld rep lay InnerContiguous rnk)
+                                (MArray wld rep lay Contiguous rnk) = MArray wld rep lay Contiguous rnk
+type instance MArrayMaxLocality (MArray wld rep lay Contiguous rnk)
+                                (MArray wld rep lay InnerContiguous rnk) = MArray wld rep lay Contiguous rnk
+type instance MArrayMaxLocality (MArray wld rep lay Strided rnk)
+                                (MArray wld rep lay Contiguous rnk) = MArray wld rep lay Contiguous rnk
+type instance MArrayMaxLocality (MArray wld rep lay Contiguous rnk)
+                                (MArray wld rep lay Strided rnk) = MArray wld rep lay Contiguous rnk
+type instance MArrayMaxLocality (MArray wld rep lay InnerContiguous rnk)
+                                (MArray wld rep lay InnerContiguous rnk) = MArray wld rep lay  InnerContiguous rnk
+type instance MArrayMaxLocality (MArray wld rep lay Strided rnk)
+                                (MArray wld rep lay InnerContiguous rnk) = MArray wld rep lay InnerContiguous rnk
+type instance MArrayMaxLocality (MArray wld rep lay InnerContiguous rnk)
+                                (MArray wld rep lay Strided rnk) = MArray wld rep lay InnerContiguous rnk
+type instance MArrayMaxLocality (MArray wld rep lay Strided rnk)
+                                (MArray wld rep lay Strided rnk) = MArray wld rep lay Strided rnk
+
+
+
+type family MArrayMinLocality lmarr rmarr :: ( * -> * -> *)
+type instance MArrayMinLocality (MArray wld rep lay Strided rnk)
+                                (MArray wld rep lay Strided rnk) = MArray wld rep lay  Strided rnk
+type instance MArrayMinLocality (MArray wld rep lay InnerContiguous rnk)
+                                (MArray wld rep lay Strided rnk) = MArray wld rep lay Strided rnk
+type instance MArrayMinLocality (MArray wld rep lay Contiguous rnk)
+                                (MArray wld rep lay Strided rnk) = MArray wld rep lay Strided rnk
+type instance MArrayMinLocality (MArray wld rep lay Strided rnk)
+                                (MArray wld rep lay InnerContiguous rnk) = MArray wld rep lay Strided rnk
+type instance MArrayMinLocality (MArray wld rep lay Strided rnk)
+                                (MArray wld rep lay Contiguous rnk) = MArray wld rep lay Strided rnk
+type instance MArrayMinLocality (MArray wld rep lay InnerContiguous rnk)
+                                (MArray wld rep lay InnerContiguous rnk) = MArray wld rep lay InnerContiguous rnk
+type instance MArrayMinLocality (MArray wld rep lay Contiguous rnk)
+                                (MArray wld rep lay InnerContiguous rnk) = MArray wld rep lay InnerContiguous rnk
+type instance MArrayMinLocality (MArray wld rep lay InnerContiguous rnk)
+                                (MArray wld rep lay Contiguous rnk) = MArray wld rep lay InnerContiguous rnk
+type instance MArrayMinLocality (MArray wld rep lay Contiguous rnk)
+                                (MArray wld rep lay Contiguous rnk) = MArray wld rep lay Contiguous rnk
+
 type family  MArrayLocality marr :: Locality
 type instance     MArrayLocality (MArray world rep lay (view::Locality) rank st  el) = view
 
@@ -226,7 +314,8 @@ class MutableRectilinear marr rank a | marr -> rank   where
 
     -- | MutableInnerContigArray is the "meet" (minimum) of the locality level of marr and InnerContiguous.
     -- Thus both Contiguous and InnerContiguous are made InnerContiguous, and Strided stays Strided
-    -- for now this makes sense to have in the MutableRectilinear class, though that may change
+    -- for now this makes sense to have in the MutableRectilinear class, though that may change.
+    -- This could also be thought of as being the GLB (greatest lower bound) on locality
     type MutableInnerContigArray (marr :: * ->  * -> *)  st  a
 
     --type MutableArrayBuffer
@@ -236,7 +325,8 @@ class MutableRectilinear marr rank a | marr -> rank   where
     -- with the outermost (ie major axis) dimension of arr restricted to the
     -- (x,y) is an inclusive interval, MUST satisfy x<y , and be a valid
     -- subinterval of the major axis of arr.
-    basicMutableSliceMajorAxis :: PrimMonad m => marr (PrimState m)  a -> (Int,Int)-> m (marr (PrimState m)  a)
+    basicMutableSliceMajorAxis :: PrimMonad m => marr (PrimState m)  a ->
+      (Int,Int)-> m (marr (PrimState m)  a)
 
     --  |  semantically, 'basicProjectMajorAxis' arr ix, is the rank reducing version of what
     -- basicSliceMajorAxis arr (ix,ix) would mean _if_ the (ix,ix) tuple was a legal major axis slice
@@ -249,7 +339,7 @@ class MutableRectilinear marr rank a | marr -> rank   where
         -> m (MutableInnerContigArray marr (PrimState m)  a )
 
 
-class A.Array (ArrPure marr)  rank a => MutableArray marr   (rank:: Nat)   a |  marr -> rank   where
+class A.Array (ArrPure marr)  rank a => MutableArray marr (rank:: Nat)  a | marr -> rank  where
 
     type   ArrPure marr  :: * -> *
     type   ArrMutable ( arr :: * -> * )  :: * -> * -> *
@@ -301,13 +391,13 @@ class A.Array (ArrPure marr)  rank a => MutableArray marr   (rank:: Nat)   a |  
 
     -- |  return the smallest valid array index
     --  should be weakly dominated by every other valid index
-    basicSmallestIndex :: (PrimMonad m) => marr (PrimState m)   a ->  (Index rank )
+    basicSmallestIndex ::  marr st   a ->  Index rank
     basicSmallestIndex = \ marr -> basicAddressToIndex marr $ basicSmallestAddress marr
     {-# INLINE basicSmallestIndex #-}
 
     -- | return the greatest valid array index
     -- should weakly dominate every
-    basicGreatestIndex ::(PrimMonad m )=>  marr (PrimState m)   a -> (Index rank )
+    basicGreatestIndex ::  marr st  a -> Index rank
     basicGreatestIndex = \ marr -> basicAddressToIndex marr $ basicGreatestAddress marr
     {-# INLINE basicGreatestIndex #-}
 
@@ -317,14 +407,14 @@ class A.Array (ArrPure marr)  rank a => MutableArray marr   (rank:: Nat)   a |  
     -- Note that for invalid addresses in between minAddress and maxAddress,
     -- will return the next valid address.
 
-    basicNextAddress :: PrimMonad m => marr (PrimState m)  a -> Address ->  Address
+    basicNextAddress ::  marr st  a -> Address ->  Address
 
 
     -- I think the case could be made for a basicPreviousAddress opeeration
 
     -- | gives the next valid array index
     -- undefined on invalid indices and the greatest valid index
-    basicNextIndex ::PrimMonad m =>  marr (PrimState m)  a -> Index rank  -> m (Index rank )
+    basicNextIndex :: marr st  a -> Index rank  -> Index rank
 
 
 
@@ -334,7 +424,7 @@ class A.Array (ArrPure marr)  rank a => MutableArray marr   (rank:: Nat)   a |  
     -- that contains @addr@. This will be a singleton when the "maximal uniform stride interval"
     -- containing @addr@ has strictly less than 3 elements. Otherwise will return an Address range
     -- covering the maximal interval that will have cardinality at least 3.
-    basicAddressRegion :: PrimMonad m =>  marr (PrimState m)  a ->Address ->  m  UniformAddressInterval
+    basicAddressRegion :: marr st a ->Address ->  UniformAddressInterval
 
 
     -- | this doesn't fit in this class, but thats ok, will deal with that later
@@ -361,15 +451,17 @@ class A.Array (ArrPure marr)  rank a => MutableArray marr   (rank:: Nat)   a |  
 
 
     --note  the sparsewrite and sparse read are "fused" versions of basicManifestAddress
-    -- and address read and write. probably needs to be benchmarked!
+    -- and address read and write. probably needs to be benchmarked! TODO
 
     -- | Yield the element at the given position. This method should not be
     -- called directly, use 'unsafeSparseRead' instead.
-    basicUnsafeSparseRead :: PrimMonad m => marr  (PrimState m)   a -> Index rank -> m (Maybe a)
+    basicUnsafeSparseRead :: PrimMonad m => marr  (PrimState m)   a ->
+       Index rank -> m (Maybe a)
 
     -- | Replace the element at the given position. This method should not be
     -- called directly, use 'unsafeWrite' instead.
-    basicUnsafeSparseWrite :: PrimMonad m => marr (PrimState m) a -> Index rank -> m( Maybe (a -> m ()))
+    basicUnsafeSparseWrite :: PrimMonad m => marr (PrimState m) a ->
+      Index rank -> m( Maybe (a -> m ()))
 
 
 
@@ -445,7 +537,8 @@ note that these example do not have the right error handling logic currently
 --                        , Num a
 --                        , PrimMonad m
 --                        , MutableArray (mvect Direct loc) N1 a)=>
---    marr (PrimState m) N2 a ->  mvect Direct loc (PrimState m) N1 a -> m (mvect Direct Contiguous  (PrimState m) N1 a )
+--    marr (PrimState m) N2 a ->  mvect Direct loc (PrimState m) N1 a ->
+--       m (mvect Direct Contiguous  (PrimState m) N1 a )
 --generalizedMatrixDenseVectorProduct mat vect = do
 --    -- FIXME : check the dimensions match
 --    (x:* y :* Nil )<- return $ basicShape mat
