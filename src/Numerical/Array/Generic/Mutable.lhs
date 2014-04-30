@@ -117,18 +117,15 @@ type family RepConstraint world  rep el :: Constraint
 -}
 data family MArray world rep lay (view::Locality) (rank :: Nat ) st  el
 
-data instance  MArray Native Boxed layout locality rank st el =
-    MutableNativeBoxedArray {
-        nativeBoxedBuffer:: {-# UNPACK #-} !(BM.MVector st el)
-        ,nativeBoxedFormat ::  !(Format layout locality rank)  }
+data instance  MArray Native Boxed layout locality rank st el = MutableNativeBoxedArray {
+              nativeBoxedBuffer:: {-# UNPACK #-} !(BM.MVector st el)
+              ,nativeBoxedFormat ::  !(Format layout locality rank)  }
 
-data instance  MArray Native Stored layout locality rank st el =
-    MutableNativeStoredArray {
+data instance  MArray Native Stored layout locality rank st el =  MutableNativeStoredArray {
         nativeStoredBuffer:: {-# UNPACK #-} !(SM.MVector st el)
         ,nativeStoredFormat ::  !(Format layout locality rank)  }
 
-data instance  MArray Native Unboxed layout locality rank st el =
-    MutableNativeUnboxedArray {
+data instance  MArray Native Unboxed layout locality rank st el = MutableNativeUnboxedArray {
         nativeUnboxedBuffer:: {-# UNPACK #-} !(UM.MVector st el)
         ,nativeUnboxedFormat ::  !(Format layout locality rank)  }
         -- I have this slight worry that Unboxed arrays will have
@@ -194,14 +191,14 @@ data instance MArray Native Storable lay  view
 
 {-
 
-Mutable Dense Array Builder will only have contiguous instances
+Mutable (Dense) Array Builder will only have contiguous instances
 and only makes sense for dense arrays afaik
 
 BE VERY THOUGHTFUL about what instances you write, or i'll be mad
 -}
 
 class MutableArray marr (rank:: Nat) a => MutableArrayBuilder marr rank a where
-    --basicBuildArray:: Index rank -> b 
+    --basicBuildArray:: Index rank -> b
 
 class MutableDenseArray marr rank a => MutableDenseArrayBuilder marr rank a where
     basicUnsafeNew :: PrimMonad m => Index rank -> m (marr (PrimState m)   a)
@@ -350,7 +347,7 @@ class A.Array (ArrPure marr)  rank a => MutableArray marr   (rank:: Nat)   a |  
     -- | Reset all elements of the vector to some undefined value, clearing all
     -- references to external objects. This is usually a noop for unboxed
     -- vectors. This method should not be called directly, use 'clear' instead.
-    basicClear       :: PrimMonad m => marr (PrimState m)   a -> m ()
+    basicClear :: PrimMonad m => marr (PrimState m)   a -> m ()
 
 
     ---- | Yield the element at the given position. This method should not be
@@ -368,11 +365,11 @@ class A.Array (ArrPure marr)  rank a => MutableArray marr   (rank:: Nat)   a |  
 
     -- | Yield the element at the given position. This method should not be
     -- called directly, use 'unsafeSparseRead' instead.
-    basicUnsafeSparseRead  :: PrimMonad m => marr  (PrimState m)   a -> Index rank -> m (Maybe a)
+    basicUnsafeSparseRead :: PrimMonad m => marr  (PrimState m)   a -> Index rank -> m (Maybe a)
 
     -- | Replace the element at the given position. This method should not be
     -- called directly, use 'unsafeWrite' instead.
-    basicUnsafeSparseWrite :: PrimMonad m => marr (PrimState m)   a -> Index rank   -> m( Maybe (a -> m ()))
+    basicUnsafeSparseWrite :: PrimMonad m => marr (PrimState m) a -> Index rank -> m( Maybe (a -> m ()))
 
 
 
