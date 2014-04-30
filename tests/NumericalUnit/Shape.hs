@@ -37,7 +37,7 @@ unitTestShape = testGroup "Shape Unit tests"
                 SV.toList a @?= [3:* 4:* Nil,1:*2:*Nil]
         ]
     where 
-        {- The NOINLINE is need to properly check storable instances -}
+        {- The NOINLINE is need to properly check storable instances, otherwise fusion removes the allocation! -}
         svFromList  :: SV.Storable a => [a] -> SV.Vector a
         svFromList = SV.fromList
         {-# NOINLINE svFromList #-}
