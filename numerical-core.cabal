@@ -109,8 +109,45 @@ library
     -- Base language which the package is written in.
     default-language:    Haskell2010
 
-
 Test-suite testsuite
+   default-language: Haskell2010
+   type: exitcode-stdio-1.0
+   build-depends:    base >= 4.6 && < 4.9
+        --,hspec  >= 1.9 && < 1.10
+        ,tasty >= 0.8 && < 0.9
+        ,tasty-hunit >= 0.8 && < 0.9
+        ,HUnit  >= 1.2.5 && < 1.3
+        ,primitive >= 0.5 && < 0.6
+        ,vector >= 0.10 && < 0.12
+        ,tagged >= 0.7 && < 0.8
+        ,template-haskell >= 2.8.0.0 && < 2.10.0.0
+        ,ghc-prim
+        ,vector-algorithms >= 0.6.0.1 && < 0.7
+        ,numerical-core
+   --having an explicit list of other modules breaks hpc
+   ghc-options: -threaded -fhpc
+   other-modules:
+        Numerical.Array.Layout
+        Numerical.Array
+        --Control.Monad.State.ReallyStrict
+        --Numerical.Array.Operations
+        Numerical.Array.Shape
+        Numerical.Nat
+        Numerical.World
+        Numerical.Array.Generic.Mutable
+        Numerical.Array.Generic.Pure
+        Numerical.Array.Locality
+        Numerical.Array.Address
+        ------
+        ------
+        NumericalUnit.Shape
+        NumericalUnit.Layout
+   hs-source-dirs: tests
+       src
+   main-is: Main.hs
+
+
+Test-suite testsuite-O2
    default-language: Haskell2010
    type: exitcode-stdio-1.0
    build-depends:    base >= 4.6 && < 4.9
@@ -149,7 +186,7 @@ Test-suite testsuite
    main-is: Main.hs
 
 
-Test-suite testsuite-llvm
+Test-suite testsuite-O2llvm
    default-language: Haskell2010
    type: exitcode-stdio-1.0
    build-depends:    base >= 4.6 && < 4.9
