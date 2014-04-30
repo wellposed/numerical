@@ -19,9 +19,9 @@
 module Numerical.Array.Generic.Internal where
 
 import Control.Monad.Primitive ( PrimMonad, PrimState )
-import qualified Numerical.Array.Layout as L 
+import qualified Numerical.Array.Layout as L
 import Numerical.Array.Layout (Address(..),Locality(..),Direct(..))
-import Numerical.Array.Shape 
+import Numerical.Array.Shape
 import GHC.Prim(Constraint)
 
 import qualified Data.Vector.Storable.Mutable as SM
