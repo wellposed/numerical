@@ -199,7 +199,11 @@ and only makes sense for dense arrays afaik
 
 BE VERY THOUGHTFUL about what instances you write, or i'll be mad
 -}
-class MutableDenseArrayBuilder marr rank a where 
+
+class MutableArray marr (rank:: Nat) a => MutableArrayBuilder marr rank a where
+    basicBuildArray:: Index rank ->
+
+class MutableDenseArray marr rank a => MutableDenseArrayBuilder marr rank a where
     basicUnsafeNew :: PrimMonad m => Index rank -> m (marr (PrimState m)   a)
     basicUnsafeReplicate :: PrimMonad m => Index rank  -> a -> m (marr (PrimState m)  a)
 
@@ -249,13 +253,20 @@ class MutableRectilinear marr rank a | marr -> rank   where
 
 
 class A.Array (ArrPure marr)  rank a => MutableArray marr   (rank:: Nat)   a |  marr -> rank   where
-     
-    type   ArrPure marr  :: * -> * 
-    type   ArrMutable ( arr :: * -> * )  :: * -> * -> *  
 
-    -- | Every 'MutableArray'  instance has a contiguous version 
+    type   ArrPure marr  :: * -> *
+    type   ArrMutable ( arr :: * -> * )  :: * -> * -> *
+
+    -- the type of the underlying storage buffer
+    type MutableArrayBuffer marr :: * -> * -> *
+
+    --
+    type MutableArrayConstraint marr :: * -> Constraint
+
+    -- | Every 'MutableArray'  instance has a contiguous version
     -- of itself, This contiguous version will ALWAYS have a Builder instance.
-    type MutableArrayContiguous (marr :: * -> * -> *) :: * ->  * -> * 
+    --
+    type MutableArrayContiguous (marr :: * -> * -> *) :: * ->  * -> *
 
     -- | Unsafely convert a mutable Array to its immutable version without copying. 
     -- The mutable Array may not be used after this operation. Assumed O(1) complexity
@@ -283,7 +294,7 @@ class A.Array (ArrPure marr)  rank a => MutableArray marr   (rank:: Nat)   a |  
     basicSparseIndexToAddress ::  marr s   a -> Index rank  -> m  (Maybe Address) 
 
     -- | 'basicMutableAddressToIndex' assumes you only give it legal manifest addresses
-    basicAddressToIndex :: marr s   a -> Address ->   m (Index rank  )
+    basicAddressToIndex :: marr s   a -> Address ->    (Index rank  )
 
     -- |  return the smallest valid logical address
     basicSmallestAddress ::  marr st   a ->  Address 
@@ -293,14 +304,14 @@ class A.Array (ArrPure marr)  rank a => MutableArray marr   (rank:: Nat)   a |  
 
     -- |  return the smallest valid array index
     --  should be weakly dominated by every other valid index
-    basicSmallestIndex :: (PrimMonad m) => marr (PrimState m)   a -> m (Index rank )
-    basicSmallestIndex = \ marr -> basicAddressToIndex marr $ basicSmallestAddress marr 
+    basicSmallestIndex :: (PrimMonad m) => marr (PrimState m)   a ->  (Index rank )
+    basicSmallestIndex = \ marr -> basicAddressToIndex marr $ basicSmallestAddress marr
     {-# INLINE basicSmallestIndex #-}
 
     -- | return the greatest valid array index
-    -- should weakly dominate every 
-    basicGreatestIndex ::(PrimMonad m )=>  marr (PrimState m)   a -> m (Index rank )
-    basicGreatestIndex = \ marr -> basicAddressToIndex marr $ basicGreatestAddress marr 
+    -- should weakly dominate every
+    basicGreatestIndex ::(PrimMonad m )=>  marr (PrimState m)   a -> (Index rank )
+    basicGreatestIndex = \ marr -> basicAddressToIndex marr $ basicGreatestAddress marr
     {-# INLINE basicGreatestIndex #-}
 
 
@@ -309,8 +320,8 @@ class A.Array (ArrPure marr)  rank a => MutableArray marr   (rank:: Nat)   a |  
     -- Note that for invalid addresses in between minAddress and maxAddress,
     -- will return the next valid address.
 
-    basicNextAddress :: PrimMonad m => marr (PrimState m)  a -> Address -> m Address 
-    -- FIXME / TODO/ can basicNextAddress be considered pure?
+    basicNextAddress :: PrimMonad m => marr (PrimState m)  a -> Address ->  Address
+
 
     -- I think the case could be made for a basicPreviousAddress opeeration
 

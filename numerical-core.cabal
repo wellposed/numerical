@@ -94,6 +94,7 @@ library
                         ,tagged >= 0.7 && < 0.8
                         ,template-haskell >= 2.8.0.0 && < 2.10.0.0
                         ,ghc-prim
+                        ,vector-algorithms >= 0.6.0.1 && < 0.7
                          -- , quickcheck >=
                          
                         -- what version constraints?
@@ -120,9 +121,10 @@ Test-suite testsuite
         ,tagged >= 0.7 && < 0.8
         ,template-haskell >= 2.8.0.0 && < 2.10.0.0
         ,ghc-prim
+        ,vector-algorithms >= 0.6.0.1 && < 0.7
         ,numerical-core
    --having an explicit list of other modules breaks hpc 
-   ghc-options: -fhpc -O2  -threaded
+   ghc-options: -fhpc -O2  -threaded -fllvm 
    other-modules: 
         Numerical.Array.Layout
         Numerical.Array
