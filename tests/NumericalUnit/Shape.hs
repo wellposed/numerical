@@ -10,6 +10,7 @@ module NumericalUnit.Shape(unitTestShape) where
 import Test.HUnit
 import Numerical.Array.Shape as S 
 import qualified Data.Vector.Storable as SV 
+import qualified Data.Vector.Unboxed as UV 
 import Prelude as P
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -41,11 +42,24 @@ unitTestShape = testGroup "Shape Unit tests"
         , testCase "storable on size 2 shape" $ 
             do  a <- return (svFromList [3:* 4:* Nil,1:*2:*Nil :: Shape (S (S Z)) Int]) ;
                 SV.toList a @?= [3:* 4:* Nil,1:*2:*Nil]
+
+        , testCase "unboxed on size 0 shape" $ 
+            do a <- return (uvFromList [Nil,Nil :: Shape Z Int]) ; UV.toList a @?= [Nil,Nil]
+        , testCase "unboxed on size 1 shape" $ 
+            do a <- return (uvFromList [1:*Nil,2:*Nil :: Shape (S Z) Int]) ; UV.toList a @?= [1:*Nil,2:*Nil]
+        , testCase "unboxed on size 2 shape" $ 
+            do  a <- return (uvFromList [3:* 4:* Nil,1:*2:*Nil :: Shape (S (S Z)) Int]) ;
+                UV.toList a @?= [3:* 4:* Nil,1:*2:*Nil]                
         ]
     where 
         {- The NOINLINE is need to properly check storable instances, otherwise fusion removes the allocation! -}
         svFromList  :: SV.Storable a => [a] -> SV.Vector a
         svFromList = SV.fromList
         {-# NOINLINE svFromList #-}
+
+        uvFromList :: UV.Unbox a => [a] -> UV.Vector a 
+        uvFromList = UV.fromList 
+        {-# NOINLINE uvFromList#-}
+
 
     

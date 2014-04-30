@@ -46,6 +46,8 @@ module Numerical.Array.Shape(Shape(..)
     ,takePrefix
     ,shapeToList
     ,Index
+    ,UV.Vector(UV.V_ShapeZ,UV.V_ShapeSZ,UV.V_ShapeSSN)
+    ,UV.MVector(UV.MV_ShapeZ,UV.MV_ShapeSZ,UV.MV_ShapeSSN)
     ) 
     where
 
@@ -56,6 +58,7 @@ import Data.Typeable()
 import qualified Data.Functor as Fun 
 import qualified  Data.Foldable as F
 import qualified Control.Applicative as A 
+import Control.Monad (liftM)
 --import qualified Data.Traversable as T 
 
 import Numerical.Nat 
@@ -64,6 +67,10 @@ import Prelude hiding  (map,foldl,foldr,init,scanl,scanr,scanl1,scanr1,foldl1,fo
 
 import qualified Foreign.Storable  as Store 
 import qualified Foreign.Ptr as Ptr
+
+import qualified Data.Vector.Unboxed as UV 
+import qualified Data.Vector.Generic as GV 
+import qualified Data.Vector.Generic.Mutable as GMV
 
 {-
 Shape may get renamed to Index in the near future! 
@@ -204,6 +211,163 @@ shapeSize :: F.Foldable (Shape n)=>Shape n a -> Int
 shapeSize  = \ as -> ( F.foldl (\ct _ -> ct +1) 0 as )
 
 
+
+newtype instance UV.MVector s (Shape Z a)  = MV_ShapeZ  Int
+newtype instance UV.Vector    (Shape Z a) = V_ShapeZ  Int 
+
+newtype instance UV.MVector s (Shape (S Z) a)  = MV_ShapeSZ (UV.MVector s a)
+newtype instance UV.Vector    (Shape (S Z) a) = V_ShapeSZ  (UV.Vector    a)
+
+newtype instance UV.MVector s (Shape (S (S n)) a)  = MV_ShapeSSN (UV.MVector s (a, Shape (S n) a) )
+newtype instance UV.Vector    (Shape (S (S n)) a) = V_ShapeSSN  (UV.Vector   (a, Shape (S n) a) )
+
+
+instance UV.Unbox a => UV.Unbox (Shape Z a)
+instance UV.Unbox a =>  UV.Unbox (Shape (S Z) a)
+instance (UV.Unbox a,UV.Unbox (Shape (S n) a) )=> UV.Unbox (Shape (S (S n)) a)
+
+
+
+instance UV.Unbox a => GMV.MVector UV.MVector  (Shape Z a) where
+  {-# INLINE basicLength #-}
+  {-# INLINE basicUnsafeSlice #-}
+  {-# INLINE basicOverlaps #-}
+  {-# INLINE basicUnsafeNew #-}
+  {-# INLINE basicUnsafeRead #-}
+  {-# INLINE basicUnsafeWrite #-}
+  {-# INLINE basicClear #-}
+  {-# INLINE basicSet #-}
+  {-# INLINE basicUnsafeCopy #-}
+  {-# INLINE basicUnsafeGrow #-}
+
+  basicLength (MV_ShapeZ n) = n
+
+  basicUnsafeSlice _ m (MV_ShapeZ _) = MV_ShapeZ m
+
+  basicOverlaps _ _ = False
+
+  basicUnsafeNew n = return (MV_ShapeZ n)
+
+  basicUnsafeRead (MV_ShapeZ _) _ = return Nil 
+
+  basicUnsafeWrite (MV_ShapeZ _) _ Nil = return ()
+
+  basicClear _ = return ()
+
+  basicSet (MV_ShapeZ _) Nil = return ()
+
+  basicUnsafeCopy (MV_ShapeZ _) (MV_ShapeZ _) = return ()
+
+  basicUnsafeGrow (MV_ShapeZ n) m = return $ MV_ShapeZ (n+m)
+
+instance UV.Unbox a => GV.Vector UV.Vector  (Shape Z a) where
+  {-# INLINE basicUnsafeFreeze #-}
+  basicUnsafeFreeze (MV_ShapeZ n) = return $ V_ShapeZ n
+
+  {-# INLINE basicUnsafeThaw #-}
+  basicUnsafeThaw (V_ShapeZ n) = return $ MV_ShapeZ n
+
+  {-# INLINE basicLength #-}
+  basicLength (V_ShapeZ n) = n
+
+  {-# INLINE basicUnsafeSlice #-}
+  basicUnsafeSlice _ m (V_ShapeZ _) = V_ShapeZ m
+
+  {-# INLINE basicUnsafeIndexM #-}
+  basicUnsafeIndexM (V_ShapeZ _) _ = return Nil 
+
+  {-# INLINE basicUnsafeCopy #-}
+  basicUnsafeCopy (MV_ShapeZ _) (V_ShapeZ _) = return ()
+
+  {-# INLINE elemseq #-}
+  elemseq _ = seq
+
+instance (UV.Unbox a) => GMV.MVector UV.MVector (Shape (S Z) a) where
+  {-# INLINE basicLength #-}
+  {-# INLINE basicUnsafeSlice #-}
+  {-# INLINE basicOverlaps #-}
+  {-# INLINE basicUnsafeNew #-}
+  {-# INLINE basicUnsafeReplicate #-}
+  {-# INLINE basicUnsafeRead #-}
+  {-# INLINE basicUnsafeWrite #-}
+  {-# INLINE basicClear #-}
+  {-# INLINE basicSet #-}
+  {-# INLINE basicUnsafeCopy #-}
+  {-# INLINE basicUnsafeGrow #-}
+  basicLength (MV_ShapeSZ v) = GMV.basicLength v
+  basicUnsafeSlice i n (MV_ShapeSZ v) = MV_ShapeSZ $ GMV.basicUnsafeSlice i n v
+  basicOverlaps (MV_ShapeSZ v1) (MV_ShapeSZ v2) = GMV.basicOverlaps v1 v2
+  basicUnsafeNew n = MV_ShapeSZ `liftM` GMV.basicUnsafeNew n
+  basicUnsafeReplicate n (a:*_) = MV_ShapeSZ `liftM` GMV.basicUnsafeReplicate n a 
+  basicUnsafeRead (MV_ShapeSZ v) i = ( :* Nil ) `liftM` GMV.basicUnsafeRead v i
+  basicUnsafeWrite (MV_ShapeSZ v) i (a:* _) = GMV.basicUnsafeWrite v i a 
+  basicClear (MV_ShapeSZ v) = GMV.basicClear v
+  basicSet (MV_ShapeSZ v) (a:*_) = GMV.basicSet v a 
+  basicUnsafeCopy (MV_ShapeSZ v1) (MV_ShapeSZ v2) = GMV.basicUnsafeCopy v1 v2
+  basicUnsafeMove (MV_ShapeSZ v1) (MV_ShapeSZ v2) = GMV.basicUnsafeMove v1 v2
+  basicUnsafeGrow (MV_ShapeSZ v) n = MV_ShapeSZ `liftM` GMV.basicUnsafeGrow v n
+
+instance ( UV.Unbox a) => GV.Vector UV.Vector (Shape (S Z) a ) where
+  {-# INLINE basicUnsafeFreeze #-}
+  {-# INLINE basicUnsafeThaw #-}
+  {-# INLINE basicLength #-}
+  {-# INLINE basicUnsafeSlice #-}
+  {-# INLINE basicUnsafeIndexM #-}
+  {-# INLINE elemseq #-}
+  basicUnsafeFreeze (MV_ShapeSZ v) = V_ShapeSZ `liftM` GV.basicUnsafeFreeze v
+  basicUnsafeThaw (V_ShapeSZ v) = MV_ShapeSZ`liftM` GV.basicUnsafeThaw v
+  basicLength (V_ShapeSZ v) = GV.basicLength v
+  basicUnsafeSlice i n (V_ShapeSZ v) = V_ShapeSZ $ GV.basicUnsafeSlice i n v
+  basicUnsafeIndexM (V_ShapeSZ v) i
+                = ( :* Nil ) `liftM` GV.basicUnsafeIndexM v i
+  basicUnsafeCopy (MV_ShapeSZ mv) (V_ShapeSZ v)
+                = GV.basicUnsafeCopy mv v
+  elemseq _ (a:*_) z =   GV.elemseq (undefined :: UV.Vector a) a z
+
+
+instance (UV.Unbox a,UV.Unbox (Shape (S n) a)) => GMV.MVector UV.MVector (Shape (S (S n)) a) where
+  {-# INLINE basicLength #-}
+  {-# INLINE basicUnsafeSlice #-}
+  {-# INLINE basicOverlaps #-}
+  {-# INLINE basicUnsafeNew #-}
+  {-# INLINE basicUnsafeReplicate #-}
+  {-# INLINE basicUnsafeRead #-}
+  {-# INLINE basicUnsafeWrite #-}
+  {-# INLINE basicClear #-}
+  {-# INLINE basicSet #-}
+  {-# INLINE basicUnsafeCopy #-}
+  {-# INLINE basicUnsafeGrow #-}
+  basicLength (MV_ShapeSSN v) = GMV.basicLength v
+  basicUnsafeSlice i n (MV_ShapeSSN v) = MV_ShapeSSN $ GMV.basicUnsafeSlice i n v
+  basicOverlaps (MV_ShapeSSN v1) (MV_ShapeSSN v2) = GMV.basicOverlaps v1 v2
+  basicUnsafeNew n = MV_ShapeSSN `liftM` GMV.basicUnsafeNew n
+  basicUnsafeReplicate n (a :* as) = MV_ShapeSSN `liftM` GMV.basicUnsafeReplicate n (a,as)
+  basicUnsafeRead (MV_ShapeSSN v) i = uncurry (:*) `liftM` GMV.basicUnsafeRead v i
+  basicUnsafeWrite (MV_ShapeSSN v) i (a :* as ) = GMV.basicUnsafeWrite v i (a,as)
+  basicClear (MV_ShapeSSN v) = GMV.basicClear v
+  basicSet (MV_ShapeSSN v) (a :* as) = GMV.basicSet v (a,as)
+  basicUnsafeCopy (MV_ShapeSSN v1) (MV_ShapeSSN v2) = GMV.basicUnsafeCopy v1 v2
+  basicUnsafeMove (MV_ShapeSSN v1) (MV_ShapeSSN v2) = GMV.basicUnsafeMove v1 v2
+  basicUnsafeGrow (MV_ShapeSSN v) n = MV_ShapeSSN `liftM` GMV.basicUnsafeGrow v n
+
+
+instance (UV.Unbox a,UV.Unbox (Shape (S n) a)) =>  GV.Vector UV.Vector (Shape (S (S n)) a) where
+  {-# INLINE basicUnsafeFreeze #-}
+  {-# INLINE basicUnsafeThaw #-}
+  {-# INLINE basicLength #-}
+  {-# INLINE basicUnsafeSlice #-}
+  {-# INLINE basicUnsafeIndexM #-}
+  {-# INLINE elemseq #-}
+  basicUnsafeFreeze (MV_ShapeSSN v) = V_ShapeSSN `liftM` GV.basicUnsafeFreeze v
+  basicUnsafeThaw (V_ShapeSSN v) = MV_ShapeSSN `liftM` GV.basicUnsafeThaw v
+  basicLength (V_ShapeSSN v) = GV.basicLength v
+  basicUnsafeSlice i n (V_ShapeSSN v) = V_ShapeSSN $ GV.basicUnsafeSlice i n v
+  basicUnsafeIndexM (V_ShapeSSN v) i
+                = uncurry (:*) `liftM` GV.basicUnsafeIndexM v i
+  basicUnsafeCopy (MV_ShapeSSN mv) (V_ShapeSSN v)
+                = GV.basicUnsafeCopy mv v
+  elemseq _ (a :* as) z = GV.elemseq (undefined :: UV.Vector a) a
+                       $ GV.elemseq (undefined :: UV.Vector (Shape (S n) a)) as z
 
 shapeToList :: Shape n a -> [a]
 shapeToList Nil = []
