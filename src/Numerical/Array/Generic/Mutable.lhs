@@ -327,6 +327,7 @@ class MutableRectilinear marr rank a | marr -> rank   where
     -- subinterval of the major axis of arr.
     basicMutableSliceMajorAxis :: PrimMonad m => marr (PrimState m)  a ->
       (Int,Int)-> m (marr (PrimState m)  a)
+    --but  should it be primmonadic? nah, tis pure!
 
     --  |  semantically, 'basicProjectMajorAxis' arr ix, is the rank reducing version of what
     -- basicSliceMajorAxis arr (ix,ix) would mean _if_ the (ix,ix) tuple was a legal major axis slice
