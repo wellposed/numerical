@@ -10,7 +10,7 @@
 {-#  LANGUAGE GADTs #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-
+{-# LANGUAGE FunctionalDependencies #-}
 
 module Numerical.Array.Layout(
   Locality(..)
@@ -20,7 +20,8 @@ module Numerical.Array.Layout(
   ,Direct
   ,Layout(..)
   ,Address(..)
-  ,UniformAddressInterval(..)) where
+  ,UniformAddressInterval(..)
+  ,Ordering) where
 
 
 
@@ -29,6 +30,7 @@ import Control.Applicative
 import Numerical.Array.Address
 import Numerical.Array.Locality
 import Numerical.Array.Shape as S
+
 
 import qualified Data.Foldable as F
 
@@ -81,44 +83,61 @@ formats sparsely
 
 -}
 
+{-
+TODO : move a bunch of the projection and transformation
+logic from the Array classes to the analogous Layout classes.
+All of the operations are oblivious to underlying buffer type
+
+-}
+
+-- either we need to break ties, or the ties have been broken
+majorCompareLeftToRight :: Ordering -> Ordering -> Ordering
+majorCompareLeftToRight EQ new = new
+majorCompareLeftToRight a _ = a
 
 
-
+majorCompareRightToLeft :: Ordering -> Ordering -> Ordering
+majorCompareRightToLeft new EQ = new
+majorCompareRightToLeft _ b = b
 
 data family Format lay (contiguity:: Locality)  (rank :: Nat)
 
 
-class Layout lay (contiguity:: Locality) (rank :: Nat)  where
+class Layout form  (rank :: Nat) | form -> rank  where
 
-    type Tranposed lay
+    type Tranposed form
 
+    -- not happy with this name, will change later FIXME TODO
+    basicFormShape :: form -> Shape rank Int
 
-    transposedLayout ::  (lay ~ Tranposed l2,l2~Tranposed lay)=> Format lay contiguity rank -> Format l2 contiguity rank
+    transposedLayout ::  (form ~ Tranposed transform,transform~Tranposed form)=> form  -> transform
     --shapeOf
 
-    basicToAddress :: Format lay contiguity rank -> Shape rank Int -> Address
+    basicToAddress :: form  -> Shape rank Int -> Address
 
 
-    basicToIndex :: Format   lay contiguity rank -> Address -> Shape rank Int
+    basicToIndex :: form -> Address -> Shape rank Int
 
     --unchecked
     --nextAddress --- not sure if this should even exist for contiguous ones..
     -- not sure if this is the right model for the valid ops
     --validAddress::Form   lay contiguity rank -> Int -> Either String (Shape rank Int)
     --validIndex ::Form   lay contiguity rank -> Shape rank Int -> Either String Int
-    basicNextAddress :: Format   lay contiguity rank -> Address ->  Address
+    basicNextAddress :: form  -> Address ->  Address
     basicNextAddress =  \form shp ->  basicToAddress form $  (basicNextIndex form  $! basicToIndex form  shp )
     {-# INLINE basicNextAddress #-}
 
-    basicNextIndex :: Format  lay contiguity rank -> Shape rank Int ->(Shape rank Int)
+    basicNextIndex :: form  -> Shape rank Int ->Shape rank Int
     basicNextIndex  = \form shp ->  basicToIndex form  $  (basicNextAddress form  $! basicToAddress form  shp )
     {-# INLINE  basicNextIndex #-}
 
 
+    basicCompareLogicalIndex :: p form-> Shape rank Int ->Shape rank Int -> Ordering
+
 
 
     -- one of basicNextAddress and basicNextIndex must always be implemented
-    {-# MINIMAL transposedLayout, basicToIndex, basicToAddress, (basicNextIndex | basicNextAddress ) #-}
+    {-# MINIMAL basicFormShape,basicCompareLogicalIndex, transposedLayout, basicToIndex, basicToAddress, (basicNextIndex | basicNextAddress ) #-}
 
 -----
 -----
@@ -127,21 +146,28 @@ class Layout lay (contiguity:: Locality) (rank :: Nat)  where
 data instance Format  Direct Contiguous (S Z) =
             FormatDirectContiguous { logicalShapeDirectContiguous :: {-#UNPACK#-} !Int }
 
-instance Layout Direct Contiguous (S Z)   where
-    type Tranposed Direct = Direct
+instance Layout (Format Direct Contiguous (S Z))  (S Z)  where
 
+    type Tranposed (Format Direct Contiguous (S Z)) = (Format Direct Contiguous (S Z))
+
+    {-# INLINE basicFormShape#-}
+    basicFormShape = \ x -> (logicalShapeDirectContiguous x) :* Nil
 
     transposedLayout = id
 
     {-#INLINE basicToAddress#-}
-    basicToAddress   (FormatDirectContiguous _) (j :* _ )= Address j
+    basicToAddress   = \ (FormatDirectContiguous _) (j :* _ ) -> Address j
 
     --basicNextIndex=  undefined -- \ _ x ->  Just $! x + 1
     --note its unchecked!
     {-# INLINE basicToIndex#-}
     basicToIndex =  \ (FormatDirectContiguous _) (Address ix)  -> (ix ) :* Nil
 
+    {-# INLINE basicNextAddress #-}
     basicNextAddress = \ _ addr -> addr + 1
+
+    {-# INLINE basicCompareLogicalIndex #-}
+    basicCompareLogicalIndex = \ _  (l:* _) (r:* _) -> compare l r
 
 
 
@@ -149,9 +175,12 @@ data instance Format  Direct Strided (S Z) =
         FormatDirectStrided { logicalShapeDirectStrided :: {-#UNPACK#-}!Int
                     , logicalStrideDirectStrided:: {-#UNPACK#-}!Int}
 
-instance Layout Direct Strided (S Z)   where
-    type Tranposed Direct = Direct
+instance Layout (Format Direct Strided (S Z))  (S Z)  where
 
+    type Tranposed (Format Direct Strided (S Z)) = (Format Direct Strided (S Z))
+
+    {-# INLINE basicFormShape #-}
+    basicFormShape = \x -> (logicalShapeDirectStrided x) :* Nil
 
     transposedLayout = id
 
@@ -168,20 +197,28 @@ instance Layout Direct Strided (S Z)   where
     {-# INLINE basicToIndex#-}
     basicToIndex = \ (FormatDirectStrided _ stride) (Address ix)  -> (ix `div` stride ) :* Nil
 
+    {-# INLINE basicCompareLogicalIndex #-}
+    basicCompareLogicalIndex = \ _  (l:* _) (r:* _) -> compare l r
+
 -----
 -----
 -----
 
 
 
-data instance  Format  Row  Contiguous rank  = FormatRowContiguous {boundsFormRow :: !(Shape rank Int)}
+data instance  Format  Row  Contiguous rank  = FormatRowContiguous {
+    boundsFormRow :: !(Shape rank Int)}
+
 -- strideRow :: Shape rank Int,
 instance   (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)
-    => Layout Row  Contiguous rank where
+    => Layout (Format Row  Contiguous rank) rank where
 
-    type Tranposed Row = Column
+    type Tranposed (Format Row  Contiguous rank) = (Format Column Contiguous rank)
 
     transposedLayout = \(FormatRowContiguous shp) -> FormatColumnContiguous $ reverseShape shp
+
+    {-# INLINE basicFormShape #-}
+    basicFormShape = \x -> boundsFormRow x
 
     {-# INLINE basicToAddress #-}
     basicToAddress = \rs tup -> let !strider =takePrefix $! S.scanr (*) 1 (boundsFormRow rs)
@@ -198,18 +235,24 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)
                             S.scanl1 (\(_,r) strid -> r `quotRem`  strid)
                                 (ix,error "impossible remainder access in Row Contiguous basicToIndex") striderShape
 
-
+    {-# INLINE basicCompareLogicalIndex #-}
+    basicCompareLogicalIndex = \ _  ls rs -> foldl majorCompareLeftToRight EQ  $ S.map2 compare ls rs
 
 
 -----
 -----
 data instance  Format  Row  InnerContiguous rank  =
-        FormatRowInnerContiguous {boundsFormRowInnerContig :: !(Shape rank Int), strideFormRowInnerContig:: !(Shape rank Int)}
+        FormatRowInnerContiguous {boundsFormRowInnerContig :: !(Shape rank Int)
+        , strideFormRowInnerContig:: !(Shape rank Int)}
+
 -- strideRow :: Shape rank Int,
-instance   (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank) => Layout Row  InnerContiguous rank where
-    type Tranposed Row = Column
+instance   (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)
+  => Layout (Format Row  InnerContiguous rank) rank  where
 
+    type Tranposed (Format Row  InnerContiguous rank) = Format Column  InnerContiguous rank
 
+    {-# INLINE basicFormShape  #-}
+    basicFormShape = \x -> boundsFormRowInnerContig x
 
     transposedLayout = \(FormatRowInnerContiguous shp stride) ->
         FormatColumnInnerContiguous  (reverseShape shp)  (reverseShape stride)
@@ -229,16 +272,23 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank) =>
                 S.scanl1 (\(_,r) strid -> r `quotRem`  strid)
                     (ix,error "impossible remainder access in Row Contiguous basicToIndex") (strideFormRowInnerContig rs )
 
+    {-# INLINE basicCompareLogicalIndex #-}
+    basicCompareLogicalIndex = \ _  ls rs -> foldl majorCompareLeftToRight EQ  $ S.map2 compare ls rs
 
 ---
 ---
 data instance  Format  Row  Strided rank  =
-        FormatRowStrided {boundsFormRowStrided:: !(Shape rank Int), strideFormRowStrided:: !(Shape rank Int)}
+        FormatRowStrided {boundsFormRowStrided:: !(Shape rank Int)
+            , strideFormRowStrided:: !(Shape rank Int)}
 -- strideRow :: Shape rank Int,
-instance  (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)=> Layout Row  Strided rank where
-    type Tranposed Row = Column
 
+instance  (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)
+  => Layout (Format Row  Strided rank) rank  where
 
+    type Tranposed (Format Row  Strided rank) = (Format Column  Strided rank)
+
+    {-# INLINE basicFormShape  #-}
+    basicFormShape = \x -> boundsFormRowStrided x
 
     transposedLayout = \(FormatRowStrided shp stride) ->
         FormatColumnStrided  (reverseShape shp)  (reverseShape stride)
@@ -259,15 +309,25 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)=> L
                     (ix,error "impossible remainder access in Row Contiguous basicToIndex")
                     (strideFormRowStrided rs )
 
+    {-# INLINE basicCompareLogicalIndex #-}
+    basicCompareLogicalIndex = \ _  ls rs ->
+        foldl majorCompareLeftToRight EQ  $ S.map2 compare ls rs
+
 -----
 -----
 -----
 
-data instance  Format  Column Contiguous rank  = FormatColumnContiguous {boundsColumnContig :: !(Shape rank Int)}
+data instance  Format  Column Contiguous rank  = FormatColumnContiguous {
+  boundsColumnContig :: !(Shape rank Int)}
+
  -- strideRow :: Shape rank Int,
-instance  (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)=> Layout Column  Contiguous rank where
-    type Tranposed Column = Row
+instance  (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)
+  => Layout (Format Column  Contiguous rank )  rank where
 
+    type Tranposed (Format Column  Contiguous rank ) = (Format Row Contiguous rank )
+
+    {-# INLINE basicFormShape  #-}
+    basicFormShape = \x -> boundsColumnContig x
 
     transposedLayout = \(FormatColumnContiguous shp)-> FormatRowContiguous $ reverseShape shp
     {-# INLINE basicToAddress #-}
@@ -285,14 +345,22 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)=> L
                         S.scanr1 (\ strid (_,r)  -> r `quotRem`  strid)
                             (ix,error "impossible remainder access in Column Contiguous basicToIndex") striderShape
 
+    {-# INLINE basicCompareLogicalIndex #-}
+    basicCompareLogicalIndex = \ _  ls rs -> foldr majorCompareRightToLeft EQ  $ S.map2 compare ls rs
 
 
+data instance  Format Column InnerContiguous rank  = FormatColumnInnerContiguous {
+      boundsColumnInnerContig :: !(Shape rank Int),
+      strideFormColumnInnerContig:: !(Shape rank Int)}
 
-data instance  Format Column InnerContiguous rank  = FormatColumnInnerContiguous {boundsColumnInnerContig :: !(Shape rank Int), strideFormColumnInnerContig:: !(Shape rank Int)}
  -- strideRow :: Shape rank Int,
-instance  (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)=> Layout Column  InnerContiguous rank where
-    type Tranposed Column = Row
+instance  (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)
+  => Layout (Format Column  InnerContiguous rank) rank  where
 
+    type Tranposed (Format Column  InnerContiguous rank) = (Format Row  InnerContiguous rank)
+
+    {-# INLINE basicFormShape  #-}
+    basicFormShape = \x -> boundsColumnInnerContig x
 
     transposedLayout = \(FormatColumnInnerContiguous shp stride)->
          FormatRowInnerContiguous (reverseShape shp) (reverseShape stride)
@@ -312,13 +380,19 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)=> L
               let !striderShape  = strideFormColumnInnerContig form
                   in S.map  fst  $!   S.scanr1 (\ stride (_,r)  -> r `quotRem`  stride)
                         (ix,error "impossible remainder access in Column Contiguous basicToIndex") striderShape
+    {-# INLINE basicCompareLogicalIndex #-}
+    basicCompareLogicalIndex = \ _  ls rs -> foldr majorCompareRightToLeft EQ  $ S.map2 compare ls rs
 
 
 data instance  Format Column Strided rank  = FormatColumnStrided {boundsColumnStrided :: !(Shape rank Int), strideFormColumnStrided:: !(Shape rank Int)}
  -- strideRow :: Shape rank Int,
-instance   (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)=> Layout Column  Strided rank where
-    type Tranposed Column = Row
+instance   (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)
+  => Layout (Format Column  Strided rank) rank where
 
+    type Tranposed (Format Column  Strided rank) = (Format Row  Strided rank)
+
+    {-# INLINE basicFormShape  #-}
+    basicFormShape = \x -> boundsColumnStrided x
 
     transposedLayout = \(FormatColumnStrided shp stride)->
          FormatRowStrided (reverseShape shp) (reverseShape stride)
@@ -337,6 +411,8 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)=> 
               let !striderShape  = strideFormColumnStrided form
                   in S.map  fst  $!   S.scanr1 (\ stride (_,r)  -> r `quotRem`  stride)
                         (ix,error "impossible remainder access in Column Contiguous basicToIndex") striderShape
+    {-# INLINE basicCompareLogicalIndex #-}
+    basicCompareLogicalIndex = \ _  ls rs -> foldr majorCompareRightToLeft EQ $ S.map2 compare ls rs
 
 
 
