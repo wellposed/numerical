@@ -167,7 +167,7 @@ type family  MArrayLayout marr where
 type family MArrayRep marr where
     MArrayRep (MArray world rep lay (view::Locality) rank st  el) = rep
 
-type family MArrayMaxLocality lmarr rmarr :: ( * -> * -> *) where
+type family MArrayMaxLocality (lmarr ::  * -> * -> * )(rmarr::  * -> * -> *) :: ( * -> * -> *) where
   MArrayMaxLocality (MArray wld rep lay Contiguous rnk)
                     (MArray wld rep lay  Contiguous rnk) = MArray wld rep lay Contiguous rnk
   MArrayMaxLocality (MArray wld rep lay InnerContiguous rnk)
@@ -189,7 +189,7 @@ type family MArrayMaxLocality lmarr rmarr :: ( * -> * -> *) where
 
 
 
-type family MArrayMinLocality lmarr rmarr :: ( * -> * -> *) where
+type family MArrayMinLocality (lmarr ::  * -> * -> * )(rmarr::  * -> * -> *) :: ( * -> * -> *) where
   MArrayMinLocality (MArray wld rep lay Strided rnk)
                     (MArray wld rep lay Strided rnk) = MArray wld rep lay Strided rnk
   MArrayMinLocality (MArray wld rep lay InnerContiguous rnk)
@@ -213,7 +213,7 @@ type family MArrayMinLocality lmarr rmarr :: ( * -> * -> *) where
 #else
 
 
-type family MArrayMaxLocality lmarr rmarr :: ( * -> * -> *)
+type family MArrayMaxLocality (lmarr ::  * -> * -> * )(rmarr::  * -> * -> *) :: ( * -> * -> *)
 type instance MArrayMaxLocality (MArray wld rep lay Contiguous rnk)
                                 (MArray wld rep lay Contiguous rnk) = MArray wld rep lay Contiguous rnk
 type instance MArrayMaxLocality (MArray wld rep lay InnerContiguous rnk)
@@ -235,7 +235,7 @@ type instance MArrayMaxLocality (MArray wld rep lay Strided rnk)
 
 
 
-type family MArrayMinLocality lmarr rmarr :: ( * -> * -> *)
+type family MArrayMinLocality (lmarr ::  * -> * -> * )(rmarr::  * -> * -> *) :: ( * -> * -> *)
 type instance MArrayMinLocality (MArray wld rep lay Strided rnk)
                                 (MArray wld rep lay Strided rnk) = MArray wld rep lay  Strided rnk
 type instance MArrayMinLocality (MArray wld rep lay InnerContiguous rnk)
