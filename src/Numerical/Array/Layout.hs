@@ -103,6 +103,13 @@ majorCompareRightToLeft _ b = b
 data family Format lay (contiguity:: Locality)  (rank :: Nat)
 
 
+{-
+LAYOUT as currently defined is actually dense layout
+
+need to add a general sparse/dense layout format
+
+-}
+
 class Layout form  (rank :: Nat) | form -> rank  where
 
     type Tranposed form
