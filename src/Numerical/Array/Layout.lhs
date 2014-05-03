@@ -281,7 +281,8 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)
     basicFormShape = \x -> boundsFormRow x
 
     {-# INLINE basicToAddress #-}
-    basicToAddress = \rs tup -> let !strider =takePrefix $! S.scanr (*) 1 (boundsFormRow rs)
+    --basicToAddress = \rs tup -> let !strider =takePrefix $! S.scanr (*) 1 (boundsFormRow rs)
+    basicToAddress = \rs tup -> let !strider =S.scanr1 (*) 1 (boundsFormRow rs)
                                 in Address $! S.foldl'  (+) 0 $! map2 (*) strider tup
     {-# INLINE basicNextAddress#-}
     basicNextAddress = \_ addr -> addr + 1
@@ -290,10 +291,12 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)
     basicToIndex  =   \ rs (Address ix) -> case boundsFormRow rs of
           Nil -> Nil
           (_:*_)->
-            let !striderShape  =takePrefix $! S.scanr (*) 1 (boundsFormRow rs)
+            --let !striderShape  =takePrefix $! S.scanr (*) 1 (boundsFormRow rs)
+            -- FIXME
+            let !striderShape  =  takePrefix$!S.scanl (*) 1 (boundsFormRow rs)
                 in  S.map  fst $!
-                            S.scanl1 (\(_,r) strid -> r `quotRem`  strid)
-                                (ix,error "impossible remainder access in Row Contiguous basicToIndex") striderShape
+                            S.scanr1 (\ strid (_,r)  -> r `quotRem`  strid)
+                                (error "impossible remainder access in Row Contiguous basicToIndex",ix) striderShape
 
     {-# INLINE basicCompareIndex #-}
     basicCompareIndex = \ _  ls rs -> foldl majorCompareLeftToRight EQ  $ S.map2 compare ls rs
@@ -399,7 +402,8 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)
     transposedLayout = \(FormatColumnContiguous shp)-> FormatRowContiguous $ reverseShape shp
     {-# INLINE basicToAddress #-}
     basicToAddress    =   \ rs tup ->
-        let !strider =  takeSuffix $!   S.scanl (*) 1 (boundsColumnContig rs)
+    -- used to be take suffix of scanl
+        let !strider =   S.scanl1 (*) 1 (boundsColumnContig rs)
                 in Address $! foldl' (+) 0  $! map2 (*) strider tup
 
     {-# INLINE basicNextAddress #-}
@@ -409,10 +413,11 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)
     basicToIndex  = \ rs (Address ix) -> case boundsColumnContig rs of
           Nil -> Nil
           (_:*_)->
-              let !striderShape  =takeSuffix $! S.scanl (*) 1 (boundsColumnContig rs)
+          -- used to be take suffix of scanl  FIXME  FIXME
+              let !striderShape  =   takeSuffix $ S.scanr (*) 1 (boundsColumnContig rs)
                   in S.map  fst  $!
-                        S.scanr1 (\ strid (_,r)  -> r `quotRem`  strid)
-                            (ix,error "impossible remainder access in Column Contiguous basicToIndex") striderShape
+                       S.scanl1 (\   (_,r) strid  -> r `quotRem`  strid)
+                            (error "impossible remainder access in Column Contiguous basicToIndex", ix) striderShape
 
     {-# INLINE basicCompareIndex #-}
     basicCompareIndex = \ _  ls rs -> foldr majorCompareRightToLeft EQ  $ S.map2 compare ls rs
