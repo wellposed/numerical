@@ -39,11 +39,11 @@ import qualified Data.Vector.Storable.Mutable as SM
 import qualified Data.Vector.Unboxed.Mutable as UM
 import qualified Data.Vector.Mutable as BM
 \end{code}
---
--- For now we're going to just crib the vector style api and Lift it
--- up into a multi dimensional setting.
---
--- the tentative design is to have something like
+
+For now we're going to just crib the vector style api and Lift it
+up into a multi dimensional setting.
+
+the tentative design is to have something like
 
 
 
@@ -283,9 +283,13 @@ Mutable (Dense) Array Builder will only have contiguous instances
 and only makes sense for dense arrays afaik
 
 BE VERY THOUGHTFUL about what instances you write, or i'll be mad
+
+
+not including the general sparse building in the first release,
+will include subsequently
 -}
 
-class MutableArray marr (rank:: Nat) a => MutableArrayBuilder marr rank a where
+--class MutableArray marr (rank:: Nat) a => MutableArrayBuilder marr rank a where
     --basicBuildArray:: Index rank -> b
 
 class MutableDenseArray marr rank a => MutableDenseArrayBuilder marr rank a where
@@ -318,6 +322,8 @@ class MutableRectilinear marr rank a | marr -> rank   where
     -- This could also be thought of as being the GLB (greatest lower bound) on locality
     type MutableInnerContigArray (marr :: * ->  * -> *)  st  a
 
+
+
     --type MutableArrayBuffer
     --not implementing this .. for now
 
@@ -340,6 +346,17 @@ class MutableRectilinear marr rank a | marr -> rank   where
         -> m (MutableInnerContigArray marr (PrimState m)  a )
 
 
+#if defined(__GLASGOW_HASKELL__) && ( __GLASGOW_HASKELL__ >= 707)
+-- | Every 'MutableArray'  instance has a contiguous version
+-- of itself, This contiguous version will ALWAYS have a Builder instance.
+type family MutableArrayContiguous (marr :: * -> * -> *) :: * ->  * -> * where
+  MutableArrayContiguous (MArray world rep layout locality rank)= MArray world rep layout Contiguous rank
+#else
+type family MutableArrayContiguous (marr :: * -> * -> *) :: * ->  * -> *
+type instance  MutableArrayContiguous (MArray world rep layout locality rank)= MArray world rep layout Contiguous rank
+#endif
+
+
 class A.Array (ArrPure marr)  rank a => MutableArray marr (rank:: Nat)  a | marr -> rank  where
 
     type   ArrPure marr  :: * -> *
@@ -351,10 +368,7 @@ class A.Array (ArrPure marr)  rank a => MutableArray marr (rank:: Nat)  a | marr
     --
     type MutableArrayConstraint marr :: * -> Constraint
 
-    -- | Every 'MutableArray'  instance has a contiguous version
-    -- of itself, This contiguous version will ALWAYS have a Builder instance.
-    --
-    type MutableArrayContiguous (marr :: * -> * -> *) :: * ->  * -> *
+
 
     -- | Unsafely convert a mutable Array to its immutable version without copying.
     -- The mutable Array may not be used after this operation. Assumed O(1) complexity
