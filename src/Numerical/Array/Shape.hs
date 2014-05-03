@@ -59,7 +59,7 @@ import qualified Data.Functor as Fun
 import qualified  Data.Foldable as F
 import qualified Control.Applicative as A
 import Control.Monad (liftM)
---import qualified Data.Traversable as T
+import qualified Data.Traversable as T
 
 import Numerical.Nat
 
@@ -372,6 +372,43 @@ instance (UV.Unbox a,UV.Unbox (Shape (S n) a)) =>  GV.Vector UV.Vector (Shape (S
 shapeToList :: Shape n a -> [a]
 shapeToList Nil = []
 shapeToList (a:* as) = a : (shapeToList as )
+
+
+instance T.Traversable (Shape Z) where
+  traverse = \ _ Nil -> A.pure Nil
+  {-# INLINE traverse #-}
+  sequenceA = T.traverse id
+  mapM f = A.unwrapMonad . T.traverse (A.WrapMonad . f)
+  sequence = T.mapM id
+  {-#INLINE sequenceA #-}
+  {-#INLINE mapM #-}
+  {-#INLINE sequence #-}
+
+
+instance  T.Traversable (Shape (S Z)) where
+  traverse = \ f (a:* as) ->  (:*) A.<$> f a A.<*> T.traverse f as
+  {-# INLINE traverse #-}
+  sequenceA = T.traverse id
+  mapM f = A.unwrapMonad . T.traverse (A.WrapMonad . f)
+  sequence = T.mapM id
+  {-#INLINE sequenceA #-}
+  {-#INLINE mapM #-}
+  {-#INLINE sequence #-}
+
+instance T.Traversable (Shape (S n)) => T.Traversable (Shape (S (S n))) where
+  traverse = \ f (a:* as) ->  (:*) A.<$> f a A.<*> T.traverse f as
+  {-#INLINE traverse #-}
+  sequenceA = T.traverse id
+  mapM f = A.unwrapMonad . T.traverse (A.WrapMonad . f)
+  sequence = T.mapM id
+  {-#INLINE sequenceA #-}
+  {-#INLINE mapM #-}
+  {-#INLINE sequence #-}
+
+
+
+
+
 
 
 {- when you lift a toral order onto vectors, you get
