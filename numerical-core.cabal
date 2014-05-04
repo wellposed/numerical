@@ -66,8 +66,8 @@ library
         --Numerical.Array.Operations
         Numerical.Array.Shape
         Numerical.Nat
-        Numerical.Array.Generic.Mutable
-        Numerical.Array.Generic.Pure
+        Numerical.Array.Mutable
+        Numerical.Array.Pure
         Numerical.Array.Locality
         Numerical.Array.Address
     ghc-options: -Wall

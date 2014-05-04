@@ -1,1 +1,0 @@
-module Numerical.Array.Slice where 

@@ -16,7 +16,7 @@
 {-# LANGUAGE FunctionalDependencies #-}
 
 
-module Numerical.Array.Generic.Mutable(
+module Numerical.Array.Mutable(
     MArray(..)
     ,MutableArray(..)
     ,MutableRectilinear(..)
@@ -33,7 +33,7 @@ import Numerical.Array.Shape
 import GHC.Prim(Constraint)
 import Numerical.World
 
-import qualified Numerical.Array.Generic.Pure as A
+import qualified Numerical.Array.Pure as A
 
 import qualified Data.Vector.Storable.Mutable as SM
 import qualified Data.Vector.Unboxed.Mutable as UM

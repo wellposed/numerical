@@ -16,7 +16,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE FunctionalDependencies #-}
 
-module Numerical.Array.Generic.Pure      where
+module Numerical.Array.Pure      where
 
 
 import Numerical.Array.Address
