@@ -374,6 +374,12 @@ shapeToList Nil = []
 shapeToList (a:* as) = a : (shapeToList as )
 
 
+{-
+the Traversable instance for shape needs both Z and S Z base
+cases to interact nicely with the instances defined for
+foldable
+-}
+
 instance T.Traversable (Shape Z) where
   traverse = \ _ Nil -> A.pure Nil
   {-# INLINE traverse #-}
