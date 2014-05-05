@@ -1,7 +1,7 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE UnboxedTuples #-}
 
-module Control.MonadInterna.State.ReallyStrict(State,get,put,runState) where
+module Control.NumericalMonad.State.ReallyStrict(State,get,put,runState) where
 
 import qualified Control.Applicative as A
 

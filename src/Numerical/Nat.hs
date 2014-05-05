@@ -1,17 +1,16 @@
 {-# LANGUAGE DataKinds, PolyKinds, GADTs, TypeFamilies, TypeOperators,
              ConstraintKinds, ScopedTypeVariables, RankNTypes #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE DeriveDataTypeable#-}
 {-# LANGUAGE CPP #-}
 
-module Numerical.Nat(Nat(..),nat,N0,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10
+module Numerical.Nat(Nat(..),N0,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10
     ,SNat(..), type (+),plus_id_r,plus_succ_r,gcastWith,Proxy(..),LitNat,U)  where
 import Data.Typeable
 import Data.Data
 import qualified GHC.TypeLits as TL
-import Language.Haskell.TH hiding (reify)
+
 
 #if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
 import Data.Type.Equality(gcastWith)
@@ -84,13 +83,6 @@ plus_succ_r :: SNat n1 -> Proxy n2 -> ((n1 + (S n2)) :~: (S (n1 + n2)))
 plus_succ_r SZero _ = Refl
 plus_succ_r (SSucc n1) proxy_n2 = gcastWith (plus_succ_r n1 proxy_n2) Refl
 
--- only use this if you're ok required template haskell
-nat :: Int -> TypeQ
-nat n
-    | n >= 0 = localNat n
-    | otherwise = error "nat: negative"
-    where   localNat 0 =  conT 'Z
-            localNat m = conT 'S `appT` localNat (m-1)
 
 
 type N0 = Z

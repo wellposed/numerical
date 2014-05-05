@@ -1,5 +1,5 @@
 
-module Control.MonadInternal.State.Strict where
+module Control.NumericalMonad.State.Strict where
 
 --import Data.Functor.Identity
 import Control.Monad.Trans.Class
