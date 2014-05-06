@@ -34,7 +34,9 @@ import Control.Applicative
 import Numerical.Array.Address
 import Numerical.Array.Locality
 import Numerical.Array.Shape as S
+import Data.Traversable (Traversable)
 
+import Control.NumericalMonad.State.Strict
 
 import qualified Data.Foldable as F
 
@@ -270,7 +272,7 @@ data instance  Format  Row  Contiguous rank  = FormatRowContiguous {
     boundsFormRow :: !(Shape rank Int)}
 
 -- strideRow :: Shape rank Int,
-instance   (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)
+instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape rank))
     => DenseLayout (Format Row  Contiguous rank) rank where
 
     type Tranposed (Format Row  Contiguous rank) = (Format Column Contiguous rank)
@@ -282,7 +284,12 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)
 
     {-# INLINE basicToAddress #-}
     --basicToAddress = \rs tup -> let !strider =takePrefix $! S.scanr (*) 1 (boundsFormRow rs)
-    basicToAddress = \rs tup -> let !strider =S.scanr1 (*) 1 (boundsFormRow rs)
+    basicToAddress = \rs tup -> let !strider = flip evalState 1 $
+                                      flip S.reverseTraverse (boundsFormRow rs) $
+                                        \ val ->
+                                               do accum <- get ;
+                                                  put accum ; -- NOT val * accum
+                                                  return (val * accum);
                                 in Address $! S.foldl'  (+) 0 $! map2 (*) strider tup
     {-# INLINE basicNextAddress#-}
     basicNextAddress = \_ addr -> addr + 1
@@ -293,10 +300,22 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)
           (_:*_)->
             --let !striderShape  =takePrefix $! S.scanr (*) 1 (boundsFormRow rs)
             -- FIXME
-            let !striderShape  =  takePrefix$!S.scanl (*) 1 (boundsFormRow rs)
-                in  S.map  fst $!
-                            S.scanr1 (\ strid (_,r)  -> r `quotRem`  strid)
-                                (error "impossible remainder access in Row Contiguous basicToIndex",ix) striderShape
+            let !striderShape  =  flip evalState 1 $
+                                      -- FIXME not sure if this should be reverse
+                                    flip S.reverseTraverse (boundsFormRow rs) $
+                                        \ val ->
+                                             do accum <- get ;
+                                                put (val * accum) ;
+                                                return (val * accum);
+                in
+                   flip evalState ix $
+                          flip S.traverse  striderShape $
+                              \ currentStride ->
+                                     do remainderIx <- get ;
+                                        let (!qt,!rm)= quotRem remainderIx currentStride
+                                        put rm
+                                        return  qt;
+
 
     {-# INLINE basicCompareIndex #-}
     basicCompareIndex = \ _  ls rs -> foldl majorCompareLeftToRight EQ  $ S.map2 compare ls rs
@@ -309,7 +328,7 @@ data instance  Format  Row  InnerContiguous rank  =
         , strideFormRowInnerContig:: !(Shape rank Int)}
 
 -- strideRow :: Shape rank Int,
-instance   (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)
+instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape rank))
   => DenseLayout (Format Row  InnerContiguous rank) rank  where
 
     type Tranposed (Format Row  InnerContiguous rank) = Format Column  InnerContiguous rank
@@ -327,16 +346,25 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)
 
     {-# INLINE basicNextIndex #-}
     basicNextIndex = \ (FormatRowInnerContiguous shape _) ix ->
-        S.map snd $! S.scanl1Zip (\( carry, _ ) ixv shpv   -> divMod (carry + ixv) shpv )
-                      (1,error "nextAddress init value accessed")  ix shape
+        --S.map snd $!
+        flip evalState 1 $
+           flip traverse  ((,) <$> ix <*> shape) $
+              \(ixv ,shpv   )->
+                  do  carry <-get
+                      let (newCarry,modVal)=divMod (carry + ixv) shpv
+                      put newCarry
+                      return modVal
+
 
     {-# INLINE basicToIndex #-}
-    basicToIndex  =   \ rs (Address ix) -> case boundsFormRowInnerContig rs of
-          Nil -> Nil
-          (_:*_)->
-              S.map  fst $!
-                S.scanl1 (\(_,r) strid -> r `quotRem`  strid)
-                    (ix,error "impossible remainder access in Row Contiguous basicToIndex") (strideFormRowInnerContig rs )
+    basicToIndex  =   \ rs (Address ix) ->   flip evalState ix $
+                          flip S.traverse  (strideFormRowInnerContig rs ) $
+                              \ currentStride ->
+                                     do remainderIx <- get ;
+                                        let (!qt,!rm)= quotRem remainderIx currentStride
+                                        put rm
+                                        return  qt;
+
 
     {-# INLINE basicCompareIndex #-}
     basicCompareIndex = \ _  ls rs ->
@@ -349,7 +377,7 @@ data instance  Format  Row  Strided rank  =
             , strideFormRowStrided:: !(Shape rank Int)}
 -- strideRow :: Shape rank Int,
 
-instance  (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)
+instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape rank))
   => DenseLayout (Format Row  Strided rank) rank  where
 
     type Tranposed (Format Row  Strided rank) = (Format Column  Strided rank)
@@ -364,20 +392,29 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)
     basicToAddress = \rs tup ->   Address $!
           S.foldl'  (+) 0 $! map2 (*) (strideFormRowStrided rs ) tup
 
-    {-#INLINE basicNextIndex#-}
+    {-# INLINE basicNextIndex #-}
     basicNextIndex = \ (FormatRowStrided shape _) ix ->
-        S.map snd $!
-          S.scanl1Zip (\( carry, _ ) ixv shpv  ->
-              divMod (carry + ixv) shpv ) (1,error "nextAddress init value accessed")  ix shape
+        --S.map snd $!
+        flip evalState 1 $
+           flip traverse  ((,) <$> ix <*> shape) $
+              \(ixv ,shpv   )->
+                  do  carry <-get
+                      let (newCarry,modVal)=divMod (carry + ixv) shpv
+                      put newCarry
+                      return modVal
+
 
     {-# INLINE basicToIndex #-}
-    basicToIndex  =   \ rs (Address ix) -> case boundsFormRowStrided rs of
-          Nil -> Nil
-          (_:*_)->
-              S.map  fst $!
-                S.scanl1 (\(_,r) strid -> r `quotRem`  strid)
-                    (ix,error "impossible remainder access in Row Contiguous basicToIndex")
-                    (strideFormRowStrided rs )
+    basicToIndex  =   \ rs (Address ix) ->   flip evalState ix $
+                          flip S.traverse  (strideFormRowStrided rs ) $
+                              \ currentStride ->
+                                     do remainderIx <- get ;
+                                        let (!qt,!rm)= quotRem remainderIx currentStride
+                                        put rm
+                                        return  qt;
+
+
+
 
     {-# INLINE basicCompareIndex #-}
     basicCompareIndex = \ _  ls rs ->
@@ -391,7 +428,7 @@ data instance  Format  Column Contiguous rank  = FormatColumnContiguous {
   boundsColumnContig :: !(Shape rank Int)}
 
  -- strideRow :: Shape rank Int,
-instance  (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)
+instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape rank))
   => DenseLayout (Format Column  Contiguous rank )  rank where
 
     type Tranposed (Format Column  Contiguous rank ) = (Format Row Contiguous rank )
@@ -400,24 +437,41 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)
     basicFormShape = \x -> boundsColumnContig x
 
     transposedLayout = \(FormatColumnContiguous shp)-> FormatRowContiguous $ reverseShape shp
+
     {-# INLINE basicToAddress #-}
-    basicToAddress    =   \ rs tup ->
-    -- used to be take suffix of scanl
-        let !strider =   S.scanl1 (*) 1 (boundsColumnContig rs)
-                in Address $! foldl' (+) 0  $! map2 (*) strider tup
 
-    {-# INLINE basicNextAddress #-}
-    basicNextAddress = \ _ addr -> addr + 1
+    --basicToAddress = \rs tup -> let !strider =takePrefix $! S.scanr (*) 1 (boundsFormRow rs)
+    basicToAddress = \rs tup -> let !strider = flip evalState 1 $
+                                      flip S.traverse (boundsColumnContig rs) $
+                                        \ val ->
+                                               do accum <- get ;
+                                                  put accum ; -- NOT val * accum
+                                                  return (val * accum);
+                                in Address $! S.foldl'  (+) 0 $! map2 (*) strider tup
+    {-# INLINE basicNextAddress#-}
+    basicNextAddress = \_ addr -> addr + 1
 
-    {-# INLINE  basicToIndex#-}
-    basicToIndex  = \ rs (Address ix) -> case boundsColumnContig rs of
+    {-# INLINE basicToIndex #-}
+    basicToIndex  =   \ rs (Address ix) -> case boundsColumnContig rs of
           Nil -> Nil
           (_:*_)->
-          -- used to be take suffix of scanl  FIXME  FIXME
-              let !striderShape  =   takeSuffix $ S.scanr (*) 1 (boundsColumnContig rs)
-                  in S.map  fst  $!
-                       S.scanl1 (\   (_,r) strid  -> r `quotRem`  strid)
-                            (error "impossible remainder access in Column Contiguous basicToIndex", ix) striderShape
+            --let !striderShape  =takePrefix $! S.scanr (*) 1 (boundsFormRow rs)
+            -- FIXME
+            let !striderShape  =  flip evalState 1 $
+                                      -- FIXME not sure if this should be reverse
+                                    flip S.traverse (boundsColumnContig rs) $
+                                        \ val ->
+                                             do accum <- get ;
+                                                put (val * accum) ;
+                                                return (val * accum);
+                in
+                   flip evalState ix $
+                          flip S.reverseTraverse  striderShape $
+                              \ currentStride ->
+                                     do remainderIx <- get ;
+                                        let (!qt,!rm)= quotRem remainderIx currentStride
+                                        put rm
+                                        return  qt;
 
     {-# INLINE basicCompareIndex #-}
     basicCompareIndex = \ _  ls rs -> foldr majorCompareRightToLeft EQ  $ S.map2 compare ls rs
@@ -428,7 +482,7 @@ data instance  Format Column InnerContiguous rank  = FormatColumnInnerContiguous
       strideFormColumnInnerContig:: !(Shape rank Int)}
 
  -- strideRow :: Shape rank Int,
-instance  (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)
+instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape rank))
   => DenseLayout (Format Column  InnerContiguous rank) rank  where
 
     type Tranposed (Format Column  InnerContiguous rank) = (Format Row  InnerContiguous rank)
@@ -442,22 +496,26 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)
     {-# INLINE basicToAddress #-}
     basicToAddress    =   \ form tup -> let !strider =   strideFormColumnInnerContig form
                                 in Address $! foldl' (+) 0  $! map2 (*) strider tup
-    {-#INLINE basicNextIndex #-}
+    {-# INLINE basicNextIndex #-}
     basicNextIndex = \ (FormatColumnInnerContiguous shape _) ix ->
-        S.map snd $!
-          S.scanr1Zip (\ ixv shpv ( carry, _ ) ->
-                divMod (carry + ixv) shpv) (1,error "nextAddress init value accessed")  ix shape
+        --S.map snd $!
+        flip evalState 1 $
+           flip reverseTraverse  ((,) <$> ix <*> shape) $
+              \(ixv ,shpv   )->
+                  do  carry <-get
+                      let (newCarry,modVal)=divMod (carry + ixv) shpv
+                      put newCarry
+                      return modVal
 
 
-    {-# INLINE  basicToIndex#-}
-    basicToIndex  = \ form (Address ix) -> case boundsColumnInnerContig form  of
-          Nil -> Nil
-          (_:*_)->
-              let !striderShape  = strideFormColumnInnerContig form
-                in S.map  fst  $!
-                   S.scanr1 (\ stride (_,r)  -> r `quotRem`  stride)
-                      (ix,error "impossible remainder access in Column Contiguous basicToIndex")
-                      striderShape
+    {-# INLINE basicToIndex #-}
+    basicToIndex  =   \ rs (Address ix) ->   flip evalState ix $
+                          flip S.traverse  (strideFormColumnInnerContig rs ) $
+                              \ currentStride ->
+                                     do remainderIx <- get ;
+                                        let (!qt,!rm)= quotRem remainderIx currentStride
+                                        put rm
+                                        return  qt;
 
     {-# INLINE basicCompareIndex #-}
     basicCompareIndex = \ _  ls rs -> foldr majorCompareRightToLeft EQ  $ S.map2 compare ls rs
@@ -469,7 +527,7 @@ data instance  Format Column Strided rank  = FormatColumnStrided {
  -- strideRow :: Shape rank Int,
 
 
-instance   (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)
+instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape rank))
   => DenseLayout (Format Column  Strided rank) rank where
 
     type Tranposed (Format Column  Strided rank) = (Format Row  Strided rank)
@@ -483,17 +541,29 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Scannable rank)
     {-# INLINE basicToAddress #-}
     basicToAddress    =   \ form tup -> let !strider =   strideFormColumnStrided form
                                 in Address $! foldl' (+) 0  $! map2 (*) strider tup
-    {-# INLINE basicNextIndex#-}
-    basicNextIndex = \ (FormatColumnStrided shape _) ix ->
-        S.map snd $! S.scanr1Zip (\ ixv shpv ( carry, _ ) -> divMod (carry + ixv) shpv) (1,error "nextAddress init value accessed")  ix shape
 
-    {-# INLINE  basicToIndex#-}
-    basicToIndex  = \ form (Address ix) -> case boundsColumnStrided form  of
-          Nil -> Nil
-          (_:*_)->
-              let !striderShape  = strideFormColumnStrided form
-                  in S.map  fst  $!   S.scanr1 (\ stride (_,r)  -> r `quotRem`  stride)
-                        (ix,error "impossible remainder access in Column Contiguous basicToIndex") striderShape
+    {-# INLINE basicNextIndex #-}
+    basicNextIndex = \ (FormatColumnStrided shape _) ix ->
+        --S.map snd $!
+        flip evalState 1 $
+           flip reverseTraverse  ((,) <$> ix <*> shape) $
+              \(ixv ,shpv   )->
+                  do  carry <-get
+                      let (newCarry,modVal)=divMod (carry + ixv) shpv
+                      put newCarry
+                      return modVal
+
+
+    {-# INLINE basicToIndex #-}
+    basicToIndex  =   \ rs (Address ix) ->   flip evalState ix $
+                          flip S.traverse  (strideFormColumnStrided rs ) $
+                              \ currentStride ->
+                                     do remainderIx <- get ;
+                                        let (!qt,!rm)= quotRem remainderIx currentStride
+                                        put rm
+                                        return  qt;
+
+
     {-# INLINE basicCompareIndex #-}
     basicCompareIndex = \ _  ls rs -> foldr majorCompareRightToLeft EQ $ S.map2 compare ls rs
 
