@@ -22,12 +22,6 @@ module Numerical.Array.Shape(Shape(..)
     ,foldl'
     ,foldl1
     ,foldr1
-    ,scanr
-    ,scanl
-    ,scanl1
-    ,scanr1
-    ,scanr1Zip
-    ,scanl1Zip
     ,map
     ,map2
     ,reverseShape
@@ -37,13 +31,6 @@ module Numerical.Array.Shape(Shape(..)
     ,SNat(..)
     ,weaklyDominates
     ,strictlyDominates
-    ,cons
-    ,snoc
-    ,unsnoc
-    ,uncons
-    ,Scannable
-    ,takeSuffix
-    ,takePrefix
     ,shapeToList
     ,Index
     ,UV.Vector(UV.V_ShapeZ,UV.V_ShapeSZ,UV.V_ShapeSSN)
@@ -356,6 +343,7 @@ foldl1  = \ f  shp -> F.foldl1 f  shp
 class Scannable (r:: Nat) where
     scanl :: forall a b  . (b->a -> b) -> b -> Shape r a -> Shape (S r) b
     scanl1 :: forall a b  . (b->a -> b) -> b -> Shape r a -> Shape  r b
+
     scanr :: forall a b  . (a -> b -> b ) -> b -> Shape r a -> Shape (S r) b
     scanr = \ f init shp -> snd $! scanrTup f init shp
     {-#INLINE scanr #-}
@@ -364,16 +352,18 @@ class Scannable (r:: Nat) where
     scanr1 = \ f init shp -> snd $ scanr1Tup f init shp
     {-# INLINE scanr1 #-}
 
-    scanr1Zip  ::   forall a b c  . (a -> b -> c-> c ) -> c -> Shape r a ->Shape r b ->  Shape  r c
+    scanr1Zip  ::   forall a b c  . (a -> b -> c-> c ) -> c -> Shape r a ->
+              Shape r b ->  Shape  r c
     scanr1Zip= \f init shpa shpb -> snd $ scanr1ZipTup f init shpa shpb
     {-# INLINE scanr1Zip #-}
 
-    scanl1Zip  ::   forall a b c . (c->a -> b -> c ) -> c -> Shape r a ->Shape r b ->  Shape  r c
+    scanl1Zip  ::   forall a b c . (c->a -> b -> c ) -> c -> Shape r a ->
+            Shape r b ->  Shape  r c
 
     scanrTup  :: forall a b  . (a -> b -> b ) -> b -> Shape r a ->(b, Shape (S r) b )
     scanr1Tup  :: forall a b  . (a -> b -> b ) -> b -> Shape r a -> (b, Shape r b )
-    scanr1ZipTup  ::   forall a b c  . (a -> b -> c-> c ) -> c -> Shape r a ->Shape r b ->(c, Shape  r c)
-
+    scanr1ZipTup  ::   forall a b c  . (a -> b -> c-> c ) -> c -> Shape r a ->
+                      Shape r b ->(c, Shape  r c)
 
     unsnoc :: forall a . Shape (S r)  a  -> (Shape r a,a  )
 
@@ -389,70 +379,6 @@ class Scannable (r:: Nat) where
     cons :: forall a . a -> Shape r a -> Shape (S r) a
     cons = \a as -> a :* as
     {-# MINIMAL scanl,scanl1,scanl1Zip,scanrTup,scanr1Tup, scanr1ZipTup, unsnoc #-}
-
-
-instance Scannable  Z  where
-    {-# INLINE scanl #-}
-    {-# INLINE scanl1 #-}
-    {-# INLINE scanr #-}
-    {-# INLINE scanr1 #-}
-    {-# INLINE scanr1Zip #-}
-    {-# INLINE scanl1Zip #-}
-    {-# INLINE scanrTup #-}
-    {-# INLINE scanr1Tup #-}
-    {-# INLINE scanr1ZipTup #-}
-    {-# INLINE uncons #-}
-    {-# INLINE unsnoc #-}
-    scanl = \ _ init _ ->init  :* Nil
-    scanr =  \ _ init _ ->  init :* Nil
-    scanrTup = \ _ init _ -> ( init,init :* Nil )
-    scanl1 = \ _ _ _ -> Nil
-    scanr1 = \ _ _ _ -> Nil
-    scanr1Tup  = \ _ init _ -> (init , Nil )
-    scanl1Zip = \ _ _ _ _ -> Nil
-    scanr1ZipTup =  \ _ init _ _ -> (init , Nil )
-
-    unsnoc = \ (a:* Nil ) -> (Nil, a )
-
-
-instance Scannable r => Scannable (S r)  where
-    {-# INLINE scanl #-}
-    {-# INLINE scanl1 #-}
-    {-# INLINE scanr #-}
-    {-# INLINE scanr1 #-}
-    {-# INLINE scanr1Zip #-}
-    {-# INLINE scanl1Zip #-}
-    {-# INLINE scanrTup #-}
-    {-# INLINE scanr1Tup #-}
-    {-# INLINE scanr1ZipTup #-}
-    {-# INLINE unsnoc #-}
-
-    scanl = \ f init (a:* as)  ->  init :* scanl f (f init a) as
-    scanr =  \ f init shp  -> snd $! scanrTup f init shp
-    scanl1 = \ f init (a:* as) -> scanl f (f init a) as
-    scanr1 = \ f init shp -> snd $ scanr1Tup f init shp
-    scanl1Zip = \ f init  (a:*as) (b:*bs) ->
-        case f init a b of
-            res -> res :* scanl1Zip f res as bs
-    scanr1Zip = \ f init  shpa shpb -> snd $ scanr1ZipTup f init shpa shpb
-
-    scanrTup = \ f init ( a:* as)  ->
-        case scanrTup f init as of
-            (res, shpRes) ->   case f a res  of
-                                    realRes-> (realRes, realRes:* shpRes)
-    scanr1Tup = \ f init (a:*as) ->
-         case scanr1Tup f init as of
-            (res, shpRes) ->  case f a res  of
-                                realRes-> (realRes, realRes:* shpRes)
-    scanr1ZipTup =  \ f init (a:*as) (b:*bs ) ->
-        case scanr1ZipTup f init as bs  of
-            (res, shpRes) ->  case f a  b res  of
-                                realRes-> (realRes, realRes:* shpRes)
-
-    unsnoc = \ ( a:* as) ->
-                    case unsnoc as of
-                            (front,val)->  (a:*front, val )
-
 
 
 
