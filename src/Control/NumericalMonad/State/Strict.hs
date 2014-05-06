@@ -211,21 +211,26 @@ instance (MonadIO m) => MonadIO (StateT s m) where
 -- | Fetch the current value of the state within the monad.
 get :: (Monad m) => StateT s m s
 get = state $ \s -> (s, s)
+{-# INLINE get #-}
 
 -- | @'put' s@ sets the state within the monad to @s@.
 put :: (Monad m) => s -> StateT s m ()
-put s = state $ \_ -> ((), s)
+put  = \s ->  state $ \_ -> ((), s)
+{-# INLINE put #-}
 
 -- | @'modify' f@ is an action that updates the state to the result of
 -- applying @f@ to the current state.
 --
 -- * @'modify' f = 'get' >>= ('put' . f)@
 modify :: (Monad m) => (s -> s) -> StateT s m ()
-modify f = state $ \s -> ((), f s)
+modify = \f ->  state $ \s -> ((), f s)
+{-# INLINE modify #-}
 
 -- | Get a specific component of the state, using a projection function
 -- supplied.
 --
 -- * @'gets' f = 'liftM' f 'get'@
 gets :: (Monad m) => (s -> a) -> StateT s m a
-gets f = state $ \s -> (f s, s)
+gets = \ f ->  state $ \s -> (f s, s)
+{-# INLINE gets #-}
+
