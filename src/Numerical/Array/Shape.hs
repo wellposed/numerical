@@ -333,66 +333,6 @@ foldl1  = \ f  shp -> F.foldl1 f  shp
 
 
 
---instance T.Traversable (Shape Z) where
---    traverse = \ f val -> pure Nil
-
---instance T.Traversable (Shape r) => T.Traversable (Shape (S r)) where
---    traverse
-
-
-class Scannable (r:: Nat) where
-    scanl :: forall a b  . (b->a -> b) -> b -> Shape r a -> Shape (S r) b
-    scanl1 :: forall a b  . (b->a -> b) -> b -> Shape r a -> Shape  r b
-
-    scanr :: forall a b  . (a -> b -> b ) -> b -> Shape r a -> Shape (S r) b
-    scanr = \ f init shp -> snd $! scanrTup f init shp
-    {-#INLINE scanr #-}
-
-    scanr1 :: forall a b  . (a -> b -> b ) -> b -> Shape r a -> Shape  r b
-    scanr1 = \ f init shp -> snd $ scanr1Tup f init shp
-    {-# INLINE scanr1 #-}
-
-    scanr1Zip  ::   forall a b c  . (a -> b -> c-> c ) -> c -> Shape r a ->
-              Shape r b ->  Shape  r c
-    scanr1Zip= \f init shpa shpb -> snd $ scanr1ZipTup f init shpa shpb
-    {-# INLINE scanr1Zip #-}
-
-    scanl1Zip  ::   forall a b c . (c->a -> b -> c ) -> c -> Shape r a ->
-            Shape r b ->  Shape  r c
-
-    scanrTup  :: forall a b  . (a -> b -> b ) -> b -> Shape r a ->(b, Shape (S r) b )
-    scanr1Tup  :: forall a b  . (a -> b -> b ) -> b -> Shape r a -> (b, Shape r b )
-    scanr1ZipTup  ::   forall a b c  . (a -> b -> c-> c ) -> c -> Shape r a ->
-                      Shape r b ->(c, Shape  r c)
-
-    unsnoc :: forall a . Shape (S r)  a  -> (Shape r a,a  )
-
-    {-# INLINE uncons #-}
-    uncons :: forall a . Shape (S r)  a  -> (a,Shape r a )
-    uncons  = \ (a:* as) ->  (a,as )
-
-    {-# INLINE snoc #-}
-    snoc :: forall a . Shape r a -> a -> Shape (S r) a
-    snoc = \ shp init ->  scanr (\ a _ -> a) init shp
-
-    {-# INLINE cons #-}
-    cons :: forall a . a -> Shape r a -> Shape (S r) a
-    cons = \a as -> a :* as
-    {-# MINIMAL scanl,scanl1,scanl1Zip,scanrTup,scanr1Tup, scanr1ZipTup, unsnoc #-}
-
-
-
-
-{-#INLINE takeSuffix#-}
-takeSuffix :: Shape (S n) a -> Shape n a
-takeSuffix = \ (_:* as) -> as
-
--- a sort of unsnoc
-{-# INLINE takePrefix #-}
-takePrefix :: Scannable n => Shape (S n) a -> Shape n a
-takePrefix = \ shp -> fst $ unsnoc  shp
-
-
 
 
 instance Store.Storable a =>Store.Storable (Shape (S Z) a) where
