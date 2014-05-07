@@ -10,7 +10,7 @@ module Numerical.Array.Layout(
 
 import  Numerical.Array.Layout.Base
 import  Numerical.Array.Layout.Dense
-import  Numerical.Array.Layout.Sparse
+--import  Numerical.Array.Layout.Sparse
 \end{code}
 
 
