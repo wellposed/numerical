@@ -285,7 +285,7 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape
     {-# INLINE basicToAddress #-}
     --basicToAddress = \rs tup -> let !strider =takePrefix $! S.scanr (*) 1 (boundsFormRow rs)
     basicToAddress = \rs tup -> let !strider = flip evalState 1 $
-                                      flip S.reverseTraverse (boundsFormRow rs) $
+                                      flip (S.backwards traverse) (boundsFormRow rs) $
                                         \ val ->
                                                do accum <- get ;
                                                   put accum ; -- NOT val * accum
@@ -302,7 +302,7 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape
             -- FIXME
             let !striderShape  =  flip evalState 1 $
                                       -- FIXME not sure if this should be reverse
-                                    flip S.reverseTraverse (boundsFormRow rs) $
+                                    flip (S.backwards traverse) (boundsFormRow rs) $
                                         \ val ->
                                              do accum <- get ;
                                                 put (val * accum) ;
@@ -466,7 +466,7 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape 
                                                 return (val * accum);
                 in
                    flip evalState ix $
-                          flip S.reverseTraverse  striderShape $
+                          flip (S.backwards traverse)  striderShape $
                               \ currentStride ->
                                      do remainderIx <- get ;
                                         let (!qt,!rm)= quotRem remainderIx currentStride
@@ -500,7 +500,7 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape 
     basicNextIndex = \ (FormatColumnInnerContiguous shape _) ix ->
         --S.map snd $!
         flip evalState 1 $
-           flip reverseTraverse  ((,) <$> ix <*> shape) $
+           flip (S.backwards traverse)  ((,) <$> ix <*> shape) $
               \(ixv ,shpv   )->
                   do  carry <-get
                       let (newCarry,modVal)=divMod (carry + ixv) shpv
@@ -546,7 +546,7 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape
     basicNextIndex = \ (FormatColumnStrided shape _) ix ->
         --S.map snd $!
         flip evalState 1 $
-           flip reverseTraverse  ((,) <$> ix <*> shape) $
+           flip (S.backwards traverse)  ((,) <$> ix <*> shape) $
               \(ixv ,shpv   )->
                   do  carry <-get
                       let (newCarry,modVal)=divMod (carry + ixv) shpv

@@ -36,8 +36,7 @@ module Numerical.Array.Shape(Shape(..)
     ,UV.Vector(UV.V_ShapeZ,UV.V_ShapeSZ,UV.V_ShapeSSN)
     ,UV.MVector(UV.MV_ShapeZ,UV.MV_ShapeSZ,UV.MV_ShapeSSN)
     ,T.Traversable(..)
-    ,reverseTraverse
-
+    ,backwards
     )
     where
 
@@ -175,9 +174,13 @@ instance T.Traversable (Shape (S n)) => T.Traversable (Shape (S (S n))) where
   {-#INLINE mapM #-}
   {-#INLINE sequence #-}
 
-reverseTraverse :: (T.Traversable t, A.Applicative f) =>
-     (a -> f b) -> t a -> f (t b)
-reverseTraverse = \ f container -> forwards $ T.traverse  (\x -> Backwards $ f x) container
+backwards :: (T.Traversable t, A.Applicative f) =>
+      ((a -> Backwards f b) -> t a -> Backwards f (t b))
+        -> ((a -> f b) -> t a -> f (t b))
+backwards= \ traver f container ->
+    forwards $ traver  (\x -> Backwards $ f x) container
+{-#INLINE backwards #-}
+
 
 
 
