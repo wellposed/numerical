@@ -60,6 +60,8 @@ library
     -- Modules exported by the library.
     exposed-modules:
         Numerical.Array.Layout
+        Numerical.Array.Layout.Base
+        Numerical.Array.Layout.Dense
         Numerical.Array
         Numerical.World
         Control.NumericalMonad.State.Strict
@@ -130,6 +132,8 @@ Test-suite testsuite
    ghc-options: -threaded -fhpc
    other-modules:
         Numerical.Array.Layout
+        Numerical.Array.Layout.Base
+        Numerical.Array.Layout.Dense
         Numerical.Array
         --Control.Monad.State.ReallyStrict
         --Numerical.Array.Operations
@@ -171,6 +175,8 @@ Test-suite testsuite-O2
     -- -fhpc
    other-modules:
         Numerical.Array.Layout
+        Numerical.Array.Layout.Base
+        Numerical.Array.Layout.Dense
         Numerical.Array
         --Control.Monad.State.ReallyStrict
         --Numerical.Array.Operations
@@ -212,6 +218,8 @@ Test-suite testsuite-O2llvm
     -- -fhpc
    other-modules:
         Numerical.Array.Layout
+        Numerical.Array.Layout.Base
+        Numerical.Array.Layout.Dense
         Numerical.Array
         --Control.Monad.State.ReallyStrict
         --Numerical.Array.Operations
