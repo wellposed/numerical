@@ -1,6 +1,9 @@
 \begin{code}
 
+{- |  Comments for this modules
 
+
+-}
 
 {-# LANGUAGE PolyKinds   #-}
 {-# LANGUAGE BangPatterns #-}
@@ -71,7 +74,7 @@ c) wait till ghc 7.8.2 to resolve https://ghc.haskell.org/trac/ghc/ticket/8848
     and use SPECIALIZE
 d) benchmark and then decide
 
-for now I choose (e), defer benchmarking till everything works :)
+for now I choose (a), and defer benchmarking variations till everything works :)
 
 
 a related concern is the interplay of inlining and specialization
@@ -80,21 +83,8 @@ https://ghc.haskell.org/trac/ghc/ticket/5928
 -}
 
 
-{-
-note also that this is in practice a *dense* only
-layout module, though a derived api can interpret those
-formats sparsely
 
 
-
--}
-
-{-
-TODO : move a bunch of the projection and transformation
-logic from the Array classes to the analogous Layout classes.
-All of the operations are oblivious to underlying buffer type
-
--}
 
 -- either we need to break ties, or the ties have been broken
 majorCompareLeftToRight :: Ordering -> Ordering -> Ordering
@@ -107,6 +97,55 @@ majorCompareRightToLeft new EQ = new
 majorCompareRightToLeft _ b = b
 
 data family Format lay (contiguity:: Locality)  (rank :: Nat)
+
+
+
+
+-- | @'Format' 'Direct' 'Contiguous' ('S' 'Z')@ is a 1dim array 'Layout' with unit stride
+data instance Format  Direct Contiguous (S Z) =
+    FormatDirectContiguous {
+        logicalShapeDirectContiguous :: {-#UNPACK#-} !Int }
+
+-- | @'Format' 'Direct' 'Strided'  ('S' 'Z')@ is a 1dim array 'Layout' with a regular stride >= 1
+data instance Format  Direct Strided (S Z) =
+    FormatDirectStrided {
+        logicalShapeDirectStrided :: {-#UNPACK#-}!Int
+        ,logicalStrideDirectStrided:: {-#UNPACK#-}!Int}
+
+
+-- | @'Format'  'Row'  'Contiguous' n@ is a rank n Array
+data instance  Format  Row  Contiguous n  =
+    FormatRowContiguous {
+        boundsFormRow :: !(Shape n Int)}
+
+
+data instance  Format  Row  Strided n  =
+    FormatRowStrided
+        {boundsFormRowStrided:: !(Shape n Int)
+        ,strideFormRowStrided:: !(Shape n Int)}
+
+
+data instance  Format  Row  InnerContiguous n  =
+    FormatRowInnerContiguous {
+        boundsFormRowInnerContig :: !(Shape n Int)
+        ,strideFormRowInnerContig:: !(Shape n Int)}
+
+
+data instance  Format  Column Contiguous n  =
+    FormatColumnContiguous {
+      boundsColumnContig :: !(Shape n Int)}
+
+
+data instance  Format Column InnerContiguous n  =
+    FormatColumnInnerContiguous {
+        boundsColumnInnerContig :: !(Shape n Int)
+        ,strideFormColumnInnerContig:: !(Shape n Int)}
+
+
+data instance  Format Column Strided n  =
+    FormatColumnStrided {
+      boundsColumnStrided :: !(Shape n Int)
+      ,strideFormColumnStrided:: !(Shape n Int)}
 
 
 {-
@@ -164,8 +203,6 @@ class Layout form  (rank :: Nat) | form -> rank  where
 -----
 -----
 
-data instance Format  Direct Contiguous (S Z) =
-            FormatDirectContiguous { logicalShapeDirectContiguous :: {-#UNPACK#-} !Int }
 
 instance Layout (Format Direct Contiguous (S Z))  (S Z)  where
 
@@ -183,9 +220,6 @@ instance Layout (Format Direct Contiguous (S Z))  (S Z)  where
 
 
 
-data instance Format  Direct Strided (S Z) =
-        FormatDirectStrided { logicalShapeDirectStrided :: {-#UNPACK#-}!Int
-                    , logicalStrideDirectStrided:: {-#UNPACK#-}!Int}
 
 instance  Layout (Format Direct Strided (S Z))  (S Z)  where
 
@@ -204,10 +238,6 @@ instance  Layout (Format Direct Strided (S Z))  (S Z)  where
 -----
 -----
 
-
-
-data instance  Format  Row  Contiguous rank  = FormatRowContiguous {
-    boundsFormRow :: !(Shape rank Int)}
 
 -- strideRow :: Shape rank Int,
 instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape rank))
@@ -228,9 +258,6 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape
 
 -----
 -----
-data instance  Format  Row  InnerContiguous rank  =
-        FormatRowInnerContiguous {boundsFormRowInnerContig :: !(Shape rank Int)
-        , strideFormRowInnerContig:: !(Shape rank Int)}
 
 -- strideRow :: Shape rank Int,
 instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape rank))
@@ -251,9 +278,7 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape
 
 ---
 ---
-data instance  Format  Row  Strided rank  =
-        FormatRowStrided {boundsFormRowStrided:: !(Shape rank Int)
-            , strideFormRowStrided:: !(Shape rank Int)}
+
 -- strideRow :: Shape rank Int,
 
 instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape rank))
@@ -278,9 +303,6 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape 
 -----
 -----
 
-data instance  Format  Column Contiguous rank  = FormatColumnContiguous {
-  boundsColumnContig :: !(Shape rank Int)}
-
  -- strideRow :: Shape rank Int,
 instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape rank))
   =>  Layout (Format Column  Contiguous rank )  rank where
@@ -298,9 +320,6 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape 
     basicCompareIndex = \ _  ls rs -> foldr majorCompareRightToLeft EQ  $ S.map2 compare ls rs
 
 
-data instance  Format Column InnerContiguous rank  = FormatColumnInnerContiguous {
-      boundsColumnInnerContig :: !(Shape rank Int),
-      strideFormColumnInnerContig:: !(Shape rank Int)}
 
  -- strideRow :: Shape rank Int,
 instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape rank))
@@ -319,9 +338,6 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape 
     basicCompareIndex = \ _  ls rs -> foldr majorCompareRightToLeft EQ  $ S.map2 compare ls rs
 
 
-data instance  Format Column Strided rank  = FormatColumnStrided {
-    boundsColumnStrided :: !(Shape rank Int)
-    , strideFormColumnStrided:: !(Shape rank Int)}
  -- strideRow :: Shape rank Int,
 
 
