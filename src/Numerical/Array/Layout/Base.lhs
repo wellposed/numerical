@@ -20,15 +20,15 @@
 {-# LANGUAGE FunctionalDependencies #-}
 
 module Numerical.Array.Layout.Base(
-  Locality(..)
+  Layout(..)
+  ,Tranposed(..)
   ,Format(..)
   ,Row
   ,Column
   ,Direct
-  ,Layout(..)
-  ,Address(..)
-  ,UniformAddressInterval(..)
-  ,Ordering) where
+  ,Locality(..)
+
+) where
 
 
 
@@ -148,40 +148,21 @@ data instance  Format Column Strided n  =
       ,strideFormColumnStrided:: !(Shape n Int)}
 
 
-{-
-LAYOUT as currently defined is actually dense layout
-
-need to add a general sparse/dense layout format distinction
-
-
-FOR NOW, punting on sparse for alpha,
-will need to make breaking changes to LAYOUT later for sparse
-
-
-
-ok, the crucial distinction between sparse and dense is that
-for Dense: Index -> Address when inbounds will always succeed
-
-but for Sparse : Index -> Address can fail even when its in bounds
--}
-
-
-
-  --note that unlike the Layout method  basicToAddress,
 
 
 
 
 
---class Layout form rank => DenseLayout  form  (rank :: Nat) | form -> rank  where
-  {-
-  empty class instances for all the dense Layouts
-  -}
+type family  Tranposed form
+
+
+
+
 
 
 class Layout form  (rank :: Nat) | form -> rank  where
 
-    type Tranposed form
+
 
     -- not happy with this name, will change later FIXME TODO
     basicFormShape :: form -> Shape rank Int
@@ -204,9 +185,10 @@ class Layout form  (rank :: Nat) | form -> rank  where
 -----
 
 
+type instance Tranposed (Format Direct Contiguous (S Z)) = (Format Direct Contiguous (S Z))
+
 instance Layout (Format Direct Contiguous (S Z))  (S Z)  where
 
-    type Tranposed (Format Direct Contiguous (S Z)) = (Format Direct Contiguous (S Z))
 
     {-# INLINE basicFormShape#-}
     basicFormShape = \ x -> (logicalShapeDirectContiguous x) :* Nil
@@ -219,11 +201,11 @@ instance Layout (Format Direct Contiguous (S Z))  (S Z)  where
     basicCompareIndex = \ _  (l:* _) (r:* _) -> compare l r
 
 
-
+type instance Tranposed (Format Direct Strided (S Z)) = (Format Direct Strided (S Z))
 
 instance  Layout (Format Direct Strided (S Z))  (S Z)  where
 
-    type Tranposed (Format Direct Strided (S Z)) = (Format Direct Strided (S Z))
+
 
     {-# INLINE basicFormShape #-}
     basicFormShape = \x -> (logicalShapeDirectStrided x) :* Nil
@@ -238,12 +220,13 @@ instance  Layout (Format Direct Strided (S Z))  (S Z)  where
 -----
 -----
 
+type instance  Tranposed (Format Row  Contiguous rank) = (Format Column Contiguous rank)
 
 -- strideRow :: Shape rank Int,
-instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape rank))
+instance   (Applicative (Shape rank), Traversable (Shape rank))
     =>  Layout (Format Row  Contiguous rank) rank where
 
-    type Tranposed (Format Row  Contiguous rank) = (Format Column Contiguous rank)
+
 
     transposedLayout = \(FormatRowContiguous shp) -> FormatColumnContiguous $ reverseShape shp
 
@@ -259,11 +242,13 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape
 -----
 -----
 
+type instance Tranposed (Format Row  InnerContiguous rank) = Format Column  InnerContiguous rank
+
 -- strideRow :: Shape rank Int,
-instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape rank))
+instance   (Applicative (Shape rank), Traversable (Shape rank))
   =>  Layout (Format Row  InnerContiguous rank) rank  where
 
-    type Tranposed (Format Row  InnerContiguous rank) = Format Column  InnerContiguous rank
+
 
     {-# INLINE basicFormShape  #-}
     basicFormShape = \x -> boundsFormRowInnerContig x
@@ -281,10 +266,12 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape
 
 -- strideRow :: Shape rank Int,
 
-instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape rank))
+type instance  Tranposed (Format Row  Strided rank) = (Format Column  Strided rank)
+
+instance  (Applicative (Shape rank),Traversable (Shape rank))
   =>  Layout (Format Row  Strided rank) rank  where
 
-    type Tranposed (Format Row  Strided rank) = (Format Column  Strided rank)
+
 
     {-# INLINE basicFormShape  #-}
     basicFormShape = \x -> boundsFormRowStrided x
@@ -303,11 +290,13 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape 
 -----
 -----
 
+type instance Tranposed (Format Column  Contiguous rank ) = (Format Row Contiguous rank )
+
  -- strideRow :: Shape rank Int,
-instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape rank))
+instance  (Applicative (Shape rank), Traversable (Shape rank))
   =>  Layout (Format Column  Contiguous rank )  rank where
 
-    type Tranposed (Format Column  Contiguous rank ) = (Format Row Contiguous rank )
+
 
     {-# INLINE basicFormShape  #-}
     basicFormShape = \x -> boundsColumnContig x
@@ -320,12 +309,12 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape 
     basicCompareIndex = \ _  ls rs -> foldr majorCompareRightToLeft EQ  $ S.map2 compare ls rs
 
 
-
+type  instance Tranposed (Format Column  InnerContiguous rank) = (Format Row  InnerContiguous rank)
  -- strideRow :: Shape rank Int,
-instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape rank))
+instance  (Applicative (Shape rank), Traversable (Shape rank))
   => Layout (Format Column  InnerContiguous rank) rank  where
 
-    type Tranposed (Format Column  InnerContiguous rank) = (Format Row  InnerContiguous rank)
+
 
     {-# INLINE basicFormShape  #-}
     basicFormShape = \x -> boundsColumnInnerContig x
@@ -340,11 +329,11 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape 
 
  -- strideRow :: Shape rank Int,
 
+type instance  Tranposed (Format Column  Strided rank) = (Format Row  Strided rank)
 
-instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape rank))
+instance   (Applicative (Shape rank), Traversable (Shape rank))
   => Layout (Format Column  Strided rank) rank where
 
-    type Tranposed (Format Column  Strided rank) = (Format Row  Strided rank)
 
     {-# INLINE basicFormShape  #-}
     basicFormShape = \x -> boundsColumnStrided x
