@@ -68,6 +68,7 @@ library
         Control.NumericalApplicative.Backwards
         --Numerical.Array.Operations
         Numerical.Array.Shape
+        Numerical.Array.Storage
         Numerical.Nat
         Numerical.Array.Mutable
         Numerical.Array.Pure
@@ -138,6 +139,7 @@ Test-suite testsuite
         --Control.Monad.State.ReallyStrict
         --Numerical.Array.Operations
         Numerical.Array.Shape
+        Numerical.Array.Storage
         Numerical.Nat
         Numerical.World
         Numerical.Array.Mutable
@@ -181,6 +183,7 @@ Test-suite testsuite-O2
         --Control.Monad.State.ReallyStrict
         --Numerical.Array.Operations
         Numerical.Array.Shape
+        Numerical.Array.Storage
         Numerical.Nat
         Numerical.World
         Numerical.Array.Mutable
@@ -224,6 +227,7 @@ Test-suite testsuite-O2llvm
         --Control.Monad.State.ReallyStrict
         --Numerical.Array.Operations
         Numerical.Array.Shape
+        Numerical.Array.Storage
         Numerical.Nat
         Numerical.World
         Numerical.Array.Mutable
