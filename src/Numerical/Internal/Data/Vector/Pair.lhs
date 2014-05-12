@@ -22,8 +22,9 @@ currently primmonad doesn't get its free applicative/functor powers :*(
 (<$>) f mv = do v <- mv ; return (f v )
 {-# INLINE (<$>) #-}
 
-(<*>) :: PrimMonad m => m (a->b) -> m a -> m b
-(<*>) mf mv =  do f <- mf ; v <- mv ; return (f v)
+(<***>) :: PrimMonad m => m (a->b) -> m a -> m b
+(<***>) mf mv =  do f <- mf ; v <- mv ; return (f v)
+{-# INLINE (<***>) #-}
 
 
 data family VPair (vect :: * -> * ) val
@@ -34,11 +35,18 @@ data instance MVPair mv st (a,b) = TheMVPair !(mv st a) !(mv st b)
 
 instance  (MV.MVector (MVPair (V.Mutable v))(a,b) ,V.Vector v a,V.Vector v b)
   => V.Vector (VPair v) (a,b)  where
-    --basicUnsafeFreeze = \(MVector mva mvb) -> do va <-
-    --basicUnsafeThaw
-    --basicLength
-    --basicUnsafeSlice
-    --basicUnsafeIndexM
+    basicUnsafeFreeze = \(TheMVPair mva mvb) ->
+      TheVPair <$> V.basicUnsafeFreeze mva <***> V.basicUnsafeFreeze mvb
+    basicUnsafeThaw = \(TheVPair va vb) ->
+      TheMVPair <$> V.basicUnsafeThaw va <***> V.basicUnsafeThaw vb
+    basicLength = \(TheVPair va _) -> V.basicLength va
+    basicUnsafeSlice = \start len (TheVPair va vb) ->
+      TheVPair (V.basicUnsafeSlice start len va) (V.basicUnsafeSlice start len vb)
+    basicUnsafeIndexM = \(TheVPair va vb) ix ->
+      do
+          a <- V.basicUnsafeIndexM va ix
+          b <- V.basicUnsafeIndexM vb ix
+          return (a,b)
 
 instance (MV.MVector mv a,MV.MVector mv b) => MV.MVector (MVPair mv ) (a,b) where
   basicLength = \ (TheMVPair mva mvb) -> MV.basicLength mva
@@ -53,19 +61,19 @@ instance (MV.MVector mv a,MV.MVector mv b) => MV.MVector (MVPair mv ) (a,b) wher
 
   basicUnsafeNew =
       \ size ->
-          TheMVPair <$> MV.basicUnsafeNew size <*> MV.basicUnsafeNew size
+          TheMVPair <$> MV.basicUnsafeNew size <***> MV.basicUnsafeNew size
   {-# INLINE basicUnsafeNew #-}
 
   basicUnsafeReplicate =
       \ size (a,b) ->
          TheMVPair <$>
-            MV.basicUnsafeReplicate size a <*>
+            MV.basicUnsafeReplicate size a <***>
             MV.basicUnsafeReplicate size b
 
   {-# INLINE basicUnsafeReplicate #-}
 
   basicUnsafeRead = \(TheMVPair mva mvb) ix ->
-    (,) <$>  MV.basicUnsafeRead mva ix <*> MV.basicUnsafeRead mvb ix
+    (,) <$>  MV.basicUnsafeRead mva ix <***> MV.basicUnsafeRead mvb ix
 
   {-#INLINE basicUnsafeRead#-}
 
@@ -78,7 +86,7 @@ instance (MV.MVector mv a,MV.MVector mv b) => MV.MVector (MVPair mv ) (a,b) wher
 
 
   basicUnsafeGrow = \ (TheMVPair mva mvb) growth ->
-      TheMVPair <$> MV.basicUnsafeGrow mva growth <*>
+      TheMVPair <$> MV.basicUnsafeGrow mva growth <***>
           MV.basicUnsafeGrow mvb growth
 
 
