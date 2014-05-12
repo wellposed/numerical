@@ -22,6 +22,9 @@ module Numerical.Array.Mutable(
     ,MutableRectilinear(..)
     ,MutableDenseArrayBuilder(..)
     ,MutableDenseArray(..)
+    ,Boxed
+    ,Unboxed
+    ,Stored
     ) where
 
 import Control.Monad.Primitive ( PrimMonad, PrimState )
@@ -32,6 +35,8 @@ import Numerical.Array.Shape
 --import Numerical.Nat
 import GHC.Prim(Constraint)
 import Numerical.World
+
+import Numerical.Array.Storage
 
 import qualified Numerical.Array.Pure as A
 
@@ -117,15 +122,18 @@ type family RepConstraint world  rep el :: Constraint
 -}
 data family MArray world rep lay (view::Locality) (rank :: Nat ) st  el
 
-data instance  MArray Native Boxed layout locality rank st el = MutableNativeBoxedArray {
+data instance  MArray Native Boxed layout locality rank st el =
+  DenseMutableNativeBoxedArray {
               nativeBoxedBuffer:: {-# UNPACK #-} !(BM.MVector st el)
               ,nativeBoxedFormat ::  !(Format layout locality rank)  }
 
-data instance  MArray Native Stored layout locality rank st el =  MutableNativeStoredArray {
+data instance  MArray Native Stored layout locality rank st el =
+  DenseMutableNativeStoredArray {
         nativeStoredBuffer:: {-# UNPACK #-} !(SM.MVector st el)
         ,nativeStoredFormat ::  !(Format layout locality rank)  }
 
-data instance  MArray Native Unboxed layout locality rank st el = MutableNativeUnboxedArray {
+data instance  MArray Native Unboxed layout locality rank st el =
+  DenseMutableNativeUnboxedArray {
         nativeUnboxedBuffer:: {-# UNPACK #-} !(UM.MVector st el)
         ,nativeUnboxedFormat ::  !(Format layout locality rank)  }
         -- I have this slight worry that Unboxed arrays will have
@@ -143,9 +151,7 @@ data instance  MArray Native Unboxed layout locality rank st el = MutableNativeU
 --         --,_marrShift :: {-# UNPACK #-} !Address
 --         }
 
-data Boxed
-data Unboxed
-data Stored
+
 
 --data family  MBuffer world rep st el
 
