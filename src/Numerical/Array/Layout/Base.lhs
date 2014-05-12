@@ -26,6 +26,9 @@ module Numerical.Array.Layout.Base(
   ,Row
   ,Column
   ,Direct
+  ,Boxed
+  ,Unboxed
+  ,Stored
   ,Locality(..)
 
 ) where
@@ -64,6 +67,15 @@ data Row
 
 data Column
 
+
+data CompressedSparseRow
+data CompressedSparseColumn
+
+data DirectSparse
+
+data Boxed
+data Unboxed
+data Stored
 
 {-
 NB: may need to add some specialization for low rank indexing,
@@ -156,13 +168,18 @@ data instance  Format Column Strided n  =
 type family  Tranposed form
 
 
+type instance Tranposed (Format Direct Contiguous (S Z)) = Format Direct Contiguous (S Z)
+type instance Tranposed (Format Direct Strided (S Z)) = Format Direct Strided (S Z)
 
+type instance  Tranposed (Format Row  Contiguous rank) = Format Column Contiguous rank
+type instance Tranposed (Format Row  InnerContiguous rank) = Format Column  InnerContiguous rank
+type instance  Tranposed (Format Row  Strided rank) = Format Column  Strided rank
 
-
+type instance Tranposed (Format Column Contiguous rank )=Format Row Contiguous rank
+type instance Tranposed (Format Column InnerContiguous rank)=Format Row  InnerContiguous rank
+type instance  Tranposed (Format Column  Strided rank)=Format Row  Strided rank
 
 class Layout form  (rank :: Nat) | form -> rank  where
-
-
 
     -- not happy with this name, will change later FIXME TODO
     basicFormShape :: form -> Shape rank Int
@@ -185,34 +202,25 @@ class Layout form  (rank :: Nat) | form -> rank  where
 -----
 
 
-type instance Tranposed (Format Direct Contiguous (S Z)) = (Format Direct Contiguous (S Z))
-
 instance Layout (Format Direct Contiguous (S Z))  (S Z)  where
-
 
     {-# INLINE basicFormShape#-}
     basicFormShape = \ x -> (logicalShapeDirectContiguous x) :* Nil
 
     transposedLayout = id
 
-
-
     {-# INLINE basicCompareIndex #-}
     basicCompareIndex = \ _  (l:* _) (r:* _) -> compare l r
 
 
-type instance Tranposed (Format Direct Strided (S Z)) = (Format Direct Strided (S Z))
 
 instance  Layout (Format Direct Strided (S Z))  (S Z)  where
-
-
 
     {-# INLINE basicFormShape #-}
     basicFormShape = \x -> (logicalShapeDirectStrided x) :* Nil
 
     transposedLayout = id
 
-
     {-# INLINE basicCompareIndex #-}
     basicCompareIndex = \ _  (l:* _) (r:* _) -> compare l r
 
@@ -220,20 +228,15 @@ instance  Layout (Format Direct Strided (S Z))  (S Z)  where
 -----
 -----
 
-type instance  Tranposed (Format Row  Contiguous rank) = (Format Column Contiguous rank)
 
 -- strideRow :: Shape rank Int,
 instance   (Applicative (Shape rank), Traversable (Shape rank))
     =>  Layout (Format Row  Contiguous rank) rank where
 
-
-
     transposedLayout = \(FormatRowContiguous shp) -> FormatColumnContiguous $ reverseShape shp
 
     {-# INLINE basicFormShape #-}
     basicFormShape = \x -> boundsFormRow x
-
-
 
     {-# INLINE basicCompareIndex #-}
     basicCompareIndex = \ _  ls rs -> foldl majorCompareLeftToRight EQ  $ S.map2 compare ls rs
@@ -242,20 +245,16 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
 -----
 -----
 
-type instance Tranposed (Format Row  InnerContiguous rank) = Format Column  InnerContiguous rank
 
 -- strideRow :: Shape rank Int,
 instance   (Applicative (Shape rank), Traversable (Shape rank))
   =>  Layout (Format Row  InnerContiguous rank) rank  where
-
-
 
     {-# INLINE basicFormShape  #-}
     basicFormShape = \x -> boundsFormRowInnerContig x
 
     transposedLayout = \(FormatRowInnerContiguous shp stride) ->
         FormatColumnInnerContiguous  (reverseShape shp)  (reverseShape stride)
-
 
     {-# INLINE basicCompareIndex #-}
     basicCompareIndex = \ _  ls rs ->
@@ -266,21 +265,14 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
 
 -- strideRow :: Shape rank Int,
 
-type instance  Tranposed (Format Row  Strided rank) = (Format Column  Strided rank)
-
 instance  (Applicative (Shape rank),Traversable (Shape rank))
   =>  Layout (Format Row  Strided rank) rank  where
-
-
 
     {-# INLINE basicFormShape  #-}
     basicFormShape = \x -> boundsFormRowStrided x
 
     transposedLayout = \(FormatRowStrided shp stride) ->
         FormatColumnStrided  (reverseShape shp)  (reverseShape stride)
-
-
-
 
     {-# INLINE basicCompareIndex #-}
     basicCompareIndex = \ _  ls rs ->
@@ -290,30 +282,22 @@ instance  (Applicative (Shape rank),Traversable (Shape rank))
 -----
 -----
 
-type instance Tranposed (Format Column  Contiguous rank ) = (Format Row Contiguous rank )
-
  -- strideRow :: Shape rank Int,
 instance  (Applicative (Shape rank), Traversable (Shape rank))
   =>  Layout (Format Column  Contiguous rank )  rank where
-
-
 
     {-# INLINE basicFormShape  #-}
     basicFormShape = \x -> boundsColumnContig x
 
     transposedLayout = \(FormatColumnContiguous shp)-> FormatRowContiguous $ reverseShape shp
 
-
-
     {-# INLINE basicCompareIndex #-}
     basicCompareIndex = \ _  ls rs -> foldr majorCompareRightToLeft EQ  $ S.map2 compare ls rs
 
 
-type  instance Tranposed (Format Column  InnerContiguous rank) = (Format Row  InnerContiguous rank)
  -- strideRow :: Shape rank Int,
 instance  (Applicative (Shape rank), Traversable (Shape rank))
   => Layout (Format Column  InnerContiguous rank) rank  where
-
 
 
     {-# INLINE basicFormShape  #-}
@@ -322,25 +306,21 @@ instance  (Applicative (Shape rank), Traversable (Shape rank))
     transposedLayout = \(FormatColumnInnerContiguous shp stride)->
          FormatRowInnerContiguous (reverseShape shp) (reverseShape stride)
 
-
     {-# INLINE basicCompareIndex #-}
     basicCompareIndex = \ _  ls rs -> foldr majorCompareRightToLeft EQ  $ S.map2 compare ls rs
 
 
  -- strideRow :: Shape rank Int,
 
-type instance  Tranposed (Format Column  Strided rank) = (Format Row  Strided rank)
 
 instance   (Applicative (Shape rank), Traversable (Shape rank))
   => Layout (Format Column  Strided rank) rank where
-
 
     {-# INLINE basicFormShape  #-}
     basicFormShape = \x -> boundsColumnStrided x
 
     transposedLayout = \(FormatColumnStrided shp stride)->
          FormatRowStrided (reverseShape shp) (reverseShape stride)
-
 
     {-# INLINE basicCompareIndex #-}
     basicCompareIndex = \ _  ls rs -> foldr majorCompareRightToLeft EQ $ S.map2 compare ls rs
