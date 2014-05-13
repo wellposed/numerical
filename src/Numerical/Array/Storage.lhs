@@ -1,7 +1,7 @@
 \begin{code}
 
 
-module Numerical.Array.Storage where
+module Numerical.Array.Storage(Boxed,Unboxed,Stored) where
 
 
 data Boxed

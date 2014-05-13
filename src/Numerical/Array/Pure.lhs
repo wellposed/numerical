@@ -20,7 +20,7 @@ module Numerical.Array.Pure      where
 
 
 import Numerical.Array.Address
-import Numerical.Array.Layout
+--import Numerical.Array.Layout
 import Numerical.Array.Shape
 
 

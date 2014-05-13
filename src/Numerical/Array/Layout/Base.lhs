@@ -21,14 +21,11 @@
 
 module Numerical.Array.Layout.Base(
   Layout(..)
-  ,Tranposed(..)
+  ,Tranposed
   ,Format(..)
   ,Row
   ,Column
   ,Direct
-  ,Boxed
-  ,Unboxed
-  ,Stored
   ,Locality(..)
   ,module Numerical.Array.Storage
 
@@ -38,15 +35,15 @@ module Numerical.Array.Layout.Base(
 
 import Numerical.Nat
 import Control.Applicative
-import Numerical.Array.Address
+--import Numerical.Array.Address
 import Numerical.Array.Locality
 import Numerical.Array.Shape as S
 import Numerical.Array.Storage
-import Data.Traversable (Traversable)
+--import Data.Traversable (Traversable)
 
-import Control.NumericalMonad.State.Strict
+--import Control.NumericalMonad.State.Strict
 
-import qualified Data.Foldable as F
+--import qualified Data.Foldable as F
 
 import Prelude hiding (foldr,foldl,map,scanl,scanr,scanl1,scanr1)
 
@@ -70,10 +67,10 @@ data Row
 data Column
 
 
-data CompressedSparseRow
-data CompressedSparseColumn
+--data CompressedSparseRow
+--data CompressedSparseColumn
 
-data DirectSparse
+--data DirectSparse
 
 
 

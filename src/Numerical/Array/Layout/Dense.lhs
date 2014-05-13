@@ -35,7 +35,7 @@ import Numerical.Array.Locality
 import Numerical.Array.Layout.Base
 import Numerical.Array.Shape as S
 
-import Data.Traversable (Traversable)
+--import Data.Traversable (Traversable)
 
 import Control.NumericalMonad.State.Strict
 
@@ -45,11 +45,11 @@ import Prelude hiding (foldr,foldl,map,scanl,scanr,scanl1,scanr1)
 
 
 
-class Layout form rank => SparseLayout  form  (rank :: Nat) | form -> rank  where
+--class Layout form rank => SparseLayout  form  (rank :: Nat) | form -> rank  where
 
 
 
-  lookupIndex :: form -> Index rank -> Maybe Address
+--  lookupIndex :: form -> Index rank -> Maybe Address
 
 
   --note that unlike the Layout method  basicToAddress,

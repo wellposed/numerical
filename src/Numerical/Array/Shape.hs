@@ -50,7 +50,7 @@ import qualified Control.Applicative as A
 import Control.Monad (liftM)
 import qualified Data.Traversable as T
 
-import Control.NumericalMonad.State.Strict
+--import Control.NumericalMonad.State.Strict
 import Control.NumericalApplicative.Backwards
 
 import Numerical.Nat

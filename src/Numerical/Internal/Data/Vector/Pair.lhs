@@ -49,7 +49,7 @@ instance  (MV.MVector (MVPair (V.Mutable v))(a,b) ,V.Vector v a,V.Vector v b)
           return (a,b)
 
 instance (MV.MVector mv a,MV.MVector mv b) => MV.MVector (MVPair mv ) (a,b) where
-  basicLength = \ (TheMVPair mva mvb) -> MV.basicLength mva
+  basicLength = \ (TheMVPair mva _) -> MV.basicLength mva
   {-# INLINE basicLength #-}
 
   basicUnsafeSlice = \ start len (TheMVPair mva mvb )->

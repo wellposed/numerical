@@ -36,7 +36,8 @@ import Numerical.Array.Shape
 import GHC.Prim(Constraint)
 import Numerical.World
 
-import Numerical.Array.Storage
+--import Numerical.Array.Storage(Boxed,Unboxed,Stored)
+import Numerical.Array.Locality
 
 import qualified Numerical.Array.Pure as A
 
@@ -115,7 +116,7 @@ NB: one important assumption we'll have for now, is that every
 \begin{code}
 
 
-type family RepConstraint world  rep el :: Constraint
+--type family RepConstraint world  rep el :: Constraint
 --type instance MArrayElem
 
 {- | 'MArray' is the generic data family that
@@ -134,7 +135,7 @@ data instance  MArray Native Stored layout locality rank st el =
 
 data instance  MArray Native Unboxed layout locality rank st el =
   DenseMutableNativeUnboxedArray {
-        nativeUnboxedBuffer:: {-# UNPACK #-} !(UM.MVector st el)
+        nativeUnboxedBuffer:: {- UNPACK cant for unboxed :( -} !(UM.MVector st el)
         ,nativeUnboxedFormat ::  !(Format layout locality rank Unboxed)  }
         -- I have this slight worry that Unboxed arrays will have
         -- an extra indirection vs the storable class
@@ -165,11 +166,11 @@ data instance  MArray Native Unboxed layout locality rank st el =
 
 #if defined(__GLASGOW_HASKELL__) && ( __GLASGOW_HASKELL__ >= 707)
 
-type family MArrayToContiguous (marr ::  * -> * -> *  ) ::  * -> * -> *  where
+--type family MArrayToContiguous (marr ::  * -> * -> *  ) ::  * -> * -> *  where
 
-type family MArrayToInnerContiguous (marr ::  * -> * -> *  ) ::  * -> * -> *  where
+--type family MArrayToInnerContiguous (marr ::  * -> * -> *  ) ::  * -> * -> *  where
 
-type family MArrayToStrided (marr ::  * -> * -> *  ) ::  * -> * -> *  where
+--type family MArrayToStrided (marr ::  * -> * -> *  ) ::  * -> * -> *  where
 
 type family  MArrayLocality marr :: Locality where
     MArrayLocality (MArray world rep lay (view::Locality) rank st  el) = view
@@ -203,9 +204,8 @@ type family MArrayMaxLocality (lmarr::  * -> * -> * )
 type instance MArrayMaxLocality (MArray wld rep lay a rnk)
             (MArray wld rep lay b rnk) = MArray wld rep lay (LocalityMax a b) rnk
 
-
 type family MArrayMinLocality (lmarr ::  * -> * -> * )
-(rmarr::  * -> * -> *) :: ( * -> * -> *)
+                                (rmarr::  * -> * -> *) :: ( * -> * -> *)
 type instance MArrayMinLocality (MArray wld rep lay a rnk)
                         (MArray wld rep lay b rnk) = MArray wld rep lay  (LocalityMin a b ) rnk
 
