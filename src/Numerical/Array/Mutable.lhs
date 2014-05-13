@@ -164,6 +164,13 @@ data instance  MArray Native Unboxed layout locality rank st el =
 
 
 #if defined(__GLASGOW_HASKELL__) && ( __GLASGOW_HASKELL__ >= 707)
+
+type family MArrayToContiguous (marr ::  * -> * -> *  ) ::  * -> * -> *  where
+
+type family MArrayToInnerContiguous (marr ::  * -> * -> *  ) ::  * -> * -> *  where
+
+type family MArrayToStrided (marr ::  * -> * -> *  ) ::  * -> * -> *  where
+
 type family  MArrayLocality marr :: Locality where
     MArrayLocality (MArray world rep lay (view::Locality) rank st  el) = view
 
@@ -173,93 +180,35 @@ type family  MArrayLayout marr where
 type family MArrayRep marr where
     MArrayRep (MArray world rep lay (view::Locality) rank st  el) = rep
 
-type family MArrayMaxLocality (lmarr ::  * -> * -> * )(rmarr::  * -> * -> *) :: ( * -> * -> *) where
-  MArrayMaxLocality (MArray wld rep lay Contiguous rnk)
-                    (MArray wld rep lay  Contiguous rnk) = MArray wld rep lay Contiguous rnk
-  MArrayMaxLocality (MArray wld rep lay InnerContiguous rnk)
-                    (MArray wld rep lay Contiguous rnk) = MArray wld rep lay Contiguous rnk
-  MArrayMaxLocality (MArray wld rep lay  Contiguous rnk)
-                    (MArray wld rep lay InnerContiguous rnk) = MArray wld rep lay Contiguous rnk
-  MArrayMaxLocality (MArray wld rep lay Strided rnk)
-                    (MArray wld rep lay Contiguous rnk) = MArray wld rep lay Contiguous rnk
-  MArrayMaxLocality (MArray wld rep lay Contiguous rnk)
-                    (MArray wld rep lay Strided rnk) = MArray wld rep lay Contiguous rnk
-  MArrayMaxLocality (MArray wld rep lay InnerContiguous rnk)
-                    (MArray wld rep lay InnerContiguous rnk) = MArray wld rep lay InnerContiguous rnk
-  MArrayMaxLocality (MArray wld rep lay Strided rnk)
-                    (MArray wld rep lay InnerContiguous rnk) = MArray wld rep lay InnerContiguous rnk
-  MArrayMaxLocality (MArray wld rep lay  InnerContiguous rnk)
-                    (MArray wld rep lay Strided rnk) = MArray wld rep lay InnerContiguous rnk
-  MArrayMaxLocality (MArray wld rep lay  Strided rnk)
-                    (MArray wld rep lay Strided rnk) = MArray wld rep lay Strided rnk
+type family MArrayMaxLocality (lmarr::  * -> * -> * )
+                              (rmarr::  * -> * -> * ) :: ( * -> * -> *) where
+  MArrayMaxLocality (MArray wld rep lay a rnk)
+            (MArray wld rep lay  b rnk) = MArray wld rep lay (LocalityMax a b) rnk
 
 
 
-type family MArrayMinLocality (lmarr ::  * -> * -> * )(rmarr::  * -> * -> *) :: ( * -> * -> *) where
-  MArrayMinLocality (MArray wld rep lay Strided rnk)
-                    (MArray wld rep lay Strided rnk) = MArray wld rep lay Strided rnk
-  MArrayMinLocality (MArray wld rep lay InnerContiguous rnk)
-                    (MArray wld rep lay Strided rnk) = MArray wld rep lay Strided rnk
-  MArrayMinLocality (MArray wld rep lay Contiguous rnk)
-                    (MArray wld rep lay Strided rnk) = MArray wld rep lay Strided rnk
-  MArrayMinLocality (MArray wld rep lay Strided rnk)
-                    (MArray wld rep lay InnerContiguous rnk) = MArray wld rep lay Strided rnk
-  MArrayMinLocality (MArray wld rep lay Strided rnk)
-                    (MArray wld rep lay Contiguous rnk) = MArray wld rep lay Strided rnk
-  MArrayMinLocality (MArray wld rep lay InnerContiguous rnk)
-                    (MArray wld rep lay InnerContiguous rnk) = MArray wld rep lay InnerContiguous rnk
-  MArrayMinLocality (MArray wld rep lay Contiguous rnk)
-                    (MArray wld rep lay InnerContiguous rnk) = MArray wld rep lay InnerContiguous rnk
-  MArrayMinLocality (MArray wld rep lay InnerContiguous rnk)
-                    (MArray wld rep lay Contiguous rnk) = MArray wld rep lay InnerContiguous rnk
-  MArrayMinLocality (MArray wld rep lay Contiguous rnk)
-                    (MArray wld rep lay Contiguous rnk) = MArray wld rep lay Contiguous rnk
+
+type family MArrayMinLocality (lmarr:: * -> * -> * )
+                              (rmarr:: * -> * -> * ) :: ( * -> * -> *) where
+  MArrayMinLocality (MArray wld rep lay a rnk)
+                    (MArray wld rep lay b rnk) = MArray wld rep lay (LocalityMin a b ) rnk
+
 
 
 #else
 
 
-type family MArrayMaxLocality (lmarr ::  * -> * -> * )(rmarr::  * -> * -> *) :: ( * -> * -> *)
-type instance MArrayMaxLocality (MArray wld rep lay Contiguous rnk)
-                                (MArray wld rep lay Contiguous rnk) = MArray wld rep lay Contiguous rnk
-type instance MArrayMaxLocality (MArray wld rep lay InnerContiguous rnk)
-                                (MArray wld rep lay Contiguous rnk) = MArray wld rep lay Contiguous rnk
-type instance MArrayMaxLocality (MArray wld rep lay Contiguous rnk)
-                                (MArray wld rep lay InnerContiguous rnk) = MArray wld rep lay Contiguous rnk
-type instance MArrayMaxLocality (MArray wld rep lay Strided rnk)
-                                (MArray wld rep lay Contiguous rnk) = MArray wld rep lay Contiguous rnk
-type instance MArrayMaxLocality (MArray wld rep lay Contiguous rnk)
-                                (MArray wld rep lay Strided rnk) = MArray wld rep lay Contiguous rnk
-type instance MArrayMaxLocality (MArray wld rep lay InnerContiguous rnk)
-                                (MArray wld rep lay InnerContiguous rnk) = MArray wld rep lay  InnerContiguous rnk
-type instance MArrayMaxLocality (MArray wld rep lay Strided rnk)
-                                (MArray wld rep lay InnerContiguous rnk) = MArray wld rep lay InnerContiguous rnk
-type instance MArrayMaxLocality (MArray wld rep lay InnerContiguous rnk)
-                                (MArray wld rep lay Strided rnk) = MArray wld rep lay InnerContiguous rnk
-type instance MArrayMaxLocality (MArray wld rep lay Strided rnk)
-                                (MArray wld rep lay Strided rnk) = MArray wld rep lay Strided rnk
+type family MArrayMaxLocality (lmarr::  * -> * -> * )
+                              (rmarr::  * -> * -> * ) :: ( * -> * -> *)
+type instance MArrayMaxLocality (MArray wld rep lay a rnk)
+            (MArray wld rep lay b rnk) = MArray wld rep lay (LocalityMax a b) rnk
 
 
+type family MArrayMinLocality (lmarr ::  * -> * -> * )
+(rmarr::  * -> * -> *) :: ( * -> * -> *)
+type instance MArrayMinLocality (MArray wld rep lay a rnk)
+                        (MArray wld rep lay b rnk) = MArray wld rep lay  (LocalityMin a b ) rnk
 
-type family MArrayMinLocality (lmarr ::  * -> * -> * )(rmarr::  * -> * -> *) :: ( * -> * -> *)
-type instance MArrayMinLocality (MArray wld rep lay Strided rnk)
-                                (MArray wld rep lay Strided rnk) = MArray wld rep lay  Strided rnk
-type instance MArrayMinLocality (MArray wld rep lay InnerContiguous rnk)
-                                (MArray wld rep lay Strided rnk) = MArray wld rep lay Strided rnk
-type instance MArrayMinLocality (MArray wld rep lay Contiguous rnk)
-                                (MArray wld rep lay Strided rnk) = MArray wld rep lay Strided rnk
-type instance MArrayMinLocality (MArray wld rep lay Strided rnk)
-                                (MArray wld rep lay InnerContiguous rnk) = MArray wld rep lay Strided rnk
-type instance MArrayMinLocality (MArray wld rep lay Strided rnk)
-                                (MArray wld rep lay Contiguous rnk) = MArray wld rep lay Strided rnk
-type instance MArrayMinLocality (MArray wld rep lay InnerContiguous rnk)
-                                (MArray wld rep lay InnerContiguous rnk) = MArray wld rep lay InnerContiguous rnk
-type instance MArrayMinLocality (MArray wld rep lay Contiguous rnk)
-                                (MArray wld rep lay InnerContiguous rnk) = MArray wld rep lay InnerContiguous rnk
-type instance MArrayMinLocality (MArray wld rep lay InnerContiguous rnk)
-                                (MArray wld rep lay Contiguous rnk) = MArray wld rep lay InnerContiguous rnk
-type instance MArrayMinLocality (MArray wld rep lay Contiguous rnk)
-                                (MArray wld rep lay Contiguous rnk) = MArray wld rep lay Contiguous rnk
 
 type family  MArrayLocality marr :: Locality
 type instance     MArrayLocality (MArray world rep lay (view::Locality) rank st  el) = view
