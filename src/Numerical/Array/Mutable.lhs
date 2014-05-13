@@ -399,10 +399,10 @@ class A.Array (ArrPure marr)  rank a => MutableArray marr (rank:: Nat)  a | marr
 
     --  | basicMutableSparseIndexToAddres checks if a index is present or not
     -- helpful primitive for authoring codes for (un)structured sparse array format
-    basicSparseIndexToAddress ::  marr s   a -> Index rank  -> m  (Maybe Address)
+    basicSparseIndexToAddress ::  marr s   a -> Index rank  ->  (Maybe Address)
 
     -- | 'basicMutableAddressToIndex' assumes you only give it legal manifest addresses
-    basicAddressToIndex :: marr s   a -> Address ->    (Index rank  )
+    basicAddressToIndex :: marr s   a -> Address ->    Index rank
 
     -- |  return the smallest valid logical address
     basicSmallestAddress ::  marr st   a ->  Address
@@ -448,7 +448,7 @@ class A.Array (ArrPure marr)  rank a => MutableArray marr (rank:: Nat)  a | marr
     basicAddressRegion :: marr st a ->Address ->  UniformAddressInterval
 
 
-    -- | this doesn't fit in this class, but thats ok, will deal with that later
+    -- | this doesn't quite fit in this class, but thats ok, will deal with that later
     basicOverlaps :: marr st   a -> marr st   a -> Bool
 
 
@@ -466,7 +466,7 @@ class A.Array (ArrPure marr)  rank a => MutableArray marr (rank:: Nat)  a | marr
     basicUnsafeAddressRead  :: PrimMonad m => marr  (PrimState m)   a -> Address-> m a
 
     ---- | Replace the element at the given position. This method should not be
-    ---- called directly, use 'unsafeWrite' instead.
+    ---- called directly, use 'unsafeAddressWrite' instead.
     basicUnsafeAddressWrite :: PrimMonad m => marr  (PrimState m)   a -> Address -> a -> m ()
 
 
