@@ -103,7 +103,7 @@ class DenseLayout form  (rank :: Nat) | form -> rank  where
 -----
 -----
 
-instance DenseLayout (Format Direct Contiguous (S Z))  (S Z)  where
+instance DenseLayout (Format Direct Contiguous (S Z) rep)  (S Z)  where
 
 
 
@@ -122,7 +122,7 @@ instance DenseLayout (Format Direct Contiguous (S Z))  (S Z)  where
 
 
 
-instance DenseLayout (Format Direct Strided (S Z))  (S Z)  where
+instance DenseLayout (Format Direct Strided (S Z) rep)  (S Z)  where
 
 
 
@@ -148,7 +148,7 @@ instance DenseLayout (Format Direct Strided (S Z))  (S Z)  where
 
 -- strideRow :: Shape rank Int,
 instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape rank))
-    => DenseLayout (Format Row  Contiguous rank) rank where
+    => DenseLayout (Format Row  Contiguous rank rep) rank where
 
 
     {-# INLINE basicToAddress #-}
@@ -194,7 +194,7 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape
 
 -- strideRow :: Shape rank Int,
 instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape rank))
-  => DenseLayout (Format Row  InnerContiguous rank) rank  where
+  => DenseLayout (Format Row  InnerContiguous rank rep) rank  where
 
 
     {-# INLINE basicToAddress #-}
@@ -230,7 +230,7 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape
 -- strideRow :: Shape rank Int,
 
 instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape rank))
-  => DenseLayout (Format Row  Strided rank) rank  where
+  => DenseLayout (Format Row  Strided rank rep) rank  where
 
 
 
@@ -269,7 +269,7 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape 
 
  -- strideRow :: Shape rank Int,
 instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape rank))
-  => DenseLayout (Format Column  Contiguous rank )  rank where
+  => DenseLayout (Format Column  Contiguous rank rep)  rank where
 
 
 
@@ -308,7 +308,7 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape 
 
  -- strideRow :: Shape rank Int,
 instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape rank))
-  => DenseLayout (Format Column  InnerContiguous rank) rank  where
+  => DenseLayout (Format Column  InnerContiguous rank rep) rank  where
 
 
     {-# INLINE basicToAddress #-}
@@ -339,7 +339,7 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape 
 
 
 instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape rank))
-  => DenseLayout (Format Column  Strided rank) rank where
+  => DenseLayout (Format Column  Strided rank rep) rank where
 
     {-# INLINE basicToAddress #-}
     basicToAddress    =   \ form tup -> let !strider =   strideFormColumnStrided form

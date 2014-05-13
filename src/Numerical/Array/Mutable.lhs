@@ -125,17 +125,17 @@ data family MArray world rep lay (view::Locality) (rank :: Nat ) st  el
 data instance  MArray Native Boxed layout locality rank st el =
   DenseMutableNativeBoxedArray {
               nativeBoxedBuffer:: {-# UNPACK #-} !(BM.MVector st el)
-              ,nativeBoxedFormat ::  !(Format layout locality rank)  }
+              ,nativeBoxedFormat ::  !(Format layout locality rank Boxed)  }
 
 data instance  MArray Native Stored layout locality rank st el =
   DenseMutableNativeStoredArray {
         nativeStoredBuffer:: {-# UNPACK #-} !(SM.MVector st el)
-        ,nativeStoredFormat ::  !(Format layout locality rank)  }
+        ,nativeStoredFormat ::  !(Format layout locality rank Stored)  }
 
 data instance  MArray Native Unboxed layout locality rank st el =
   DenseMutableNativeUnboxedArray {
         nativeUnboxedBuffer:: {-# UNPACK #-} !(UM.MVector st el)
-        ,nativeUnboxedFormat ::  !(Format layout locality rank)  }
+        ,nativeUnboxedFormat ::  !(Format layout locality rank Unboxed)  }
         -- I have this slight worry that Unboxed arrays will have
         -- an extra indirection vs the storable class
         -- but I think it wont matter in practice
