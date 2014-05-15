@@ -27,6 +27,10 @@ module Numerical.Array.Layout.Base(
   ,Row
   ,Column
   ,Direct
+  ,CSR
+  ,CSC
+  ,CompressedSparseRow
+  ,CompressedSparseColumn
   ,Locality(..)
   ,module Numerical.Array.Storage
 
@@ -56,9 +60,7 @@ make it easy to define new dense array layouts
 -}
 
 
---data PrimLay a
---data StaticLay a
---data Lay a
+
 
 
 data Direct
@@ -68,10 +70,13 @@ data Row
 data Column
 
 
---data CompressedSparseRow
---data CompressedSparseColumn
+data CompressedSparseRow
+type CSR = CompressedSparseRow
 
---data DirectSparse
+data CompressedSparseColumn
+type CSC = CompressedSparseColumn
+
+data DirectSparse
 
 
 
@@ -106,9 +111,52 @@ majorCompareRightToLeft :: Ordering -> Ordering -> Ordering
 majorCompareRightToLeft new EQ = new
 majorCompareRightToLeft _ b = b
 
+
+
 data family Format  lay (contiguity:: Locality)  (rank :: Nat) rep
 
 
+
+data instance Format DirectSparse  Contiguous (S Z) rep =
+    FormatDirectSparseContiguous {
+      logicalShapeDirectSparse:: {-# UNPACK#-} !Int
+      ,logicalBaseShiftDirectSparse::{-# UNPACK#-} !Int
+      ,indexTableDirectSparse :: ! ((StorageVector rep) Int )  }
+
+{-
+theres a subtle detail about the invariants of contiguous vs inner inner contiguous
+for CSR and CSC
+when I do an inner contiguous / contiguous slice / projection,
+what "address shifts" do i need to track to make sure the slices
+are zero copy as much as possible
+
+just slicing on the outer dimension doesn't need any row shifts,
+but a generalized (a,b) ... (a+x,b+y) selection when a,b!=0 does need a inner
+dim shift,
+
+NOTE that translating the inner dimension table's addresses to the corresponding
+value buffer's address can require a shift!
+This will happen when doing a MajorAxis (outer dimension) slice
+the picks out a Suffix of the CSR matrix's rows
+
+
+note that there are 2 formulations of CSR (/ CSC) formats
+
+a) 3 array: value, column index,  and  row start vectors
+
+b) 4 array: value, column index, rowstart, and row end vectors
+
+lets use choice a) for contiguous vectors, and choice b) for
+inner contiguous vectors. (because that )
+
+-}
+data instance Format CompressedSparseRow Contiguous (S (S Z)) rep =
+    FormatCompressedSparseRow {
+      logicalRowShapeContiguousCSR ::  {-# UNPACK#-} !Int
+      ,logicalColShapeContiguousCSR :: {-# UNPACK #-} !Int
+      ,logicalValueBufferShift:: {-# UNPACK #-} !Int
+      --,logicalShiftRowCSR :: {-#  UNPACK #-} !Int
+  }
 
 
 -- | @'Format' 'Direct' 'Contiguous' ('S' 'Z')@ is a 1dim array 'Layout' with unit stride
