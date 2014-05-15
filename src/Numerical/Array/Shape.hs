@@ -458,32 +458,32 @@ instance UV.Unbox a => GMV.MVector UV.MVector  (Shape Z a) where
   {-# INLINE basicSet #-}
   {-# INLINE basicUnsafeCopy #-}
   {-# INLINE basicUnsafeGrow #-}
-  basicLength (MV_ShapeZ n) = n
-  basicUnsafeSlice _ m (MV_ShapeZ _) = MV_ShapeZ m
-  basicOverlaps _ _ = False
-  basicUnsafeNew n = return (MV_ShapeZ n)
-  basicUnsafeRead (MV_ShapeZ _) _ = return Nil
-  basicUnsafeWrite (MV_ShapeZ _) _ Nil = return ()
-  basicClear _ = return ()
-  basicSet (MV_ShapeZ _) Nil = return ()
-  basicUnsafeCopy (MV_ShapeZ _) (MV_ShapeZ _) = return ()
-  basicUnsafeGrow (MV_ShapeZ n) m = return $ MV_ShapeZ (n+m)
+  basicLength  = \ (MV_ShapeZ n) ->  n
+  basicUnsafeSlice  = \ _ m (MV_ShapeZ _) -> MV_ShapeZ m
+  basicOverlaps = \ _ _  ->  False
+  basicUnsafeNew  = \ n -> return (MV_ShapeZ n)
+  basicUnsafeRead  = \ (MV_ShapeZ _) _ ->  return Nil
+  basicUnsafeWrite  = \ (MV_ShapeZ _) _ Nil ->  return ()
+  basicClear = \ _ -> return ()
+  basicSet  =  \ (MV_ShapeZ _) Nil -> return ()
+  basicUnsafeCopy  = \ (MV_ShapeZ _) (MV_ShapeZ _) ->  return ()
+  basicUnsafeGrow  = \ (MV_ShapeZ n) m -> return $ MV_ShapeZ (n+m)
 
 instance UV.Unbox a => GV.Vector UV.Vector  (Shape Z a) where
   {-# INLINE basicUnsafeFreeze #-}
-  basicUnsafeFreeze (MV_ShapeZ n) = return $ V_ShapeZ n
+  basicUnsafeFreeze  = \ (MV_ShapeZ n) ->  return $ V_ShapeZ n
   {-# INLINE basicUnsafeThaw #-}
-  basicUnsafeThaw (V_ShapeZ n) = return $ MV_ShapeZ n
+  basicUnsafeThaw = \ (V_ShapeZ n)  -> return $ MV_ShapeZ n
   {-# INLINE basicLength #-}
-  basicLength (V_ShapeZ n) = n
+  basicLength  = \(V_ShapeZ n) ->  n
   {-# INLINE basicUnsafeSlice #-}
-  basicUnsafeSlice _ m (V_ShapeZ _) = V_ShapeZ m
+  basicUnsafeSlice  = \ _ m (V_ShapeZ _) ->  V_ShapeZ m
   {-# INLINE basicUnsafeIndexM #-}
-  basicUnsafeIndexM (V_ShapeZ _) _ = return Nil
+  basicUnsafeIndexM = \ (V_ShapeZ _) _  ->  return Nil
   {-# INLINE basicUnsafeCopy #-}
-  basicUnsafeCopy (MV_ShapeZ _) (V_ShapeZ _) = return ()
+  basicUnsafeCopy  = \ (MV_ShapeZ _) (V_ShapeZ _) ->  return ()
   {-# INLINE elemseq #-}
-  elemseq _ = seq
+  elemseq  =  \ _ -> seq
 
 instance (UV.Unbox a) => GMV.MVector UV.MVector (Shape (S Z) a) where
   {-# INLINE basicLength #-}
@@ -497,18 +497,18 @@ instance (UV.Unbox a) => GMV.MVector UV.MVector (Shape (S Z) a) where
   {-# INLINE basicSet #-}
   {-# INLINE basicUnsafeCopy #-}
   {-# INLINE basicUnsafeGrow #-}
-  basicLength (MV_ShapeSZ v) = GMV.basicLength v
-  basicUnsafeSlice i n (MV_ShapeSZ v) = MV_ShapeSZ $ GMV.basicUnsafeSlice i n v
-  basicOverlaps (MV_ShapeSZ v1) (MV_ShapeSZ v2) = GMV.basicOverlaps v1 v2
-  basicUnsafeNew n = MV_ShapeSZ `liftM` GMV.basicUnsafeNew n
-  basicUnsafeReplicate n (a:*_) = MV_ShapeSZ `liftM` GMV.basicUnsafeReplicate n a
-  basicUnsafeRead (MV_ShapeSZ v) i = ( :* Nil ) `liftM` GMV.basicUnsafeRead v i
-  basicUnsafeWrite (MV_ShapeSZ v) i (a:* _) = GMV.basicUnsafeWrite v i a
-  basicClear (MV_ShapeSZ v) = GMV.basicClear v
-  basicSet (MV_ShapeSZ v) (a:*_) = GMV.basicSet v a
-  basicUnsafeCopy (MV_ShapeSZ v1) (MV_ShapeSZ v2) = GMV.basicUnsafeCopy v1 v2
-  basicUnsafeMove (MV_ShapeSZ v1) (MV_ShapeSZ v2) = GMV.basicUnsafeMove v1 v2
-  basicUnsafeGrow (MV_ShapeSZ v) n = MV_ShapeSZ `liftM` GMV.basicUnsafeGrow v n
+  basicLength  = \(MV_ShapeSZ v)-> GMV.basicLength v
+  basicUnsafeSlice  = \ i n (MV_ShapeSZ v) ->  MV_ShapeSZ $ GMV.basicUnsafeSlice i n v
+  basicOverlaps = \ (MV_ShapeSZ v1) (MV_ShapeSZ v2)  ->  GMV.basicOverlaps v1 v2
+  basicUnsafeNew  = \ n ->  MV_ShapeSZ `liftM` GMV.basicUnsafeNew n
+  basicUnsafeReplicate  = \ n (a:*_) ->  MV_ShapeSZ `liftM` GMV.basicUnsafeReplicate n a
+  basicUnsafeRead  = \ (MV_ShapeSZ v) i ->  ( :* Nil ) `liftM` GMV.basicUnsafeRead v i
+  basicUnsafeWrite  = \ (MV_ShapeSZ v) i (a:* _) ->  GMV.basicUnsafeWrite v i a
+  basicClear = \ (MV_ShapeSZ v)  ->  GMV.basicClear v
+  basicSet =  \ (MV_ShapeSZ v) (a:*_)  ->  GMV.basicSet v a
+  basicUnsafeCopy  = \ (MV_ShapeSZ v1) (MV_ShapeSZ v2) ->  GMV.basicUnsafeCopy v1 v2
+  basicUnsafeMove  = \ (MV_ShapeSZ v1) (MV_ShapeSZ v2) -> GMV.basicUnsafeMove v1 v2
+  basicUnsafeGrow  = \ (MV_ShapeSZ v) n ->  MV_ShapeSZ `liftM` GMV.basicUnsafeGrow v n
 
 instance ( UV.Unbox a) => GV.Vector UV.Vector (Shape (S Z) a ) where
   {-# INLINE basicUnsafeFreeze #-}
@@ -517,15 +517,13 @@ instance ( UV.Unbox a) => GV.Vector UV.Vector (Shape (S Z) a ) where
   {-# INLINE basicUnsafeSlice #-}
   {-# INLINE basicUnsafeIndexM #-}
   {-# INLINE elemseq #-}
-  basicUnsafeFreeze (MV_ShapeSZ v) = V_ShapeSZ `liftM` GV.basicUnsafeFreeze v
-  basicUnsafeThaw (V_ShapeSZ v) = MV_ShapeSZ`liftM` GV.basicUnsafeThaw v
-  basicLength (V_ShapeSZ v) = GV.basicLength v
-  basicUnsafeSlice i n (V_ShapeSZ v) = V_ShapeSZ $ GV.basicUnsafeSlice i n v
-  basicUnsafeIndexM (V_ShapeSZ v) i
-                = ( :* Nil ) `liftM` GV.basicUnsafeIndexM v i
-  basicUnsafeCopy (MV_ShapeSZ mv) (V_ShapeSZ v)
-                = GV.basicUnsafeCopy mv v
-  elemseq _ (a:*_) z =   GV.elemseq (undefined :: UV.Vector a) a z
+  basicUnsafeFreeze = \ (MV_ShapeSZ v)  ->  V_ShapeSZ `liftM` GV.basicUnsafeFreeze v
+  basicUnsafeThaw = \ (V_ShapeSZ v)  ->  MV_ShapeSZ`liftM` GV.basicUnsafeThaw v
+  basicLength  = \ (V_ShapeSZ v)-> GV.basicLength v
+  basicUnsafeSlice  = \ i n (V_ShapeSZ v) ->  V_ShapeSZ $ GV.basicUnsafeSlice i n v
+  basicUnsafeIndexM  = \ (V_ShapeSZ v) i -> ( :* Nil ) `liftM` GV.basicUnsafeIndexM v i
+  basicUnsafeCopy   = \ (MV_ShapeSZ mv) (V_ShapeSZ v) -> GV.basicUnsafeCopy mv v
+  elemseq  = \ _ (a:*_) z ->    GV.elemseq (undefined :: UV.Vector a) a z
 
 
 instance (UV.Unbox a,UV.Unbox (Shape (S n) a)) => GMV.MVector UV.MVector (Shape (S (S n)) a) where
@@ -540,18 +538,18 @@ instance (UV.Unbox a,UV.Unbox (Shape (S n) a)) => GMV.MVector UV.MVector (Shape 
   {-# INLINE basicSet #-}
   {-# INLINE basicUnsafeCopy #-}
   {-# INLINE basicUnsafeGrow #-}
-  basicLength (MV_ShapeSSN v) = GMV.basicLength v
-  basicUnsafeSlice i n (MV_ShapeSSN v) = MV_ShapeSSN $ GMV.basicUnsafeSlice i n v
-  basicOverlaps (MV_ShapeSSN v1) (MV_ShapeSSN v2) = GMV.basicOverlaps v1 v2
-  basicUnsafeNew n = MV_ShapeSSN `liftM` GMV.basicUnsafeNew n
-  basicUnsafeReplicate n (a :* as) = MV_ShapeSSN `liftM` GMV.basicUnsafeReplicate n (a,as)
-  basicUnsafeRead (MV_ShapeSSN v) i = uncurry (:*) `liftM` GMV.basicUnsafeRead v i
-  basicUnsafeWrite (MV_ShapeSSN v) i (a :* as ) = GMV.basicUnsafeWrite v i (a,as)
-  basicClear (MV_ShapeSSN v) = GMV.basicClear v
-  basicSet (MV_ShapeSSN v) (a :* as) = GMV.basicSet v (a,as)
-  basicUnsafeCopy (MV_ShapeSSN v1) (MV_ShapeSSN v2) = GMV.basicUnsafeCopy v1 v2
-  basicUnsafeMove (MV_ShapeSSN v1) (MV_ShapeSSN v2) = GMV.basicUnsafeMove v1 v2
-  basicUnsafeGrow (MV_ShapeSSN v) n = MV_ShapeSSN `liftM` GMV.basicUnsafeGrow v n
+  basicLength  = \ (MV_ShapeSSN v) -> GMV.basicLength v
+  basicUnsafeSlice  = \ i n (MV_ShapeSSN v) -> MV_ShapeSSN $ GMV.basicUnsafeSlice i n v
+  basicOverlaps  = \ (MV_ShapeSSN v1) (MV_ShapeSSN v2) -> GMV.basicOverlaps v1 v2
+  basicUnsafeNew = \ n -> MV_ShapeSSN `liftM` GMV.basicUnsafeNew n
+  basicUnsafeReplicate  = \ n (a :* as) ->  MV_ShapeSSN `liftM` GMV.basicUnsafeReplicate n (a,as)
+  basicUnsafeRead = \ (MV_ShapeSSN v) i  ->  uncurry (:*) `liftM` GMV.basicUnsafeRead v i
+  basicUnsafeWrite = \(MV_ShapeSSN v) i (a :* as )  -> GMV.basicUnsafeWrite v i (a,as)
+  basicClear = \ (MV_ShapeSSN v)  ->  GMV.basicClear v
+  basicSet  = \ (MV_ShapeSSN v) (a :* as) ->  GMV.basicSet v (a,as)
+  basicUnsafeCopy  = \ (MV_ShapeSSN v1) (MV_ShapeSSN v2) -> GMV.basicUnsafeCopy v1 v2
+  basicUnsafeMove  = \ (MV_ShapeSSN v1) (MV_ShapeSSN v2) ->  GMV.basicUnsafeMove v1 v2
+  basicUnsafeGrow = - (MV_ShapeSSN v) n  -> MV_ShapeSSN `liftM` GMV.basicUnsafeGrow v n
 
 
 instance (UV.Unbox a,UV.Unbox (Shape (S n) a)) =>  GV.Vector UV.Vector (Shape (S (S n)) a) where
@@ -561,13 +559,11 @@ instance (UV.Unbox a,UV.Unbox (Shape (S n) a)) =>  GV.Vector UV.Vector (Shape (S
   {-# INLINE basicUnsafeSlice #-}
   {-# INLINE basicUnsafeIndexM #-}
   {-# INLINE elemseq #-}
-  basicUnsafeFreeze (MV_ShapeSSN v) = V_ShapeSSN `liftM` GV.basicUnsafeFreeze v
-  basicUnsafeThaw (V_ShapeSSN v) = MV_ShapeSSN `liftM` GV.basicUnsafeThaw v
-  basicLength (V_ShapeSSN v) = GV.basicLength v
-  basicUnsafeSlice i n (V_ShapeSSN v) = V_ShapeSSN $ GV.basicUnsafeSlice i n v
-  basicUnsafeIndexM (V_ShapeSSN v) i
-                = uncurry (:*) `liftM` GV.basicUnsafeIndexM v i
-  basicUnsafeCopy (MV_ShapeSSN mv) (V_ShapeSSN v)
-                = GV.basicUnsafeCopy mv v
-  elemseq _ (a :* as) z = GV.elemseq (undefined :: UV.Vector a) a
+  basicUnsafeFreeze  = \ (MV_ShapeSSN v) ->  V_ShapeSSN `liftM` GV.basicUnsafeFreeze v
+  basicUnsafeThaw = \ (V_ShapeSSN v)  ->  MV_ShapeSSN `liftM` GV.basicUnsafeThaw v
+  basicLength = \ (V_ShapeSSN v)  -> GV.basicLength v
+  basicUnsafeSlice = \ i n (V_ShapeSSN v)  -> V_ShapeSSN $ GV.basicUnsafeSlice i n v
+  basicUnsafeIndexM  = \ (V_ShapeSSN v) -> uncurry (:*) `liftM` GV.basicUnsafeIndexM v i
+  basicUnsafeCopy    =  \ (MV_ShapeSSN mv) (V_ShapeSSN v) -> GV.basicUnsafeCopy mv v
+  elemseq = \  _ (a :* as) z ->  GV.elemseq (undefined :: UV.Vector a) a
                        $ GV.elemseq (undefined :: UV.Vector (Shape (S n) a)) as z
