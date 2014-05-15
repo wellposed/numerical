@@ -40,7 +40,7 @@ module Numerical.Array.Shape(Shape(..)
     )
     where
 
-import Data.Data
+--import Data.Data
 import Data.Typeable()
 
 
