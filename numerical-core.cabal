@@ -55,6 +55,9 @@ source-repository head
   type: git
   location: http://github.com/wellposed/numerical-core.git
 
+flag lib-Werror
+  default: False
+  manual: True
 
 library
     -- Modules exported by the library.
@@ -82,6 +85,9 @@ library
     -- -O2
     -- Modules included in this library but not exported.
     -- other-modules:
+    if flag(lib-Werror)
+      ghc-options: -Werror
+
 
     -- LANGUAGE extensions used by modules in this package.
     other-extensions:

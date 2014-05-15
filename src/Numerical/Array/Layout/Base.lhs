@@ -18,6 +18,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE CPP #-}
 
 module Numerical.Array.Layout.Base(
   Layout(..)
@@ -200,7 +201,9 @@ class Layout form  (rank :: Nat) | form -> rank  where
 
 
     -- one of basicNextAddress and basicNextIndex must always be implemented
+#if defined(__GLASGOW_HASKELL_) && __GLASGOW_HASKELL__ >= 707
     {-# MINIMAL basicFormShape,basicCompareIndex, transposedLayout   #-}
+#endif
 
 -----
 -----
