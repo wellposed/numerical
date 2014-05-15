@@ -104,7 +104,26 @@ data Shape (rank :: Nat) a where
 
 #if defined(__GLASGOW_HASKELL_) && __GLASGOW_HASKELL__ >= 707
 deriving instance Typeable Shape
+
+-- figure this out!
+--look at  http://hackage.haskell.org/package/HList-0.3.4.1/docs/src/Data-HList-Data.html
+--and https://hackage.haskell.org/package/base-4.3.1.0/docs/Data-Data.html#nilConstr
+-- for examples
+--instance Data a => Data (Shape Z a) where
+  --gfoldl
+
+--deriving instance Data (Shape Z a)
+--deriving instance (Data a,Data (Shape n a))=> (Data (Shape (S n) a))
+
+{-
+too much work to do data instance with pre 7.8 typeable
+-}
+
+
 #endif
+
+
+
 
 
 instance  Eq (Shape Z a) where

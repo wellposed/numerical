@@ -26,6 +26,9 @@ data Nat = S !Nat  | Z
 #if defined(__GLASGOW_HASKELL_) && __GLASGOW_HASKELL__ >= 707
 deriving instance Typeable 'Z
 deriving instance Typeable 'S
+#else
+--deriving instance Typeable 'Z
+--instance
 #endif
 
 
