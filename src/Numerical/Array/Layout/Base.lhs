@@ -153,14 +153,20 @@ a) 3 array: value, column index,  and  row start vectors
 b) 4 array: value, column index, rowstart, and row end vectors
 
 lets use choice a) for contiguous vectors, and choice b) for
-inner contiguous vectors. (because that )
+inner contiguous vectors.
+
+In both cases we need to enrich the type with a "buffer shift"
+to handle correctly doing lookups on submatrices picked out
+by either a major axis slice
 
 -}
 data instance Format CompressedSparseRow Contiguous (S (S Z)) rep =
     FormatCompressedSparseRow {
       logicalRowShapeContiguousCSR ::  {-# UNPACK#-} !Int
       ,logicalColShapeContiguousCSR :: {-# UNPACK #-} !Int
-      ,logicalValueBufferShiftContiguousCSR:: {-# UNPACK #-} !Int
+      ,logicalValueBufferAddressShiftContiguousCSR:: {-# UNPACK #-} !Int
+      ,logicalColumnIndexContiguousCSR :: !(StorageVector rep Int)
+      ,logicalRowStartIndexContiguousCSR :: ! (StorageVector rep Int )
       --,logicalShiftRowCSR :: {-#  UNPACK #-} !Int
   }
 
