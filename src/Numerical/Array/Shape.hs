@@ -25,7 +25,6 @@ module Numerical.Array.Shape(Shape(..)
     ,map
     ,map2
     ,reverseShape
-    --,At(..)
     ,Nat(..)
     ,shapeSize
     ,SNat(..)
@@ -549,7 +548,7 @@ instance (UV.Unbox a,UV.Unbox (Shape (S n) a)) => GMV.MVector UV.MVector (Shape 
   basicSet  = \ (MV_ShapeSSN v) (a :* as) ->  GMV.basicSet v (a,as)
   basicUnsafeCopy  = \ (MV_ShapeSSN v1) (MV_ShapeSSN v2) -> GMV.basicUnsafeCopy v1 v2
   basicUnsafeMove  = \ (MV_ShapeSSN v1) (MV_ShapeSSN v2) ->  GMV.basicUnsafeMove v1 v2
-  basicUnsafeGrow = - (MV_ShapeSSN v) n  -> MV_ShapeSSN `liftM` GMV.basicUnsafeGrow v n
+  basicUnsafeGrow = \ (MV_ShapeSSN v) n  -> MV_ShapeSSN `liftM` GMV.basicUnsafeGrow v n
 
 
 instance (UV.Unbox a,UV.Unbox (Shape (S n) a)) =>  GV.Vector UV.Vector (Shape (S (S n)) a) where
@@ -563,7 +562,7 @@ instance (UV.Unbox a,UV.Unbox (Shape (S n) a)) =>  GV.Vector UV.Vector (Shape (S
   basicUnsafeThaw = \ (V_ShapeSSN v)  ->  MV_ShapeSSN `liftM` GV.basicUnsafeThaw v
   basicLength = \ (V_ShapeSSN v)  -> GV.basicLength v
   basicUnsafeSlice = \ i n (V_ShapeSSN v)  -> V_ShapeSSN $ GV.basicUnsafeSlice i n v
-  basicUnsafeIndexM  = \ (V_ShapeSSN v) -> uncurry (:*) `liftM` GV.basicUnsafeIndexM v i
+  basicUnsafeIndexM  = \ (V_ShapeSSN v)  i -> uncurry (:*) `liftM` GV.basicUnsafeIndexM v i
   basicUnsafeCopy    =  \ (MV_ShapeSSN mv) (V_ShapeSSN v) -> GV.basicUnsafeCopy mv v
   elemseq = \  _ (a :* as) z ->  GV.elemseq (undefined :: UV.Vector a) a
                        $ GV.elemseq (undefined :: UV.Vector (Shape (S n) a)) as z
