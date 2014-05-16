@@ -124,6 +124,12 @@ data instance Format DirectSparse  Contiguous (S Z) rep =
       ,indexTableDirectSparse :: ! ((StorageVector rep) Int )  }
 
 {-
+for some listings of the design space of Sparse matrices
+as found in other tools,
+see < https://software.intel.com/sites/products/documentation/doclib/mkl_sa/11/mklman/GUID-9FCEB1C4-670D-4738-81D2-F378013412B0.htm >
+
+<  http://netlib.org/linalg/html_templates/node90.html > is also pretty readable
+
 theres a subtle detail about the invariants of contiguous vs inner inner contiguous
 for CSR and CSC
 when I do an inner contiguous / contiguous slice / projection,
@@ -154,7 +160,7 @@ data instance Format CompressedSparseRow Contiguous (S (S Z)) rep =
     FormatCompressedSparseRow {
       logicalRowShapeContiguousCSR ::  {-# UNPACK#-} !Int
       ,logicalColShapeContiguousCSR :: {-# UNPACK #-} !Int
-      ,logicalValueBufferShift:: {-# UNPACK #-} !Int
+      ,logicalValueBufferShiftContiguousCSR:: {-# UNPACK #-} !Int
       --,logicalShiftRowCSR :: {-#  UNPACK #-} !Int
   }
 
