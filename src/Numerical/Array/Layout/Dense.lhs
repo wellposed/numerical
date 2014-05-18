@@ -56,7 +56,12 @@ import Prelude hiding (foldr,foldl,map,scanl,scanr,scanl1,scanr1)
   --note that unlike the Layout method  basicToAddress,
 
 
+{-
 
+need to figure out how to support symmetric and hermitian and triangular
+and banded matrices
+
+-}
 
 
 --class Layout form rank => DenseLayout  form  (rank :: Nat) | form -> rank  where
