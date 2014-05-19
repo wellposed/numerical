@@ -19,6 +19,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE AutoDeriveTypeable #-}
 
 module Numerical.Array.Layout.Base(
   Layout(..)
@@ -26,6 +27,7 @@ module Numerical.Array.Layout.Base(
   ,Format(..)
   ,Row
   ,Column
+  ,DirectSparse
   ,Direct
   ,CSR
   ,CSC
@@ -161,15 +163,40 @@ by either a major axis slice
 
 -}
 data instance Format CompressedSparseRow Contiguous (S (S Z)) rep =
-    FormatCompressedSparseRow {
-      logicalRowShapeContiguousCSR ::  {-# UNPACK#-} !Int
-      ,logicalColShapeContiguousCSR :: {-# UNPACK #-} !Int
+    FormatContiguousCompressedSparseRow {
+      logicalShapeContiguousCSR ::   !(Shape (S (S Z)) Int)
       ,logicalValueBufferAddressShiftContiguousCSR:: {-# UNPACK #-} !Int
       ,logicalColumnIndexContiguousCSR :: !(StorageVector rep Int)
       ,logicalRowStartIndexContiguousCSR :: ! (StorageVector rep Int )
-      --,logicalShiftRowCSR :: {-#  UNPACK #-} !Int
   }
 
+
+data instance Format CompressedSparseRow InnerContiguous (S (S Z)) rep =
+    FormatInnerContigCompressedSparseRow {
+      logicalShapeInnerContigCSR ::   !(Shape (S (S Z)) Int)
+      ,logicalValueBufferAddressShiftInnerContigCSR:: {-# UNPACK #-} !Int
+      ,logicalColumnIndexInnerContigCSR :: !(StorageVector rep Int)
+      ,logicalRowStartIndexInnerContigCSR :: ! (StorageVector rep Int )
+      ,logicalRowEndIndexInnerContigCSR :: ! (StorageVector rep Int )
+  }
+
+data instance Format CompressedSparseColumn Contiguous (S (S Z)) rep =
+    FormatContiguousCompressedSparseColumn {
+      logicalShapeContiguousCSC ::  !(Shape (S (S Z)) Int)
+      ,logicalValueBufferAddressShiftContiguousCSC:: {-# UNPACK #-} !Int
+      ,logicalRowIndexContiguousCSC :: !(StorageVector rep Int)
+      ,logicalColumnStartIndexContiguousCSC :: ! (StorageVector rep Int )
+  }
+
+
+data instance Format CompressedSparseColumn InnerContiguous (S (S Z)) rep =
+    FormatInnerContigCompressedSparseColumn {
+      logicalShapeInnerContigCSC ::   !(Shape (S (S Z)) Int)
+      ,logicalValueBufferAddressShiftInnerContigCSC:: {-# UNPACK #-} !Int
+      ,logicalRowIndexInnerContigCSC :: !(StorageVector rep Int)
+      ,logicalColumnStartIndexInnerContigCSC :: ! (StorageVector rep Int )
+      ,logicalColumnEndIndexInnerContigCSC :: ! (StorageVector rep Int )
+  }
 
 -- | @'Format' 'Direct' 'Contiguous' ('S' 'Z')@ is a 1dim array 'Layout' with unit stride
 data instance Format  Direct Contiguous (S Z) rep  =
