@@ -34,7 +34,7 @@ install:
 script:
  - cabal-1.20 configure  -flib-Werror --enable-tests --enable-benchmarks -v2 # --ghc-options="-Werror"  # -v2 provides useful information for debugging
  - cabal-1.20 build   # this builds all libraries and executables (including tests/benchmarks)
- - cabal-1.20 test   --show-details=always
+ - cabal-1.20 test   --show-details=always --test-option=--color
  # - cabal-1.20 check
  - cabal-1.20 sdist   # tests that a source-distribution can be generated
 
