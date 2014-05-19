@@ -99,6 +99,7 @@ library
         TypeOperators
         FlexibleInstances
         FlexibleContexts
+        AutoDeriveTypeable
 
 
     -- Other library packages from which modules are imported.
