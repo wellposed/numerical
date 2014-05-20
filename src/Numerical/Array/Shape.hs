@@ -14,6 +14,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+
 -- {-# LANGUAGE OverlappingInstances #-}
 
 module Numerical.Array.Shape(Shape(..)
@@ -40,8 +41,8 @@ module Numerical.Array.Shape(Shape(..)
     where
 
 --import Data.Data
-import Data.Typeable()
-
+import Data.Typeable
+import Data.Data
 
 import qualified Data.Functor as Fun
 import qualified  Data.Foldable as F
@@ -101,8 +102,42 @@ data Shape (rank :: Nat) a where
     (:*) ::  !(a) -> !(Shape r a ) -> Shape  (S r) a
         --deriving  (Show)
 
-#if defined(__GLASGOW_HASKELL_) && __GLASGOW_HASKELL__ >= 707
+#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
 deriving instance Typeable Shape
+
+#elif defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ < 707
+
+deriving instance Typeable2 Shape
+
+#endif
+
+nilShapeConstrRep :: Constr
+nilShapeConstrRep    = mkConstr shapeDataTypeRep "Nil" [] Prefix
+consShapeConstrRep :: Constr
+consShapeConstrRep   = mkConstr shapeDataTypeRep ":*" [] Infix
+
+shapeDataTypeRep :: DataType
+shapeDataTypeRep = mkDataType "Numerical.Array.Shape.Shape" [nilShapeConstrRep,consShapeConstrRep]
+
+
+--deriving instance (Data a, Typeable n ) => Data (Shape n a)
+--  gfoldl f z xs = gfoldl f z (shapeToList xs)
+
+--  --gfoldl _ z Nil = z Nil
+--  --gfoldl f z (x :* xs) = z (:*)  `f`  x `f` xs
+
+instance (Data a,Typeable Z) =>  Data (Shape Z a) where
+    gfoldl _ z Nil = z Nil
+    gunfold _ z _  = z Nil -- not sure if _ z _ is the right one, but typechecks
+    dataTypeOf _  = shapeDataTypeRep
+    toConstr _ = nilShapeConstrRep
+
+instance (Data a, Data (Shape n a), Typeable (S n))=> Data (Shape (S n) a ) where
+    gfoldl k z (a :* b) = (z (:*) `k` a) `k` b
+    gunfold k z _ = k (k (z (:*)))
+    dataTypeOf _ = shapeDataTypeRep
+    toConstr _   = consShapeConstrRep
+
 
 -- figure this out!
 --look at  http://hackage.haskell.org/package/HList-0.3.4.1/docs/src/Data-HList-Data.html
@@ -117,11 +152,6 @@ deriving instance Typeable Shape
 {-
 too much work to do data instance with pre 7.8 typeable
 -}
-
-
-#endif
-
-
 
 
 

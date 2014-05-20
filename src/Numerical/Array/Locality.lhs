@@ -5,6 +5,8 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE StandaloneDeriving #-}
+
 
 module Numerical.Array.Locality(Locality(..),LocalityMax,LocalityMin) where
 
@@ -13,7 +15,9 @@ import Data.Data
 data  Locality = Contiguous | Strided  | InnerContiguous
   deriving (Eq,Show,Read,Typeable,Data)
 
-
+deriving instance Typeable 'Strided
+deriving instance Typeable 'InnerContiguous
+deriving instance  Typeable 'Contiguous
 
 #if defined(__GLASGOW_HASKELL__) && ( __GLASGOW_HASKELL__ >= 707)
 type family LocalityMax (a :: Locality) (b :: Locality)  :: Locality where
