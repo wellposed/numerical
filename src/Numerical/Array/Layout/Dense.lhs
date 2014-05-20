@@ -35,6 +35,8 @@ import Numerical.Array.Address
 import Numerical.Array.Locality
 import Numerical.Array.Layout.Base
 import Numerical.Array.Shape as S
+import Data.Data
+
 
 --import Data.Traversable (Traversable)
 
@@ -44,6 +46,15 @@ import qualified Data.Foldable as F
 
 import Prelude hiding (foldr,foldl,map,scanl,scanr,scanl1,scanr1)
 
+
+data Direct
+  deriving Typeable
+
+data Row
+  deriving Typeable
+
+data Column
+    deriving Typeable
 
 
 --class Layout form rank => SparseLayout  form  (rank :: Nat) | form -> rank  where
@@ -68,6 +79,210 @@ and banded matrices
   {-
   empty class instances for all the dense Layouts
   -}
+
+
+-- | @'Format' 'Direct' 'Contiguous' ('S' 'Z')@ is a 1dim array 'Layout' with unit stride
+data instance Format  Direct Contiguous (S Z) rep  =
+    FormatDirectContiguous {
+        logicalShapeDirectContiguous :: {-#UNPACK#-} !Int }
+    --deriving (Show,Eq,Data)
+
+-- | @'Format' 'Direct' 'Strided'  ('S' 'Z')@ is a 1dim array 'Layout' with a regular stride >= 1
+data instance Format  Direct Strided (S Z) rep  =
+    FormatDirectStrided {
+        logicalShapeDirectStrided :: {-#UNPACK#-}!Int
+        ,logicalStrideDirectStrided:: {-#UNPACK#-}!Int}
+    --deriving (Show,Eq,Data)
+
+-- | @'Format'  'Row'  'Contiguous' n@ is a rank n Array
+data instance  Format  Row  Contiguous n rep   =
+    FormatRowContiguous {
+        boundsFormRow :: !(Shape n Int)}
+    --deriving (Show,Eq,Data)
+
+data instance  Format  Row  Strided n rep  =
+    FormatRowStrided
+        {boundsFormRowStrided:: !(Shape n Int)
+        ,strideFormRowStrided:: !(Shape n Int)}
+    --deriving (Show,Eq,Data)
+
+data instance  Format  Row  InnerContiguous n rep  =
+    FormatRowInnerContiguous {
+        boundsFormRowInnerContig :: !(Shape n Int)
+        ,strideFormRowInnerContig:: !(Shape n Int)}
+    --deriving (Show,Eq,Data)
+
+data instance  Format  Column Contiguous n  rep =
+    FormatColumnContiguous {
+      boundsColumnContig :: !(Shape n Int)}
+    --deriving (Show,Eq,Data)
+
+data instance  Format Column InnerContiguous n rep  =
+    FormatColumnInnerContiguous {
+        boundsColumnInnerContig :: !(Shape n Int)
+        ,strideFormColumnInnerContig:: !(Shape n Int)}
+    --deriving (Show,Eq,Data)
+
+data instance  Format Column Strided n rep  =
+    FormatColumnStrided {
+      boundsColumnStrided :: !(Shape n Int)
+      ,strideFormColumnStrided:: !(Shape n Int)}
+    --deriving (Show,Eq,Data)
+
+
+type instance Tranposed (Format Direct Contiguous (S Z) rep) =
+    Format Direct Contiguous (S Z) rep
+type instance Tranposed (Format Direct Strided (S Z) rep ) =
+   Format Direct Strided (S Z) rep
+
+type instance  Tranposed (Format Row  Contiguous rank rep) =
+  Format Column Contiguous rank rep
+type instance Tranposed (Format Row  InnerContiguous rank rep) =
+    Format Column  InnerContiguous rank rep
+type instance  Tranposed (Format Row  Strided rank rep) =
+    Format Column  Strided rank rep
+
+type instance Tranposed (Format Column Contiguous rank rep)=
+    Format Row Contiguous rank rep
+type instance Tranposed (Format Column InnerContiguous rank rep)=
+    Format Row  InnerContiguous rank rep
+type instance  Tranposed (Format Column  Strided rank rep)=
+    Format Row  Strided rank rep
+
+
+
+
+-----
+-----
+-----
+
+
+instance Layout (Format Direct Contiguous (S Z) rep)  (S Z)  where
+
+    {-# INLINE basicFormShape#-}
+    basicFormShape = \ x -> (logicalShapeDirectContiguous x) :* Nil
+
+    transposedLayout = id
+
+    {-# INLINE basicCompareIndex #-}
+    basicCompareIndex = \ _  (l:* _) (r:* _) -> compare l r
+
+
+
+instance  Layout (Format Direct Strided (S Z) rep)  (S Z)  where
+
+    {-# INLINE basicFormShape #-}
+    basicFormShape = \x -> (logicalShapeDirectStrided x) :* Nil
+
+    transposedLayout = id
+
+    {-# INLINE basicCompareIndex #-}
+    basicCompareIndex = \ _  (l:* _) (r:* _) -> compare l r
+
+-----
+-----
+-----
+
+
+-- strideRow :: Shape rank Int,
+instance   (Applicative (Shape rank), Traversable (Shape rank))
+    =>  Layout (Format Row  Contiguous rank rep) rank where
+
+    transposedLayout = \(FormatRowContiguous shp) -> FormatColumnContiguous $ reverseShape shp
+
+    {-# INLINE basicFormShape #-}
+    basicFormShape = \x -> boundsFormRow x
+
+    {-# INLINE basicCompareIndex #-}
+    basicCompareIndex = \ _  ls rs -> foldl majorCompareLeftToRight EQ  $ S.map2 compare ls rs
+
+
+-----
+-----
+
+
+-- strideRow :: Shape rank Int,
+instance   (Applicative (Shape rank), Traversable (Shape rank))
+  =>  Layout (Format Row  InnerContiguous rank rep)  rank  where
+
+    {-# INLINE basicFormShape  #-}
+    basicFormShape = \x -> boundsFormRowInnerContig x
+
+    transposedLayout = \(FormatRowInnerContiguous shp stride) ->
+        FormatColumnInnerContiguous  (reverseShape shp)  (reverseShape stride)
+
+    {-# INLINE basicCompareIndex #-}
+    basicCompareIndex = \ _  ls rs ->
+      foldl majorCompareLeftToRight EQ  $ S.map2 compare ls rs
+
+---
+---
+
+-- strideRow :: Shape rank Int,
+
+instance  (Applicative (Shape rank),Traversable (Shape rank))
+  =>  Layout (Format Row  Strided rank rep) rank  where
+
+    {-# INLINE basicFormShape  #-}
+    basicFormShape = \x -> boundsFormRowStrided x
+
+    transposedLayout = \(FormatRowStrided shp stride) ->
+        FormatColumnStrided  (reverseShape shp)  (reverseShape stride)
+
+    {-# INLINE basicCompareIndex #-}
+    basicCompareIndex = \ _  ls rs ->
+        foldl majorCompareLeftToRight EQ  $ S.map2 compare ls rs
+
+-----
+-----
+-----
+
+ -- strideRow :: Shape rank Int,
+instance  (Applicative (Shape rank), Traversable (Shape rank))
+  =>  Layout (Format Column  Contiguous rank rep)  rank where
+
+    {-# INLINE basicFormShape  #-}
+    basicFormShape = \x -> boundsColumnContig x
+
+    transposedLayout = \(FormatColumnContiguous shp)-> FormatRowContiguous $ reverseShape shp
+
+    {-# INLINE basicCompareIndex #-}
+    basicCompareIndex = \ _  ls rs -> foldr majorCompareRightToLeft EQ  $ S.map2 compare ls rs
+
+
+ -- strideRow :: Shape rank Int,
+instance  (Applicative (Shape rank), Traversable (Shape rank))
+  => Layout (Format Column  InnerContiguous rank rep) rank  where
+
+
+    {-# INLINE basicFormShape  #-}
+    basicFormShape = \x -> boundsColumnInnerContig x
+
+    transposedLayout = \(FormatColumnInnerContiguous shp stride)->
+         FormatRowInnerContiguous (reverseShape shp) (reverseShape stride)
+
+    {-# INLINE basicCompareIndex #-}
+    basicCompareIndex = \ _  ls rs -> foldr majorCompareRightToLeft EQ  $ S.map2 compare ls rs
+
+
+ -- strideRow :: Shape rank Int,
+
+
+instance   (Applicative (Shape rank), Traversable (Shape rank))
+  => Layout (Format Column  Strided rank rep) rank where
+
+    {-# INLINE basicFormShape  #-}
+    basicFormShape = \x -> boundsColumnStrided x
+
+    transposedLayout = \(FormatColumnStrided shp stride)->
+         FormatRowStrided (reverseShape shp) (reverseShape stride)
+
+    {-# INLINE basicCompareIndex #-}
+    basicCompareIndex = \ _  ls rs -> foldr majorCompareRightToLeft EQ $ S.map2 compare ls rs
+
+
+
+
 
 
 class DenseLayout form  (rank :: Nat) | form -> rank  where
@@ -103,7 +318,7 @@ class DenseLayout form  (rank :: Nat) | form -> rank  where
 
 
     -- one of basicNextAddress and basicNextIndex must always be implemented
-#if defined(__GLASGOW_HASKELL_) && __GLASGOW_HASKELL__ >= 707
+#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
     {-# MINIMAL  basicToIndex, basicToAddress, (basicNextIndex | basicNextAddress)  #-}
 #endif
 

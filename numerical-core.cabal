@@ -65,6 +65,7 @@ library
         Numerical.Array.Layout
         Numerical.Array.Layout.Base
         Numerical.Array.Layout.Dense
+        Numerical.Array.Layout.Sparse
         Numerical.Array
         Numerical.World
         Control.NumericalMonad.State.Strict
@@ -99,7 +100,7 @@ library
         TypeOperators
         FlexibleInstances
         FlexibleContexts
-        AutoDeriveTypeable
+
 
 
     -- Other library packages from which modules are imported.
