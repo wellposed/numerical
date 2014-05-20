@@ -102,14 +102,10 @@ data Shape (rank :: Nat) a where
     (:*) ::  !(a) -> !(Shape r a ) -> Shape  (S r) a
         --deriving  (Show)
 
-#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
+
 deriving instance Typeable Shape
 
-#elif defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ < 707
 
-deriving instance Typeable2 Shape
-
-#endif
 
 nilShapeConstrRep :: Constr
 nilShapeConstrRep    = mkConstr shapeDataTypeRep "Nil" [] Prefix
@@ -125,6 +121,8 @@ shapeDataTypeRep = mkDataType "Numerical.Array.Shape.Shape" [nilShapeConstrRep,c
 
 --  --gfoldl _ z Nil = z Nil
 --  --gfoldl f z (x :* xs) = z (:*)  `f`  x `f` xs
+
+-- I would like to have (Data (Shape n a)) but that seems tricky
 
 instance (Data a,Typeable Z) =>  Data (Shape Z a) where
     gfoldl _ z Nil = z Nil

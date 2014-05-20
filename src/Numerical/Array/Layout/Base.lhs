@@ -21,9 +21,8 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE StandaloneDeriving#-}
 
-#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
- {-# LANGUAGE AutoDeriveTypeable #-}
-#endif
+{-# LANGUAGE AutoDeriveTypeable #-}
+
 
 module Numerical.Array.Layout.Base(
   Layout(..)
@@ -39,12 +38,12 @@ module Numerical.Array.Layout.Base(
 
 
 import Numerical.Nat
-import Numerical.Array.Address
+--import Numerical.Array.Address
 import Numerical.Array.Locality
 import Numerical.Array.Shape as S
 import Numerical.Array.Storage
-import Data.Data
-import Data.Typeable
+
+--import Data.Typeable
 --import Data.Traversable (Traversable)
 
 --import Control.NumericalMonad.State.Strict
@@ -100,9 +99,8 @@ majorCompareRightToLeft _ b = b
 
 data family Format  lay (contiguity:: Locality)  (rank :: Nat) rep
 
-#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
-deriving instance Typeable Format
-#endif
+
+
 
 
 

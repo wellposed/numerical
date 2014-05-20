@@ -23,23 +23,15 @@ type LitNat = TL.Nat
 data Nat = S !Nat  | Z
     deriving (Eq,Show,Read,Typeable,Data)
 
-#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
+
 deriving instance Typeable 'Z
 deriving instance Typeable 'S
-#elif defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ < 707
-
-deriving instance Typeable 'Z
-deriving instance Typeable1 'S
---instance
-#endif
-
 
 {-
 use closed type families when available,
 need to test that the
 -}
 
-#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
 
 type family U (n:: TL.Nat) :: Nat  where
   U 0 = Z
@@ -50,21 +42,22 @@ type family n1 + n2 where
   Z + n2 = n2
   (S n1') + n2 = S (n1' + n2)
 
-#else
 
-type family U (n:: (TL.Nat)) :: Nat
+--  ghc 7.6 instances
 
--- can't induct, hence crippled
-type instance U n = Z
+--type family U (n:: (TL.Nat)) :: Nat
 
-type family (n1::Nat) + (n2::Nat) :: Nat
-type instance Z + n2 = n2
-type instance  (S n1) + n2 = S (n1 + n2)
-gcastWith :: (a :~: b) -> ((a ~ b) => r) -> r
-gcastWith Refl x = x
-data a :~: b where
-  Refl :: a :~: a
-#endif
+---- can't induct, hence crippled
+--type instance U n = Z
+
+--type family (n1::Nat) + (n2::Nat) :: Nat
+--type instance Z + n2 = n2
+--type instance  (S n1) + n2 = S (n1 + n2)
+--gcastWith :: (a :~: b) -> ((a ~ b) => r) -> r
+--gcastWith Refl x = x
+--data a :~: b where
+--  Refl :: a :~: a
+
 
 
 

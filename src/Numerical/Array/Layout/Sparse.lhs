@@ -35,17 +35,18 @@ that acts only on the outermost dimension.
 #endif
 module Numerical.Array.Layout.Sparse(
   SparseLayout(..)
+  ,Layout(..)
   ,DirectSparse
   ,CSR
   ,CSC
   ,CompressedSparseRow
   ,CompressedSparseColumn
   ,Format(..)
+  ,StorageVector
   ) where
 
 import Data.Data
 import Numerical.Array.Layout.Base
-import Numerical.Array.Storage
 import Numerical.Array.Shape
 import Numerical.Array.Address
 
