@@ -16,6 +16,10 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE StandaloneDeriving #-}
+#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
+ {-# LANGUAGE AutoDeriveTypeable #-}
+#endif
 
 module Numerical.Array.Layout.Dense(
   DenseLayout(..)
@@ -48,13 +52,13 @@ import Prelude hiding (foldr,foldl,map,scanl,scanr,scanl1,scanr1)
 
 
 data Direct
-  deriving Typeable
+
 
 data Row
-  deriving Typeable
+
 
 data Column
-    deriving Typeable
+
 
 
 --class Layout form rank => SparseLayout  form  (rank :: Nat) | form -> rank  where
@@ -116,17 +120,25 @@ data instance  Format  Column Contiguous n  rep =
     FormatColumnContiguous {
       boundsColumnContig :: !(Shape n Int)}
     --deriving (Show,Eq,Data)
+--deriving instance (Data (Shape n Int),Typeable n,Typeable rep) =>
 
 data instance  Format Column InnerContiguous n rep  =
     FormatColumnInnerContiguous {
         boundsColumnInnerContig :: !(Shape n Int)
-        ,strideFormColumnInnerContig:: !(Shape n Int)}
+        ,strideFormColumnInnerContig:: !(Shape n Int)
+      }
+
+deriving instance Show (Shape n Int) => Show (Format Column InnerContiguous n rep)
+deriving instance (Data (Shape n Int),Typeable n,Typeable rep) =>Data (Format Column InnerContiguous n rep)
     --deriving (Show,Eq,Data)
 
 data instance  Format Column Strided n rep  =
     FormatColumnStrided {
       boundsColumnStrided :: !(Shape n Int)
       ,strideFormColumnStrided:: !(Shape n Int)}
+deriving instance Show (Shape n Int) => Show (Format Column Strided n rep)
+--deriving instance (Eq (Shape n Int)) => Eq (Format Column Strided n rep)
+deriving instance (Data (Shape n Int),Typeable n,Typeable rep) => Data (Format Column Strided n rep)
     --deriving (Show,Eq,Data)
 
 
@@ -281,14 +293,18 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
     basicCompareIndex = \ _  ls rs -> foldr majorCompareRightToLeft EQ $ S.map2 compare ls rs
 
 
-
-
+----------------------
+----------------------
+-----
+-----
+----------------------
+----------------------
 
 
 class DenseLayout form  (rank :: Nat) | form -> rank  where
 
-
-
+-- nb, this should actually be "getCurrentAffineAddressInterval"
+    --getCurrentAddressInterval :: form -> Shape rank Int -> UniformAddressInterval
 
     basicToAddress :: form  -> Shape rank Int ->   Address
 
