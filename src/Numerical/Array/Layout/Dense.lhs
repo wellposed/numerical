@@ -306,6 +306,12 @@ class DenseLayout form  (rank :: Nat) | form -> rank  where
 -- nb, this should actually be "getCurrentAffineAddressInterval"
     --getCurrentAddressInterval :: form -> Shape rank Int -> UniformAddressInterval
 
+    --leastAddress :: form  -> Address
+    --greatestAddress :: form -> Address
+
+    --leastIndex :: form -> Shape rank Int
+    --greatestIndex :: form -> Shape rank Int
+
     basicToAddress :: form  -> Shape rank Int ->   Address
 
 
