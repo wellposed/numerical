@@ -60,16 +60,12 @@ data Row
 data Column
 
 
+{-
+one important gotcha about shape is that for many formats,
+the Shape is the (fmap (+1)) of the largestIndex,
+often, but perhaps not always.
 
---class Layout form rank => SparseLayout  form  (rank :: Nat) | form -> rank  where
-
-
-
---  lookupIndex :: form -> Index rank -> Maybe Address
-
-
-  --note that unlike the Layout method  basicToAddress,
-
+-}
 
 {-
 
@@ -306,11 +302,17 @@ class DenseLayout form  (rank :: Nat) | form -> rank  where
 -- nb, this should actually be "getCurrentAffineAddressInterval"
     --getCurrentAddressInterval :: form -> Shape rank Int -> UniformAddressInterval
 
-    --leastAddress :: form  -> Address
-    --greatestAddress :: form -> Address
+    leastAddress :: form  -> Address
 
-    --leastIndex :: form -> Shape rank Int
-    --greatestIndex :: form -> Shape rank Int
+    greatestAddress :: form -> Address
+
+    leastIndex :: form -> Shape rank Int
+    leastIndex = \ form -> basicToIndex form leastAddress
+    {-# INLINE leastIndex #-}
+
+    greatestIndex :: form -> Shape rank Int
+    greatestIndex = \ form -> basicToIndex form greatestAddress
+    {-# INLINE greatestIndex #-}
 
     basicToAddress :: form  -> Shape rank Int ->   Address
 
@@ -341,7 +343,7 @@ class DenseLayout form  (rank :: Nat) | form -> rank  where
 
     -- one of basicNextAddress and basicNextIndex must always be implemented
 #if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
-    {-# MINIMAL  basicToIndex, basicToAddress, (basicNextIndex | basicNextAddress)  #-}
+    {-# MINIMAL  basicToIndex, basicToAddress, leastAddress, greatestAddress, (basicNextIndex | basicNextAddress)  #-}
 #endif
 
 -----
@@ -350,6 +352,8 @@ class DenseLayout form  (rank :: Nat) | form -> rank  where
 
 instance DenseLayout (Format Direct Contiguous (S Z) rep)  (S Z)  where
 
+    leastAddress = \ _ -> Address 0
+    greatestAddress = \ (FormatDirectContiguous ix) -> Address (ix -1)
 
 
     {-#INLINE basicToAddress#-}
