@@ -20,7 +20,6 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE StandaloneDeriving#-}
-
 {-# LANGUAGE AutoDeriveTypeable #-}
 
 
@@ -101,13 +100,6 @@ data family Format  lay (contiguity:: Locality)  (rank :: Nat) rep
 
 
 
-
-
-
-
-
-
-
 type family  Tranposed form
 
 
@@ -123,7 +115,8 @@ class (Traversable (Shape rank), Applicative (Shape rank))=>Layout form  (rank :
 
 
 
-
+--- TODO / AUDIT ME, does this work for morton order or hilbert?!
+-- I THINK SO, but not 100%
     basicCompareIndex :: p form-> Shape rank Int ->Shape rank Int -> Ordering
 
 
