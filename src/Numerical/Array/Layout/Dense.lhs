@@ -297,21 +297,38 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
 ----------------------
 
 
-class DenseLayout form  (rank :: Nat) | form -> rank  where
+class Layout form rank =>  DenseLayout form  (rank :: Nat) | form -> rank  where
 
 -- nb, this should actually be "getCurrentAffineAddressInterval"
     --getCurrentAddressInterval :: form -> Shape rank Int -> UniformAddressInterval
 
+    {-  Not sure if the leastAddress and greatestAddress
+  definitions are correct *in general*, but they're
+  correct for the example DenseLayout formats thusfar
+
+    -}
+
     leastAddress :: form  -> Address
+    leastAddress = \ _ -> Address 0
+    {-# INLINE leastAddress #-}
 
     greatestAddress :: form -> Address
+    greatestAddress = \form -> basicToAddress form $ greatestIndex form
 
     leastIndex :: form -> Shape rank Int
-    leastIndex = \ form -> basicToIndex form leastAddress
+    leastIndex = \ _  -> pure 0
     {-# INLINE leastIndex #-}
+{-
+greatestIndex assumes:
+   basicFormShape form `strictlyDominates` (pure 0)
 
+that is, every axis of a multi dim array, dimension/size must be >=1
+
+FIXME / TODO / AUDIT THIS HARD
+
+ -}
     greatestIndex :: form -> Shape rank Int
-    greatestIndex = \ form -> basicToIndex form greatestAddress
+    greatestIndex = \ form -> fmap (flip (-) 1) $  basicFormShape form
     {-# INLINE greatestIndex #-}
 
     basicToAddress :: form  -> Shape rank Int ->   Address
@@ -343,7 +360,7 @@ class DenseLayout form  (rank :: Nat) | form -> rank  where
 
     -- one of basicNextAddress and basicNextIndex must always be implemented
 #if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
-    {-# MINIMAL  basicToIndex, basicToAddress, leastAddress, greatestAddress, (basicNextIndex | basicNextAddress)  #-}
+    {-# MINIMAL  basicToIndex, basicToAddress,  (basicNextIndex | basicNextAddress)  #-}
 #endif
 
 -----
@@ -352,7 +369,7 @@ class DenseLayout form  (rank :: Nat) | form -> rank  where
 
 instance DenseLayout (Format Direct Contiguous (S Z) rep)  (S Z)  where
 
-    leastAddress = \ _ -> Address 0
+
     greatestAddress = \ (FormatDirectContiguous ix) -> Address (ix -1)
 
 
@@ -372,6 +389,7 @@ instance DenseLayout (Format Direct Contiguous (S Z) rep)  (S Z)  where
 
 
 instance DenseLayout (Format Direct Strided (S Z) rep)  (S Z)  where
+
 
 
 

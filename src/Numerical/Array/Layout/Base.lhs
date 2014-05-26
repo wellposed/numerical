@@ -44,7 +44,7 @@ import Numerical.Array.Shape as S
 import Numerical.Array.Storage
 
 --import Data.Typeable
---import Data.Traversable (Traversable)
+import Control.Applicative
 
 --import Control.NumericalMonad.State.Strict
 
@@ -113,7 +113,7 @@ type family  Tranposed form
 
 
 
-class Layout form  (rank :: Nat) | form -> rank  where
+class (Traversable (Shape rank), Applicative (Shape rank))=>Layout form  (rank :: Nat) | form -> rank  where
 
     -- not happy with this name, will change later FIXME TODO
     basicFormShape :: form -> Shape rank Int
