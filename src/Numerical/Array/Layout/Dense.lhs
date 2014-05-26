@@ -414,8 +414,8 @@ instance DenseLayout (Format Direct Strided (S Z) rep)  (S Z)  where
 
 
 -- strideRow :: Shape rank Int,
-instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape rank))
-    => DenseLayout (Format Row  Contiguous rank rep) rank where
+instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape rank))  =>
+    DenseLayout (Format Row  Contiguous rank rep) rank where
 
 
     {-# INLINE basicToAddress #-}

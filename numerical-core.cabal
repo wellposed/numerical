@@ -102,7 +102,7 @@ library
         FlexibleContexts
 
 
-
+-- relax base constraint when i wanna support 7.6 again
     -- Other library packages from which modules are imported.
     build-depends:       base >= 4.7 && < 4.9
                         ,primitive >= 0.5 && < 0.6
