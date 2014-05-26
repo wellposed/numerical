@@ -377,14 +377,14 @@ class A.Array (ArrPure marr)  rank a => MutableArray marr (rank:: Nat)  a | marr
     -- Note that for invalid addresses in between minAddress and maxAddress,
     -- will return the next valid address.
 
-    basicNextAddress ::  marr st  a -> Address ->  Address
+    basicSparseNextAddress ::  marr st  a -> Address -> Maybe Address
 
 
     -- I think the case could be made for a basicPreviousAddress opeeration
 
     -- | gives the next valid array index
     -- undefined on invalid indices and the greatest valid index
-    basicNextIndex :: marr st  a -> Index rank  -> Index rank
+    basicSparseNextIndex :: marr st  a -> Index rank  -> Maybe (Index rank)
 
 
 
@@ -478,6 +478,22 @@ class ( MutableArray marr rank a, A.DenseArray (ArrPure marr) rank a  )=>
     -- | Replace the element at the given position. This method should not be
     -- called directly, use 'unsafeWrite' instead.
     basicUnsafeDenseWrite :: PrimMonad m => marr (PrimState m)   a -> Index rank   -> a -> m ()
+
+
+    -- | gives the next valid logical address
+    -- undefined on invalid addresses and the greatest valid address.
+    -- Note that for invalid addresses in between minAddress and maxAddress,
+    -- will return the next valid address.
+
+    basicNextAddress ::  marr st  a -> Address ->  Address
+
+
+    -- I think the case could be made for a basicPreviousAddress opeeration
+
+    -- | gives the next valid array index
+    -- undefined on invalid indices and the greatest valid index
+    basicNextIndex :: marr st  a -> Index rank  -> Index rank
+
 
 \end{code}
 
