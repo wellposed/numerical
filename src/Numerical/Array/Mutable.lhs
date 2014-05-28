@@ -33,7 +33,7 @@ import Numerical.Array.Address
 import Numerical.Array.Layout
 import Numerical.Array.Shape
 --import Numerical.Nat
-import GHC.Prim(Constraint)
+--import GHC.Prim(Constraint)
 import Numerical.World
 
 --import Numerical.Array.Storage(Boxed,Unboxed,Stored)
@@ -314,16 +314,19 @@ type instance  MutableArrayContiguous (MArray world rep layout locality rank)= M
 
 class A.Array (ArrPure marr)  rank a => MutableArray marr (rank:: Nat)  a | marr -> rank  where
 
-    type   ArrPure marr  :: * -> *
+    type   ArrPure (marr :: * -> * -> * ) :: * -> *
     type   ArrMutable ( arr :: * -> * )  :: * -> * -> *
 
     -- the type of the underlying storage buffer
     type MutableArrayBuffer marr :: * -> * -> *
 
-    --
-    type MutableArrayConstraint marr :: * -> Constraint
+    -- really shouldnt appear in end user code, will only
+    -- come up in writing new combinators
+    -- the abstraction here is a reflection of the need for
+    type MArrayAddress (marr :: * -> * -> * ) ::  *
 
-
+    -- | 'basicUnsafeAffineAddressShift' is needed to handle abstracting acce
+    basicUnsafeAffineAddressShift :: (address ~ MArrayAddress marr) => marr st a -> Int -> address -> address
 
     -- | Unsafely convert a mutable Array to its immutable version without copying.
     -- The mutable Array may not be used after this operation. Assumed O(1) complexity
@@ -348,16 +351,17 @@ class A.Array (ArrPure marr)  rank a => MutableArray marr (rank:: Nat)  a | marr
 
     --  | basicMutableSparseIndexToAddres checks if a index is present or not
     -- helpful primitive for authoring codes for (un)structured sparse array format
-    basicSparseIndexToAddress ::  marr s   a -> Index rank  ->  (Maybe Address)
+    basicSparseIndexToAddress :: (address ~ MArrayAddress marr)
+      => marr s   a -> Index rank  ->  (Maybe address)
 
     -- | 'basicMutableAddressToIndex' assumes you only give it legal manifest addresses
-    basicAddressToIndex :: marr s   a -> Address ->    Index rank
+    basicAddressToIndex :: (address ~ MArrayAddress marr) =>marr s   a -> address ->    Index rank
 
     -- |  return the smallest valid logical address
-    basicSmallestAddress ::  marr st   a ->  Address
+    basicSmallestAddress :: (address ~ MArrayAddress marr)=> marr st   a ->  address
 
     --  | return the largest valid logical adress
-    basicGreatestAddress ::  marr st   a ->  Address
+    basicGreatestAddress :: (address ~ MArrayAddress marr)=> marr st   a ->  address
 
     -- |  return the smallest valid array index
     --  should be weakly dominated by every other valid index
@@ -377,7 +381,7 @@ class A.Array (ArrPure marr)  rank a => MutableArray marr (rank:: Nat)  a | marr
     -- Note that for invalid addresses in between minAddress and maxAddress,
     -- will return the next valid address.
 
-    basicSparseNextAddress ::  marr st  a -> Address -> Maybe Address
+    basicSparseNextAddress :: (address ~ MArrayAddress marr)=> marr st  a -> address -> Maybe address
 
 
     -- I think the case could be made for a basicPreviousAddress opeeration
@@ -394,7 +398,7 @@ class A.Array (ArrPure marr)  rank a => MutableArray marr (rank:: Nat)  a | marr
     -- that contains @addr@. This will be a singleton when the "maximal uniform stride interval"
     -- containing @addr@ has strictly less than 3 elements. Otherwise will return an Address range
     -- covering the maximal interval that will have cardinality at least 3.
-    basicAddressRegion :: marr st a ->Address ->  UniformAddressInterval
+    basicAddressRegion ::(address ~ MArrayAddress marr) => marr st a ->address ->  UniformAddressInterval
 
 
     -- | this doesn't quite fit in this class, but thats ok, will deal with that later
@@ -412,11 +416,11 @@ class A.Array (ArrPure marr)  rank a => MutableArray marr (rank:: Nat)  a | marr
 
     ---- | Yield the element at the given position. This method should not be
     ---- called directly, use 'unsafeRead' instead.
-    basicUnsafeAddressRead  :: PrimMonad m => marr  (PrimState m)   a -> Address-> m a
+    basicUnsafeAddressRead  :: (PrimMonad m ,address ~ MArrayAddress marr) => marr  (PrimState m)   a -> address-> m a
 
     ---- | Replace the element at the given position. This method should not be
     ---- called directly, use 'unsafeAddressWrite' instead.
-    basicUnsafeAddressWrite :: PrimMonad m => marr  (PrimState m)   a -> Address -> a -> m ()
+    basicUnsafeAddressWrite :: (PrimMonad m ,address ~ MArrayAddress marr) => marr  (PrimState m)   a -> address  -> a -> m ()
 
 
 
@@ -515,7 +519,9 @@ note that these example do not have the right error handling logic currently
 
 \begin{code}
 
-{-note needs to be modified to work with sparse arrarys -}
+--Num e => matrix st  e -> invect st e -> outvect st e ->
+
+--{-note needs to be modified to work with sparse arrarys -}
 --generalizedMatrixDenseVectorProduct ::  forall m a mvect loc marr.
 --                        (MutableArrayBuilder (mvect Direct 'Contiguous) N1 a
 --                        ,(MutableArray  (mvect Direct 'Contiguous) N1 a)
@@ -532,7 +538,7 @@ note that these example do not have the right error handling logic currently
 --    basicIndexedFoldM mat step
 
 --    return resultVector
-
+--              where
 --                    step =  \matval ix@(ix_x:* ix_y :* Nil )->
 --                        do
 --                            inVectval <- basicUnsafeRead vect (ix_x :* Nil)
