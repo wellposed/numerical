@@ -4,11 +4,10 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE  TypeFamilies  #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-module Numerical.Array.Address(Address(..),UniformAddressInterval(..)) where
+module Numerical.Array.Address(Address(..),UniformAddressInterval(..),SparseAddress(..)) where
 
 
 import Data.Data
-import Data.Word
 import Control.Monad (liftM)
 import qualified Foreign.Storable  as Store
 import qualified Data.Vector.Unboxed as UV
@@ -19,6 +18,11 @@ import qualified Data.Vector.Generic.Mutable as GMV
 newtype Address = Address  Int
   deriving (Eq,Ord,Show,Read,Typeable,Data,Store.Storable)
 
+
+data SparseAddress = SparseAddress {
+        outerIndex :: {-# UNPACK #-} !Int
+        ,innerIndex :: {-# UNPACK#-} !Int }
+      deriving (Eq,Show,Data,Typeable)
 {-
 At some point decouple logical and physical address
 Logical Address should always be Int64
@@ -27,9 +31,9 @@ physical address should be native IntPtr (aka Int)
 -}
 
 -- | 'UniformAddressInterval' describes a set of
-data UniformAddressInterval = AddressOne !Address
-            |  AddressRange {uniformLow :: !Address, uniformHigh:: !Address , uniformStride :: !Word}
-
+data UniformAddressInterval addr = AddressOne !addr
+            |  AddressRange {uniformLow :: !addr, uniformHigh:: !addr , uniformStride :: !Int}
+    deriving (Eq,Show,Typeable,Data)
 
 instance Num Address where
     {-# INLINE (+) #-}
@@ -45,6 +49,10 @@ instance Num Address where
 
 {-
 note that
+-}
+
+{-
+note that i don't think these vector instances ever matter
 -}
 
 newtype instance UV.MVector s Address  = MV_Address (UV.MVector s Int)

@@ -18,10 +18,10 @@
 
 module Numerical.Array.Mutable(
     MArray(..)
-    ,MutableArray(..)
-    ,MutableRectilinear(..)
-    ,MutableDenseArrayBuilder(..)
-    ,MutableDenseArray(..)
+    ,Array(..)
+    ,RectilinearArray (..)
+    ,DenseArrayBuilder(..)
+    ,DenseArray(..)
     ,Boxed
     ,Unboxed
     ,Stored
@@ -247,7 +247,7 @@ will include subsequently
 --class MutableArray marr (rank:: Nat) a => MutableArrayBuilder marr rank a where
     --basicBuildArray:: Index rank -> b
 
-class MutableDenseArray marr rank a => MutableDenseArrayBuilder marr rank a where
+class DenseArray marr rank a => DenseArrayBuilder marr rank a where
     basicUnsafeNew :: PrimMonad m => Index rank -> m (marr (PrimState m)   a)
     basicUnsafeReplicate :: PrimMonad m => Index rank  -> a -> m (marr (PrimState m)  a)
 
@@ -257,7 +257,7 @@ Mutable
 
 -}
 
-class MutableRectilinear marr rank a | marr -> rank   where
+class RectilinearArray marr rank a | marr -> rank   where
 
     -- | @'MutableRectilinearOrientation' marr@ should equal Row or Column for any sane choice
     -- of instance, because every MutableRectilinear instance will have a notion of
@@ -312,7 +312,7 @@ type instance  MutableArrayContiguous (MArray world rep layout locality rank)= M
 #endif
 
 
-class A.Array (ArrPure marr)  rank a => MutableArray marr (rank:: Nat)  a | marr -> rank  where
+class A.PureArray (ArrPure marr)  rank a => Array marr (rank:: Nat)  a | marr -> rank  where
 
     type   ArrPure (marr :: * -> * -> * ) :: * -> *
     type   ArrMutable ( arr :: * -> * )  :: * -> * -> *
@@ -398,7 +398,8 @@ class A.Array (ArrPure marr)  rank a => MutableArray marr (rank:: Nat)  a | marr
     -- that contains @addr@. This will be a singleton when the "maximal uniform stride interval"
     -- containing @addr@ has strictly less than 3 elements. Otherwise will return an Address range
     -- covering the maximal interval that will have cardinality at least 3.
-    basicAddressRegion ::(address ~ MArrayAddress marr) => marr st a ->address ->  UniformAddressInterval
+    basicAddressRegion ::(address ~ MArrayAddress marr)
+          => marr st a ->address ->  UniformAddressInterval address
 
 
     -- | this doesn't quite fit in this class, but thats ok, will deal with that later
@@ -463,8 +464,8 @@ basicIndexedMap
 
 
 
-class ( MutableArray marr rank a, A.DenseArray (ArrPure marr) rank a  )=>
-            MutableDenseArray marr rank a | marr -> rank   where
+class ( Array marr rank a, A.PureDenseArray (ArrPure marr) rank a  )=>
+            DenseArray marr rank a | marr -> rank   where
     -- | for Dense arrays, it is always easy to check if a given index is valid.
     -- this operation better have  O(1) complexity or else!
     basicIndexInBounds :: marr st a -> Index rank  -> Bool

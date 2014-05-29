@@ -42,7 +42,8 @@ That is, A valid address will always stay valid, even if after some mutation it 
     correspond to a *different* index than it did before.
 -}
 
-class  Array arr   (rank:: Nat)   a |  arr -> rank   where
+class  PureArray arr   (rank:: Nat)   a |  arr -> rank   where
+    type PureArrayAddress (arr :: *  -> * ) ::  *
 
     -- | gives the shape, a 'rank' length list of the dimensions
     basicShape :: arr   a -> Index rank
@@ -51,16 +52,16 @@ class  Array arr   (rank:: Nat)   a |  arr -> rank   where
 
     --  | basicMutableSparseIndexToAddres checks if a index is present or not
     -- helpful primitive for authoring codes for (un)structured sparse array format
-    basicSparseIndexToAddress :: Monad m => arr a -> Index rank  -> m (Maybe Address)
+    basicSparseIndexToAddress :: ( address ~PureArrayAddress  arr, Monad m) => arr a -> Index rank  -> m (Maybe address)
 
     -- |
-    basicAddressToIndex :: Monad m => arr a -> Address -> m  (Index rank  )
+    basicAddressToIndex :: (address ~PureArrayAddress  arr,Monad m) => arr a -> address -> m  (Index rank  )
 
     -- |  return the smallest valid logical address
-    basicSmallestAddress ::  arr a ->  Address
+    basicSmallestAddress :: (address ~PureArrayAddress  arr)=>  arr a ->  address
 
     --  | return the largest valid logical ad
-    basicGreatestAddress ::  arr a ->  Address
+    basicGreatestAddress ::(address ~PureArrayAddress  arr)=>   arr a ->  address
 
     -- |  return the smallest valid array index
     --  should be weakly dominated by every other valid index
@@ -74,7 +75,7 @@ class  Array arr   (rank:: Nat)   a |  arr -> rank   where
     -- undefined on invalid addresses and the greatest valid address.
     -- Note that for invalid addresses in between minAddress and maxAddress,
     -- will return the next valid address
-    basicNextAddress ::  arr a -> Address -> Address
+    basicNextAddress :: (address ~PureArrayAddress  arr)=>  arr a -> address -> address
 
     -- I think the case could be made for a basicPreviousAddress opeeration
 
@@ -86,13 +87,13 @@ class  Array arr   (rank:: Nat)   a |  arr -> rank   where
     -- that contains @addr@. This will be a singleton when the "maximal uniform stride interval"
     -- containing @addr@ has strictly less than 3 elements. Otherwise will return an Address range
     -- covering the maximal interval that will have cardinality at least 3.
-    basicAddressRegion ::  arr   a -> Address ->  UniformAddressInterval
+    basicAddressRegion :: (address ~PureArrayAddress  arr)=>  arr   a -> address ->  UniformAddressInterval address
 
 
 
     ---- | Yield the element at the given position. This method should not be
     ---- called directly, use 'unsafeRead' instead.
-    basicUnsafeAddressRead  ::  arr   a -> Address-> a
+    basicUnsafeAddressRead  :: (address ~PureArrayAddress  arr)=>  arr   a -> address-> a
 
 
 
@@ -100,13 +101,13 @@ class  Array arr   (rank:: Nat)   a |  arr -> rank   where
     -- called directly, use 'unsafeSparseRead' instead.
     basicUnsafeSparseRead  ::  arr   a -> Index rank  -> Maybe a
 
-class Array arr rank a => DenseArray arr rank a where
+class PureArray arr rank a => PureDenseArray arr rank a where
 
     -- |
     basicIndexInBounds :: marr st -> Index rank -> Bool
 
     -- |
-    basicUnsafeAddressDenseRead  :: Monad m => arr  a -> Address-> m a
+    basicUnsafeAddressDenseRead  :: (address ~PureArrayAddress  arr,Monad m) => arr  a -> address-> m a
 
 
 
