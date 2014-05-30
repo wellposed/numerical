@@ -19,7 +19,7 @@
 module Numerical.Array.Mutable(
     MArray(..)
     ,Array(..)
-    ,RectilinearArray (..)
+    ,RectilinearArray(..)
     ,DenseArrayBuilder(..)
     ,DenseArray(..)
     ,Boxed
