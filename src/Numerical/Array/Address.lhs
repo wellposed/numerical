@@ -20,8 +20,8 @@ newtype Address = Address  Int
 
 
 data SparseAddress = SparseAddress {
-        outerIndex :: {-# UNPACK #-} !Int
-        ,innerIndex :: {-# UNPACK#-} !Int }
+        outerIndex  :: {-# UNPACK #-} !Int
+        ,innerIndex :: {-# UNPACK #-} !Int }
       deriving (Eq,Show,Data,Typeable)
 {-
 At some point decouple logical and physical address
