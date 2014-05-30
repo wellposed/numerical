@@ -3,7 +3,14 @@
 
 {-# LANGUAGE MultiParamTypeClasses , FlexibleContexts,UndecidableInstances #-}
 
-module  Numerical.Internal.Data.Vector.Pair(VPair(..),MVPair(..)) where
+module  Numerical.Internal.Data.Vector.Pair(
+    VPair(..)
+    ,vPair
+    ,vUnPair
+    ,MVPair(..)
+    ,mvUnPair
+    ,mvPair
+      ) where
 
 import qualified Data.Vector.Generic as V
 import qualified Data.Vector.Generic.Mutable as MV
@@ -26,12 +33,33 @@ currently primmonad doesn't get its free applicative/functor powers :*(
 (<***>) mf mv =  do f <- mf ; v <- mv ; return (f v)
 {-# INLINE (<***>) #-}
 
+-- need to write  VPair and MVPair as data families to force only taking tuples
+-- if you ever write new instances, its your own fault if anything weird happens :)
+-- maybe a
 
 data family VPair (vect :: * -> * ) val
 data instance VPair v (a,b)= TheVPair !(v a) !(v b)
 
+vPair :: (v a,v b)->VPair v (a,b)
+vPair  = \ (va,vb) ->  TheVPair va vb
+{-# INLINE vPair #-}
+
+vUnPair  :: VPair v (a,b) -> (v a, v b)
+vUnPair = \ (TheVPair va vb)-> (va,vb)
+{-# INLINE vUnPair #-}
+
+
 data family MVPair (vect :: * -> * -> *) st val
 data instance MVPair mv st (a,b) = TheMVPair !(mv st a) !(mv st b)
+
+
+mvPair :: (mv st a,mv st b)->MVPair mv st (a,b)
+mvPair  = \ (mva, mvb) ->  TheMVPair mva mvb
+{-# INLINE mvPair #-}
+
+mvUnPair  :: MVPair mv st  (a,b) -> (mv st a,mv st b)
+mvUnPair = \ (TheMVPair mva mvb)-> (mva,mvb)
+{-# INLINE mvUnPair #-}
 
 instance  (MV.MVector (MVPair (V.Mutable v))(a,b) ,V.Vector v a,V.Vector v b)
   => V.Vector (VPair v) (a,b)  where
