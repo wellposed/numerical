@@ -29,6 +29,8 @@ that acts only on the outermost dimension.
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE StandaloneDeriving#-}
+{-# LANGUAGE FlexibleInstances  #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 #if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
  {-# LANGUAGE AutoDeriveTypeable #-}
@@ -46,10 +48,11 @@ module Numerical.Array.Layout.Sparse(
   ) where
 
 import Data.Data
+import Data.Bits (unsafeShiftR)
 import Numerical.Array.Layout.Base
 import Numerical.Array.Shape
 import Numerical.Array.Address
-
+import qualified  Data.Vector.Generic as V
 
 data CompressedSparseRow
   deriving Typeable
@@ -111,6 +114,21 @@ to handle correctly doing lookups on submatrices picked out
 by either a major axis slice
 
 -}
+
+
+--deriving instance (Show (Shape (S (S Z)) Int), Show (StorageVector rep Int) )
+    -- => Show (Format CompressedSparseRow Contiguous (S (S Z)) rep)
+
+--deriving instance  (Eq (Shape (S (S Z)) Int), Eq (StorageVector rep Int) )
+    -- => Eq (Format CompressedSparseRow Contiguous (S (S Z)) rep)
+
+--deriving instance (Data (Shape (S (S Z)) Int), Data (StorageVector rep Int) )
+  --- => Data (Format CompressedSparseRow Contiguous (S (S Z)) rep)
+
+--deriving instance  (Typeable (Shape (S (S Z)) Int ), Typeable (StorageVector rep Int) )
+ -- => Typeable (Format CompressedSparseRow Contiguous (S (S Z)) rep)
+    --deriving (Eq,Data,Typeable)
+
 data instance Format CompressedSparseRow Contiguous (S (S Z)) rep =
     FormatContiguousCompressedSparseRow {
       logicalRowShapeContiguousCSR ::  {-# UNPACK #-} !Int
@@ -119,14 +137,7 @@ data instance Format CompressedSparseRow Contiguous (S (S Z)) rep =
       ,logicalColumnIndexContiguousCSR :: !(StorageVector rep Int)
       ,logicalRowStartIndexContiguousCSR :: ! (StorageVector rep Int )
   }
---deriving instance (Show (Shape (S (S Z)) Int), Show (StorageVector rep Int) ) => Show (Format CompressedSparseRow Contiguous (S (S Z)) rep)
 
---deriving instance  (Eq (Shape (S (S Z)) Int), Eq (StorageVector rep Int) ) => Eq (Format CompressedSparseRow Contiguous (S (S Z)) rep)
-
---deriving instance (Data (Shape (S (S Z)) Int), Data (StorageVector rep Int) ) => Data (Format CompressedSparseRow Contiguous (S (S Z)) rep)
-
---deriving instance  (Typeable (Shape (S (S Z)) Int ), Typeable (StorageVector rep Int) ) => Typeable (Format CompressedSparseRow Contiguous (S (S Z)) rep)
-    --deriving (Eq,Data,Typeable)
 
 data instance Format CompressedSparseRow InnerContiguous (S (S Z)) rep =
     FormatInnerContigCompressedSparseRow {
@@ -165,16 +176,23 @@ class Layout form rank  => SparseLayout form  (rank :: Nat)  | form -> rank wher
 
     type SparseLayoutAddress form :: *
 
-    basicToSparseAddress :: (address ~ SparseLayoutAddress form)=>form  -> Shape rank Int -> Maybe  address
+    basicToSparseAddress :: (address ~ SparseLayoutAddress form)=>
+        form  -> Shape rank Int -> Maybe  address
 
 
-    basicToSparseIndex ::(address ~ SparseLayoutAddress form)=> form -> address -> Shape rank Int
+    basicToSparseIndex ::(address ~ SparseLayoutAddress form)=>
+        form -> address -> Shape rank Int
 
 
-    basicNextAddress :: (address ~ SparseLayoutAddress form)=>form  -> address -> Maybe  address
+    basicNextAddress :: (address ~ SparseLayoutAddress form)=>
+        form  -> address -> Maybe  address
 
+    {-# INLINE basicNextIndex #-}
     basicNextIndex :: form  -> Shape rank Int -> Maybe  (Shape rank Int)
-
+    basicNextIndex =
+        \ form shp ->
+          basicToSparseAddress form shp >>=
+            (\x ->  fmap (basicToSparseIndex form)  $  basicNextAddress form x)
 
 
 \end{code}
@@ -182,3 +200,76 @@ class Layout form rank  => SparseLayout form  (rank :: Nat)  | form -> rank wher
 
 
 CSR and CSC go here, and their version of lookups and next address and next index
+
+
+
+
+\begin{code}
+
+--  Offset binary search --- cribbed with permission from
+-- edward kmett's structured lib
+--
+-- now assumed each key is unique and ordered
+--
+-- Assuming @l <= h@. Returns @h@ if the predicate is never @True@ over @[l..h)@
+search :: (Int -> Ordering) -> Int -> Int -> Int
+search p = go where
+  go l h
+    | l == h    = l
+    | otherwise = case p m of
+                  LT -> go (m+1) h
+                  ---  entry is less than target, go up!
+                  EQ -> m
+                  -- we're there! Finish early
+                  GT -> go l m
+                  -- entry is greater than target, go down!
+    where hml = h - l
+          m = l + unsafeShiftR hml 1 + unsafeShiftR hml 6
+{-# INLINE search #-}
+
+lookupExact :: (Ord k, V.Vector vec k) => vec k -> k -> Maybe Int
+lookupExact ks key
+  | j <- search (\i -> compare (ks V.! i)  key) 0 (V.length ks - 1)
+  , ks V.! j == key = Just $! j
+  | otherwise = Nothing
+{-# INLINE lookupExact #-}
+
+--lookupLUB ::  (Ord k, V.Vector vec k) => vec k -> k -> Maybe Int
+--lookupLUB  ks key
+--  | j <- search  (\i -> compare (ks V.! i)  key) 0 (V.length ks - 1)
+--  , ks V.! j <= key = Just $! j
+--  | otherwise = Nothing
+--{-# INLINE lookupLUB  #-}
+
+type instance  Transposed (Format DirectSparse Contiguous (S Z) rep )=
+   (Format DirectSparse Contiguous (S Z) rep )
+
+instance Layout   (Format DirectSparse Contiguous (S Z) rep ) (S Z) where
+  transposedLayout  = id
+  {-# INLINE transposedLayout #-}
+  basicFormShape = \ form -> logicalShapeDirectSparse form  :* Nil
+  {-# INLINE basicFormShape #-}
+  basicCompareIndex = \ _ (a:* Nil) (b :* Nil) ->compare a b
+  {-# INLINE basicCompareIndex#-}
+
+instance V.Vector (StorageVector rep) Int
+   => SparseLayout  (Format DirectSparse Contiguous (S Z) rep ) (S Z) where
+      type SparseLayoutAddress (Format DirectSparse Contiguous (S Z) rep) =  Address
+-- TODO, double check that im doing shift correctly
+      {-# INLINE basicToSparseAddress #-}
+      basicToSparseAddress =
+          \ (FormatDirectSparseContiguous shape  shift lookupTable) (ix:*_)->
+             if  not (ix < shape && ix > 0 ) then  Nothing
+              else  fmap (Address) $! lookupExact lookupTable (ix + shift)
+
+      {-# INLINE basicToSparseIndex #-}
+      basicToSparseIndex =
+        \ (FormatDirectSparseContiguous _ shift lut) (Address addr) ->
+            ((lut V.! addr ) - shift) :* Nil
+
+      {-# INLINE basicNextAddress #-}
+      basicNextAddress =
+        \ (FormatDirectSparseContiguous _ _ lut) (Address addr) ->
+          if  addr >= (V.length lut) then Nothing else Just  (Address (addr+1))
+
+\end{code}
