@@ -161,18 +161,17 @@ data instance Format CompressedSparseColumn InnerContiguous (S (S Z)) rep =
 
 
 
-class Layout form rank  => SparseLayout form  (rank :: Nat) | form -> rank  where
+class Layout form rank  => SparseLayout form  (rank :: Nat)  | form -> rank where
+
+    type SparseLayoutAddress form :: *
+
+    basicToSparseAddress :: (address ~ SparseLayoutAddress form)=>form  -> Shape rank Int -> Maybe  address
 
 
+    basicToSparseIndex ::(address ~ SparseLayoutAddress form)=> form -> address -> Shape rank Int
 
 
-    basicToSparseAddress :: form  -> Shape rank Int -> Maybe  Address
-
-
-    basicToSparseIndex :: form -> Address -> Shape rank Int
-
-
-    basicNextAddress :: form  -> Address -> Maybe  Address
+    basicNextAddress :: (address ~ SparseLayoutAddress form)=>form  -> address -> Maybe  address
 
     basicNextIndex :: form  -> Shape rank Int -> Maybe  (Shape rank Int)
 
