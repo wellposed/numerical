@@ -417,11 +417,13 @@ class A.PureArray (ArrPure marr)  rank a => Array marr (rank:: Nat)  a | marr ->
 
     ---- | Yield the element at the given position. This method should not be
     ---- called directly, use 'unsafeRead' instead.
-    basicUnsafeAddressRead  :: (PrimMonad m ,address ~ MArrayAddress marr) => marr  (PrimState m)   a -> address-> m a
+    basicUnsafeAddressRead  :: (PrimMonad m ,address ~ MArrayAddress marr) =>
+        marr  (PrimState m)   a -> address-> m a
 
     ---- | Replace the element at the given position. This method should not be
     ---- called directly, use 'unsafeAddressWrite' instead.
-    basicUnsafeAddressWrite :: (PrimMonad m ,address ~ MArrayAddress marr) => marr  (PrimState m)   a -> address  -> a -> m ()
+    basicUnsafeAddressWrite :: (PrimMonad m ,address ~ MArrayAddress marr) =>
+         marr  (PrimState m)   a -> address  -> a -> m ()
 
 
 
