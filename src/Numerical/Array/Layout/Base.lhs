@@ -25,7 +25,7 @@
 
 module Numerical.Array.Layout.Base(
   Layout(..)
-  ,Tranposed
+  ,Transposed
   ,Format
   ,Locality(..)
   ,majorCompareRightToLeft
@@ -100,7 +100,7 @@ data family Format  lay (contiguity:: Locality)  (rank :: Nat) rep
 
 
 
-type family  Tranposed form
+type family  Transposed form
 
 
 
@@ -110,7 +110,7 @@ class (Traversable (Shape rank), Applicative (Shape rank))=>Layout form  (rank :
     -- not happy with this name, will change later FIXME TODO
     basicFormShape :: form -> Shape rank Int
 
-    transposedLayout ::  (form ~ Tranposed transform,transform~Tranposed form)=> form  -> transform
+    transposedLayout ::  (form ~ Transposed transform,transform~Transposed form)=> form  -> transform
     --shapeOf
 
 

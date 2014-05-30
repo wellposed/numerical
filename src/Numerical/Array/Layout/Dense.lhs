@@ -138,23 +138,23 @@ deriving instance (Data (Shape n Int),Typeable n,Typeable rep) => Data (Format C
     --deriving (Show,Eq,Data)
 
 
-type instance Tranposed (Format Direct Contiguous (S Z) rep) =
+type instance Transposed (Format Direct Contiguous (S Z) rep) =
     Format Direct Contiguous (S Z) rep
-type instance Tranposed (Format Direct Strided (S Z) rep ) =
+type instance Transposed (Format Direct Strided (S Z) rep ) =
    Format Direct Strided (S Z) rep
 
-type instance  Tranposed (Format Row  Contiguous rank rep) =
+type instance  Transposed (Format Row  Contiguous rank rep) =
   Format Column Contiguous rank rep
-type instance Tranposed (Format Row  InnerContiguous rank rep) =
+type instance Transposed (Format Row  InnerContiguous rank rep) =
     Format Column  InnerContiguous rank rep
-type instance  Tranposed (Format Row  Strided rank rep) =
+type instance  Transposed (Format Row  Strided rank rep) =
     Format Column  Strided rank rep
 
-type instance Tranposed (Format Column Contiguous rank rep)=
+type instance Transposed (Format Column Contiguous rank rep)=
     Format Row Contiguous rank rep
-type instance Tranposed (Format Column InnerContiguous rank rep)=
+type instance Transposed (Format Column InnerContiguous rank rep)=
     Format Row  InnerContiguous rank rep
-type instance  Tranposed (Format Column  Strided rank rep)=
+type instance  Transposed (Format Column  Strided rank rep)=
     Format Row  Strided rank rep
 
 
