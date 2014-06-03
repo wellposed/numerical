@@ -417,13 +417,19 @@ instance DenseLayout (Format Direct Strided (S Z) rep)  (S Z)  where
 instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape rank))  =>
     DenseLayout (Format Row  Contiguous rank rep) rank where
 
+{-
+TODO  AUDIT
 
+-}
     {-# INLINE basicToAddress #-}
     --basicToAddress = \rs tup -> let !strider =takePrefix $! S.scanr (*) 1 (boundsFormRow rs)
     basicToAddress = \rs tup ->
           let !strider = flip evalState 1 $
                           ---- this is just computing the stride vector
-                            flip (S.backwards traverse) (boundsFormRow rs) $
+                          -- in row major the left most index is the inner most
+                          -- and thus the smallest, so accume them left to right
+                          -- like a scanl
+                            flip (traverse) (boundsFormRow rs) $
                               \ val ->
                                    do accum <- get ;
                                       put (val * accum) ;
@@ -542,6 +548,7 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape 
 
     {-# INLINE basicToAddress #-}
     basicToAddress = \rs tup -> let !strider = flip evalState 1 $
+                                      --- using traverse as a scanr
                                       flip (S.backwards traverse) (boundsColumnContig rs) $
                                         \ val ->
                                                do accum <- get ;
