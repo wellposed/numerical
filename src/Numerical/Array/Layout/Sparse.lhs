@@ -71,7 +71,7 @@ data DirectSparse
 data instance Format DirectSparse  Contiguous (S Z) rep =
     FormatDirectSparseContiguous {
       logicalShapeDirectSparse:: {-# UNPACK#-} !Int
-      ,logicalBaseShiftDirectSparse::{-# UNPACK#-} !Int
+      ,logicalBaseIndexShiftDirectSparse::{-# UNPACK#-} !Int
       ,indexTableDirectSparse :: ! ((StorageVector rep) Int )  }
     --deriving (Show,Eq,Data)
 
@@ -128,6 +128,39 @@ by either a major axis slice
 --deriving instance  (Typeable (Shape (S (S Z)) Int ), Typeable (StorageVector rep Int) )
  -- => Typeable (Format CompressedSparseRow Contiguous (S (S Z)) rep)
     --deriving (Eq,Data,Typeable)
+
+
+{-
+NOTE!!!!!
+logicalValueBufferAddressShiftContiguousCSR (and friends)
+are so that major axis slices can still use the same buffer,
+(needed for both Contiguous and InnerContiguous cases).
+So When looking up the Address for a value based upon its
+Inner dimension, we need to *SUBTRACT* that shift
+to get the correct offset index into the current SLICE.
+
+Phrased differently, This address shift is the *Discrepancy/Difference*
+between the size of the elided prefix of the Vector and the starting
+
+
+This is kinda a good argument for not punting the Slicing on the raw buffers to
+Vector, because it generally makes this a bit more subtle to think about
+and someone IS going to implement something wrong this way!
+
+
+Another subtle and potentially confusing point is distinguishing between
+Affine shifts in the Index Space vs the Address space.
+
+Only the outer dimension lookup table shift is needed in the Contiguous
+2dim case, but the 2dim InnerContiguous case is a bit more confusing
+because of the potential for a slice along the inner dimension
+
+Rank 1 sparse  (like Direct sparse) is only Contiguous,
+and either a) doesn't need a shift, or b) only needs an index shift
+commensurate matching the leading implicit index of a Major Axis Slice
+
+
+-}
 
 data instance Format CompressedSparseRow Contiguous (S (S Z)) rep =
     FormatContiguousCompressedSparseRow {
@@ -255,12 +288,14 @@ instance Layout   (Format DirectSparse Contiguous (S Z) rep ) (S Z) where
 instance V.Vector (StorageVector rep) Int
    => SparseLayout  (Format DirectSparse Contiguous (S Z) rep ) (S Z) where
       type SparseLayoutAddress (Format DirectSparse Contiguous (S Z) rep) =  Address
+
+
 -- TODO, double check that im doing shift correctly
       {-# INLINE basicToSparseAddress #-}
       basicToSparseAddress =
-          \ (FormatDirectSparseContiguous shape  shift lookupTable) (ix:*_)->
+          \ (FormatDirectSparseContiguous shape  indexshift lookupTable) (ix:*_)->
              if  not (ix < shape && ix > 0 ) then  Nothing
-              else  fmap (Address) $! lookupExact lookupTable (ix + shift)
+              else  fmap Address  $! lookupExact lookupTable (ix + indexshift)
 
       {-# INLINE basicToSparseIndex #-}
       basicToSparseIndex =
@@ -271,5 +306,36 @@ instance V.Vector (StorageVector rep) Int
       basicNextAddress =
         \ (FormatDirectSparseContiguous _ _ lut) (Address addr) ->
           if  addr >= (V.length lut) then Nothing else Just  (Address (addr+1))
+------------
+------------
+
+type instance Transposed (Format CompressedSparseRow Contiguous (S (S Z)) rep )=
+    (Format CompressedSparseColumn Contiguous (S (S Z)) rep )
+
+instance Layout (Format CompressedSparseRow Contiguous (S (S Z)) rep ) (S (S Z)) where
+  transposedLayout  = \(FormatContiguousCompressedSparseRow a b c d e) ->
+    (FormatContiguousCompressedSparseColumn a b c d e )
+  {-# INLINE transposedLayout #-}
+  basicFormShape = \ form -> logicalRowShapeContiguousCSR form  :*
+         logicalColumnShapeContiguousCSR form :* Nil
+  {-# INLINE basicFormShape #-}
+  basicCompareIndex = \ _ as  bs ->shapeCompareRightToLeft as bs
+  {-# INLINE basicCompareIndex#-}
+
+instance  (V.Vector (StorageVector rep) Int )
+  => SparseLayout (Format CompressedSparseRow Contiguous (S (S Z)) rep ) (S (S Z)) where
+
+      type SparseLayoutAddress (Format CompressedSparseRow Contiguous (S (S Z)) rep ) = SparseAddress
+      basicToSparseAddress = error "implement me "
+      basicToSparseIndex = error "implement me"
+      basicNextAddress = error "implement me"
+      -- theres probably a cleaner way to write this, should revisit later
+      --basicToSparseIndex =
+      --  \ (FormatContiguousCompressedSparseRow x_range y_range addrShift columnIndex rowstartIndex) (ix_x:*ix_y :* _ )->
+      --      if  not (ix_x >= x_range ||  ix_y >=y_range )
+      --        then -- slightly different logic when ix_y < range_y vs == range_y-1
+      --            fmap (SparseAddress ix_y ) $! lookupExact columnIndex
+--
+              --else Nothing
 
 \end{code}

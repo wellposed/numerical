@@ -30,6 +30,8 @@ module Numerical.Array.Layout.Base(
   ,Locality(..)
   ,majorCompareRightToLeft
   ,majorCompareLeftToRight
+  ,shapeCompareRightToLeft
+  ,shapeCompareLeftToRight
   ,module Numerical.Array.Storage
 
 ) where
@@ -43,11 +45,12 @@ import Numerical.Array.Shape as S
 import Numerical.Array.Storage
 
 --import Data.Typeable
-import Control.Applicative
+import Control.Applicative as A
+
 
 --import Control.NumericalMonad.State.Strict
 
---import qualified Data.Foldable as F
+import qualified Data.Foldable as F
 
 import Prelude hiding (foldr,foldl,map,scanl,scanr,scanl1,scanr1)
 
@@ -94,6 +97,13 @@ majorCompareRightToLeft :: Ordering -> Ordering -> Ordering
 majorCompareRightToLeft new EQ = new
 majorCompareRightToLeft _ b = b
 
+{-# INLINE shapeCompareLeftToRight #-}
+shapeCompareLeftToRight :: (F.Foldable (Shape r),A.Applicative (Shape r), Ord a) => Shape r a -> Shape r a -> Ordering
+shapeCompareLeftToRight =   \  ls rs -> foldl majorCompareLeftToRight EQ  $ S.map2 compare ls rs
+
+{-# INLINE shapeCompareRightToLeft #-}
+shapeCompareRightToLeft :: ((F.Foldable (Shape r)),A.Applicative (Shape r), Ord a) => Shape r a -> Shape r a -> Ordering
+shapeCompareRightToLeft =   \  ls rs -> foldl majorCompareRightToLeft EQ  $ S.map2 compare ls rs
 
 
 data family Format  lay (contiguity:: Locality)  (rank :: Nat) rep
