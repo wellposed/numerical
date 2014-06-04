@@ -49,6 +49,7 @@ module Numerical.Array.Layout.Sparse(
 
 import Data.Data
 import Data.Bits (unsafeShiftR)
+import Control.Applicative
 import Numerical.Array.Layout.Base
 import Numerical.Array.Shape
 import Numerical.Array.Address
@@ -227,6 +228,7 @@ class Layout form rank  => SparseLayout form  (rank :: Nat)  | form -> rank wher
           basicToSparseAddress form shp >>=
             (\x ->  fmap (basicToSparseIndex form)  $  basicNextAddress form x)
 
+    {-# MINIMAL basicToSparseAddress, basicToSparseIndex, basicNextAddress #-}
 
 \end{code}
 
@@ -266,6 +268,13 @@ lookupExact ks key
   , ks V.! j == key = Just $! j
   | otherwise = Nothing
 {-# INLINE lookupExact #-}
+
+lookupExactRange :: (Ord k, V.Vector vec k) => vec k -> k -> Int -> Int -> Maybe Int
+lookupExactRange  ks key lo hi
+  | j <- search (\i -> compare (ks V.! i)  key) lo hi
+  , ks V.! j == key = Just $! j
+  | otherwise = Nothing
+{-# INLINE lookupExactRange  #-}
 
 --lookupLUB ::  (Ord k, V.Vector vec k) => vec k -> k -> Maybe Int
 --lookupLUB  ks key
@@ -326,16 +335,30 @@ instance  (V.Vector (StorageVector rep) Int )
   => SparseLayout (Format CompressedSparseRow Contiguous (S (S Z)) rep ) (S (S Z)) where
 
       type SparseLayoutAddress (Format CompressedSparseRow Contiguous (S (S Z)) rep ) = SparseAddress
-      basicToSparseAddress = error "implement me "
-      basicToSparseIndex = error "implement me"
-      basicNextAddress = error "implement me"
-      -- theres probably a cleaner way to write this, should revisit later
-      --basicToSparseIndex =
-      --  \ (FormatContiguousCompressedSparseRow x_range y_range addrShift columnIndex rowstartIndex) (ix_x:*ix_y :* _ )->
-      --      if  not (ix_x >= x_range ||  ix_y >=y_range )
-      --        then -- slightly different logic when ix_y < range_y vs == range_y-1
-      --            fmap (SparseAddress ix_y ) $! lookupExact columnIndex
---
-              --else Nothing
+
+      basicToSparseIndex =
+       \ (FormatContiguousCompressedSparseRow _ _  _ columnIndex _)
+          (SparseAddress outter inner) -> (columnIndex V.! inner ) :* outter :*  Nil
+          -- outter is the row (y index) and inner is the lookup position for the x index
+
+
+      basicNextAddress = error "finish me "
+        -- \ (FormatContiguousCompressedSparseRow x_range y_range addrShift columnIndex rowstartIndex)
+        --    (SparseAddress outter inner) ->
+        --  error "finish me damn it"
+
+      basicToSparseAddress =
+        \ (FormatContiguousCompressedSparseRow x_range y_range addrShift columnIndex rowstartIndex) (ix_x:*ix_y :* _ ) ->
+            if  not (ix_x >= x_range ||  ix_y >=y_range )
+              then
+              -- slightly different logic when ix_y < range_y-1 vs == range_y-1
+              -- because contiguous, don't need the index space shift though!
+                       SparseAddress ix_y   <$>
+                          lookupExactRange columnIndex ix_x ((rowstartIndex V.! ix_y) - addrShift)
+                            (if  ix_y < (y_range-1)
+                              -- addr shift is for correcting from a major axis slice
+                              then  (rowstartIndex V.! (ix_y+1) ) - addrShift
+                              else V.length columnIndex  - 1 )
+              else   (Nothing :: Maybe SparseAddress )
 
 \end{code}
