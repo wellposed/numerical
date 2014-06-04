@@ -210,6 +210,10 @@ class Layout form rank  => SparseLayout form  (rank :: Nat)  | form -> rank wher
 
     type SparseLayoutAddress form :: *
 
+    leastSparseAddress ::  (address ~ SparseLayoutAddress form)=> form -> address
+
+    greatestSparseAddress ::  (address ~ SparseLayoutAddress form)=> form -> address
+
     basicToSparseAddress :: (address ~ SparseLayoutAddress form)=>
         form  -> Shape rank Int -> Maybe  address
 
@@ -228,7 +232,8 @@ class Layout form rank  => SparseLayout form  (rank :: Nat)  | form -> rank wher
           basicToSparseAddress form shp >>=
             (\x ->  fmap (basicToSparseIndex form)  $  basicNextAddress form x)
 
-    {-# MINIMAL basicToSparseAddress, basicToSparseIndex, basicNextAddress #-}
+    {-# MINIMAL basicToSparseAddress, basicToSparseIndex, basicNextAddress
+      ,greatestSparseAddress, leastSparseAddress #-}
 
 \end{code}
 
@@ -298,6 +303,11 @@ instance V.Vector (StorageVector rep) Int
    => SparseLayout  (Format DirectSparse Contiguous (S Z) rep ) (S Z) where
       type SparseLayoutAddress (Format DirectSparse Contiguous (S Z) rep) =  Address
 
+      leastSparseAddress = \ _ -> Address 0
+
+      greatestSparseAddress =
+        \ (FormatDirectSparseContiguous _ _   lookupTable)->
+            Address (V.length lookupTable - 1 )
 
 -- TODO, double check that im doing shift correctly
       {-# INLINE basicToSparseAddress #-}
@@ -336,19 +346,54 @@ instance  (V.Vector (StorageVector rep) Int )
 
       type SparseLayoutAddress (Format CompressedSparseRow Contiguous (S (S Z)) rep ) = SparseAddress
 
+      {-# INLINE leastSparseAddress #-}
+      leastSparseAddress = \_ -> SparseAddress 0 0
+
+      {-# INLINE greatestSparseAddress#-}
+      greatestSparseAddress  =
+       \ (FormatContiguousCompressedSparseRow _ y_range _
+          columnIndex _) ->
+              SparseAddress (y_range - 1) (V.length columnIndex - 1 )
+
+
+      {-#INLINE basicToSparseIndex #-}
       basicToSparseIndex =
        \ (FormatContiguousCompressedSparseRow _ _  _ columnIndex _)
-          (SparseAddress outter inner) -> (columnIndex V.! inner ) :* outter :*  Nil
-          -- outter is the row (y index) and inner is the lookup position for the x index
+          (SparseAddress outer inner) -> (columnIndex V.! inner ) :* outer :*  Nil
+          -- outer is the row (y index) and inner is the lookup position for the x index
 
 
-      basicNextAddress = error "finish me "
-        -- \ (FormatContiguousCompressedSparseRow x_range y_range addrShift columnIndex rowstartIndex)
-        --    (SparseAddress outter inner) ->
+{-
+theres 3 cases for contiguous next address:
+in the middle of a run on a fixed outer dimension,
+need to bump the outer dimension, or we're at the end of the entire array
+
+we make the VERY strong assumption that no illegal addresses are ever made!
+
+note that for very very small sparse matrices, the branching will have some
+overhead, but in general branch prediction should work out ok.
+-}
+      {-# INLINE basicNextAddress #-}
+      basicNextAddress =
+         \ (FormatContiguousCompressedSparseRow _ _ _
+                                                columnIndex rowstartIndex)
+            (SparseAddress outer inner) ->
+              if not  (inner == (V.length columnIndex -1)
+                                          {- && outer == (y_range-1) -}
+                     || (inner +1) == (rowstartIndex V.! (outer + 1)))
+                then
+                  Just (SparseAddress outer (inner+1))
+                else
+                  if inner == (V.length columnIndex -1)
+                    then Nothing
+                    else Just (SparseAddress (outer + 1) (inner + 1 ) )
+
         --  error "finish me damn it"
-
+      {-# INLINE basicToSparseAddress #-}
       basicToSparseAddress =
-        \ (FormatContiguousCompressedSparseRow x_range y_range addrShift columnIndex rowstartIndex) (ix_x:*ix_y :* _ ) ->
+        \ (FormatContiguousCompressedSparseRow x_range y_range addrShift
+              columnIndex rowstartIndex)
+          (ix_x:*ix_y :* _ ) ->
             if  not (ix_x >= x_range ||  ix_y >=y_range )
               then
               -- slightly different logic when ix_y < range_y-1 vs == range_y-1
