@@ -43,26 +43,34 @@ type family LocalityMin (a::Locality) (b ::Locality) :: Locality where
 
 #else
 type family LocalityMax (a :: Locality) (b :: Locality)  :: Locality
-type instance  LocalityMax  Contiguous Contiguous = Contiguous
-type instance  LocalityMax Contiguous  InnerContiguous = Contiguous
-type instance  LocalityMax Contiguous  Strided = Contiguous
-type instance  LocalityMax InnerContiguous  Contiguous  = Contiguous
-type instance  LocalityMax Strided  Contiguous  = Contiguous
-type instance  LocalityMax InnerContiguous  InnerContiguous  = InnerContiguous
-type instance  LocalityMax InnerContiguous  Strided  = InnerContiguous
-type instance  LocalityMax Strided InnerContiguous  = InnerContiguous
-type instance  LocalityMax Strided Strided = Strided
+type instance  LocalityMax  a b = LocalityMaxPrivate a b
+
+type family LocalityMaxPrivate (a :: Locality) (b :: Locality)  :: Locality
+type instance  LocalityMaxPrivate  Contiguous Contiguous = Contiguous
+type instance  LocalityMaxPrivate Contiguous  InnerContiguous = Contiguous
+type instance  LocalityMaxPrivate Contiguous  Strided = Contiguous
+type instance  LocalityMaxPrivate InnerContiguous  Contiguous  = Contiguous
+type instance  LocalityMaxPrivate Strided  Contiguous  = Contiguous
+type instance  LocalityMaxPrivate InnerContiguous  InnerContiguous  = InnerContiguous
+type instance  LocalityMaxPrivate InnerContiguous  Strided  = InnerContiguous
+type instance  LocalityMaxPrivate Strided InnerContiguous  = InnerContiguous
+type instance  LocalityMaxPrivate Strided Strided = Strided
 
 type family LocalityMin (a::Locality) (b ::Locality) :: Locality
-type instance  LocalityMin  Contiguous Contiguous = Contiguous
-type instance  LocalityMin Contiguous  InnerContiguous = InnerContiguous
-type instance  LocalityMin Contiguous  Strided = Strided
-type instance  LocalityMin InnerContiguous  Contiguous  = InnerContiguous
-type instance  LocalityMin Strided  Contiguous  = Strided
-type instance  LocalityMin InnerContiguous  InnerContiguous  = InnerContiguous
-type instance  LocalityMin InnerContiguous  Strided  = Strided
-type instance  LocalityMin Strided InnerContiguous  = Strided
-type instance  LocalityMin Strided Strided = Strided
+type instance  LocalityMin a b = LocalityMinPrivate a b
+
+
+type family LocalityMinPrivate (a::Locality) (b ::Locality) :: Locality
+type instance  LocalityMinPrivate  Contiguous Contiguous = Contiguous
+type instance  LocalityMinPrivate Contiguous  InnerContiguous = InnerContiguous
+type instance  LocalityMinPrivate Contiguous  Strided = Strided
+type instance  LocalityMinPrivate InnerContiguous  Contiguous  = InnerContiguous
+type instance  LocalityMinPrivate Strided  Contiguous  = Strided
+type instance  LocalityMinPrivate InnerContiguous  InnerContiguous  = InnerContiguous
+type instance  LocalityMinPrivate InnerContiguous  Strided  = Strided
+type instance  LocalityMinPrivate Strided InnerContiguous  = Strided
+type instance  LocalityMinPrivate Strided Strided = Strided
+
 
 #endif
 
