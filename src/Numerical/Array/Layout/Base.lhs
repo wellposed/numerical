@@ -5,7 +5,7 @@
 
 -}
 
-{-# LANGUAGE PolyKinds   #-}
+-- {-# LANGUAGE PolyKinds   #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -20,7 +20,9 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE StandaloneDeriving#-}
-{-# LANGUAGE AutoDeriveTypeable #-}
+#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
+ {-# LANGUAGE AutoDeriveTypeable #-}
+#endif
 
 
 module Numerical.Array.Layout.Base(

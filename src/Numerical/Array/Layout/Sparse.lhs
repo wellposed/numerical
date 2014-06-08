@@ -20,7 +20,7 @@ that acts only on the outermost dimension.
 \begin{code}
 
 
-{-# LANGUAGE PolyKinds   #-}
+-- {-# LANGUAGE PolyKinds   #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeFamilies #-}

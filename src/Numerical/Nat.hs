@@ -1,4 +1,4 @@
-{-# LANGUAGE DataKinds, PolyKinds, GADTs, TypeFamilies, TypeOperators,
+{-# LANGUAGE DataKinds, GADTs, TypeFamilies, TypeOperators,
              ConstraintKinds, ScopedTypeVariables, RankNTypes #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE StandaloneDeriving #-}
