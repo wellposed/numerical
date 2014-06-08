@@ -174,13 +174,13 @@ data instance Format CompressedSparseRow Contiguous (S (S Z)) rep =
 
 
 data instance Format CompressedSparseRow InnerContiguous (S (S Z)) rep =
-    FormatInnerContigCompressedSparseRow {
-      logicalRowShapeInnerContigCSR ::    {-# UNPACK #-} !Int
-      ,logicalColumnShapeInnerContigCSR ::  {-# UNPACK #-} !Int
-      ,logicalValueBufferAddressShiftInnerContigCSR:: {-# UNPACK #-} !Int
-      ,logicalColumnIndexInnerContigCSR :: !(StorageVector rep Int)
-      ,logicalRowStartIndexInnerContigCSR :: ! (StorageVector rep Int )
-      ,logicalRowEndIndexInnerContigCSR :: ! (StorageVector rep Int )
+    FormatInnerContiguousCompressedSparseRow {
+      logicalRowShapeInnerContiguousCSR ::    {-# UNPACK #-} !Int
+      ,logicalColumnShapeInnerContiguousCSR ::  {-# UNPACK #-} !Int
+      ,logicalValueBufferAddressShiftInnerContiguousCSR:: {-# UNPACK #-} !Int
+      ,logicalColumnIndexInnerContiguousCSR :: !(StorageVector rep Int)
+      ,logicalRowStartIndexInnerContiguousCSR :: ! (StorageVector rep Int )
+      ,logicalRowEndIndexInnerContiguousCSR :: ! (StorageVector rep Int )
   }
       --deriving (Show,Eq,Data)
 
@@ -195,12 +195,13 @@ data instance Format CompressedSparseColumn Contiguous (S (S Z)) rep =
     --deriving (Show,Eq,Data)
 
 data instance Format CompressedSparseColumn InnerContiguous (S (S Z)) rep =
-    FormatInnerContigCompressedSparseColumn {
-      logicalRowShapeInnerContigCSC ::    {-# UNPACK #-} !Int
-      ,logicalValueBufferAddressShiftInnerContigCSC:: {-# UNPACK #-} !Int
-      ,logicalRowIndexInnerContigCSC :: !(StorageVector rep Int)
-      ,logicalColumnStartIndexInnerContigCSC :: ! (StorageVector rep Int )
-      ,logicalColumnEndIndexInnerContigCSC :: ! (StorageVector rep Int )
+    FormatInnerContiguousCompressedSparseColumn {
+      logicalRowShapeInnerContiguousCSC ::    {-# UNPACK #-} !Int
+        ,logicalColumnShapeInnerContiguousCSC ::  {-# UNPACK #-} !Int
+      ,logicalValueBufferAddressShiftInnerContiguousCSC:: {-# UNPACK #-} !Int
+      ,logicalRowIndexInnerContiguousCSC :: !(StorageVector rep Int)
+      ,logicalColumnStartIndexInnerContiguousCSC :: ! (StorageVector rep Int )
+      ,logicalColumnEndIndexInnerContiguousCSC :: ! (StorageVector rep Int )
   }
     --deriving (Show,Eq,Data)
 
@@ -331,6 +332,10 @@ instance V.Vector (StorageVector rep) Int
 type instance Transposed (Format CompressedSparseRow Contiguous (S (S Z)) rep )=
     (Format CompressedSparseColumn Contiguous (S (S Z)) rep )
 
+type instance Transposed (Format CompressedSparseColumn Contiguous (S (S Z)) rep )=
+    (Format CompressedSparseRow Contiguous (S (S Z)) rep )
+
+
 instance Layout (Format CompressedSparseRow Contiguous (S (S Z)) rep ) (S (S Z)) where
   transposedLayout  = \(FormatContiguousCompressedSparseRow a b c d e) ->
     (FormatContiguousCompressedSparseColumn a b c d e )
@@ -406,4 +411,94 @@ overhead, but in general branch prediction should work out ok.
                               else V.length columnIndex  - 1 )
               else   (Nothing :: Maybe SparseAddress )
 
+
+
+-------
+-------
+
+
+
+type instance Transposed (Format CompressedSparseRow InnerContiguous (S (S Z)) rep )=
+    (Format CompressedSparseColumn InnerContiguous (S (S Z)) rep )
+
+type instance Transposed (Format CompressedSparseColumn InnerContiguous (S (S Z)) rep )=
+    (Format CompressedSparseRow InnerContiguous (S (S Z)) rep )
+
+
+instance Layout (Format CompressedSparseRow InnerContiguous (S (S Z)) rep ) (S (S Z)) where
+  transposedLayout  = \(FormatInnerContiguousCompressedSparseRow a b c d e f) ->
+    (FormatInnerContiguousCompressedSparseColumn a b c d e f)
+  {-# INLINE transposedLayout #-}
+  basicFormShape = \ form -> logicalRowShapeInnerContiguousCSR form  :*
+         logicalColumnShapeInnerContiguousCSR form :* Nil
+  {-# INLINE basicFormShape #-}
+  basicCompareIndex = \ _ as  bs ->shapeCompareRightToLeft as bs
+  {-# INLINE basicCompareIndex#-}
+
+
+
+--instance  (V.Vector (StorageVector rep) Int )
+--  => SparseLayout (Format CompressedSparseRow InnerContiguous (S (S Z)) rep ) (S (S Z)) where
+
+--      type SparseLayoutAddress (Format CompressedSparseRow InnerContiguous (S (S Z)) rep ) = SparseAddress
+
+--      {-# INLINE leastSparseAddress #-}
+--      leastSparseAddress = \_ -> SparseAddress 0 0
+
+--      {-# INLINE greatestSparseAddress#-}
+--      greatestSparseAddress  =
+--       \ (FormatContiguousCompressedSparseRow _ y_range _
+--          columnIndex _) ->
+--              SparseAddress (y_range - 1) (V.length columnIndex - 1 )
+
+
+--      {-#INLINE basicToSparseIndex #-}
+--      basicToSparseIndex =
+--       \ (FormatContiguousCompressedSparseRow _ _  _ columnIndex _)
+--          (SparseAddress outer inner) -> (columnIndex V.! inner ) :* outer :*  Nil
+--          -- outer is the row (y index) and inner is the lookup position for the x index
+
+
+--{-
+--theres 3 cases for contiguous next address:
+--in the middle of a run on a fixed outer dimension,
+--need to bump the outer dimension, or we're at the end of the entire array
+
+--we make the VERY strong assumption that no illegal addresses are ever made!
+
+--note that for very very small sparse matrices, the branching will have some
+--overhead, but in general branch prediction should work out ok.
+---}
+--      {-# INLINE basicNextAddress #-}
+--      basicNextAddress =
+--         \ (FormatContiguousCompressedSparseRow _ _ _
+--                                                columnIndex rowstartIndex)
+--            (SparseAddress outer inner) ->
+--              if not  (inner == (V.length columnIndex -1)
+--                                          {- && outer == (y_range-1) -}
+--                     || (inner +1) == (rowstartIndex V.! (outer + 1)))
+--                then
+--                  Just (SparseAddress outer (inner+1))
+--                else
+--                  if inner == (V.length columnIndex -1)
+--                    then Nothing
+--                    else Just (SparseAddress (outer + 1) (inner + 1 ) )
+
+--        --  error "finish me damn it"
+--      {-# INLINE basicToSparseAddress #-}
+--      basicToSparseAddress =
+--        \ (FormatContiguousCompressedSparseRow x_range y_range addrShift
+--              columnIndex rowstartIndex)
+--          (ix_x:*ix_y :* _ ) ->
+--            if  not (ix_x >= x_range ||  ix_y >=y_range )
+--              then
+--              -- slightly different logic when ix_y < range_y-1 vs == range_y-1
+--              -- because contiguous, don't need the index space shift though!
+--                       SparseAddress ix_y   <$>
+--                          lookupExactRange columnIndex ix_x ((rowstartIndex V.! ix_y) - addrShift)
+--                            (if  ix_y < (y_range-1)
+--                              -- addr shift is for correcting from a major axis slice
+--                              then  (rowstartIndex V.! (ix_y+1) ) - addrShift
+--                              else V.length columnIndex  - 1 )
+--              else   (Nothing :: Maybe SparseAddress )
 \end{code}
