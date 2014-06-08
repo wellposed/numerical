@@ -336,11 +336,6 @@ FIXME / TODO / AUDIT THIS HARD
 
     basicToIndex :: form -> Address -> Shape rank Int
 
-    --unchecked
-    --nextAddress --- not sure if this should even exist for contiguous ones..
-    -- not sure if this is the right model for the valid ops
-    --validAddress::Form   lay contiguity rank -> Int -> Either String (Shape rank Int)
-    --validIndex ::Form   lay contiguity rank -> Shape rank Int -> Either String Int
 
     -- IMPORTANT NOTE, the NextAddress defined via Next Index seems
     -- that it will only be invoked on strided/discontiguous dense formats
@@ -362,6 +357,33 @@ FIXME / TODO / AUDIT THIS HARD
 #if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
     {-# MINIMAL  basicToIndex, basicToAddress,  (basicNextIndex | basicNextAddress)  #-}
 #endif
+
+---
+---
+---
+
+{-
+these are factored out versions of the
+various shared computations in both Row and Column Major
+rank n Array format computations
+
+-}
+
+{-# INLINE computeStrideShape #-}
+computeStrideShape ::
+     ((Int -> State Int Int) -> Shape n Int  -> State Int (Shape n Int )) -> Shape n Int -> Shape n Int
+computeStrideShape = \trvse shp  ->
+    flip evalState 1 $
+                      flip  trvse shp  $
+                      -- basically accumulating the product of the
+                      -- dimensions
+                          \ val ->
+                               do accum <- get ;
+                                  put (val * accum) ;
+                                  return accum;
+
+
+
 
 -----
 -----
@@ -424,16 +446,7 @@ TODO  AUDIT
     {-# INLINE basicToAddress #-}
     --basicToAddress = \rs tup -> let !strider =takePrefix $! S.scanr (*) 1 (boundsFormRow rs)
     basicToAddress = \rs tup ->
-          let !strider = flip evalState 1 $
-                          ---- this is just computing the stride vector
-                          -- in row major the left most index is the inner most
-                          -- and thus the smallest, so accume them left to right
-                          -- like a scanl
-                            flip (traverse) (boundsFormRow rs) $
-                              \ val ->
-                                   do accum <- get ;
-                                      put (val * accum) ;
-                                      return accum;
+          let !strider =  computeStrideShape (traverse) (boundsFormRow rs)
                   in Address $! S.foldl'  (+) 0 $! map2 (*) strider tup
 
     {-# INLINE basicNextAddress#-}
@@ -441,14 +454,8 @@ TODO  AUDIT
 
     {-# INLINE basicToIndex #-}
     basicToIndex  =   \ rs (Address ix) ->
-        let !striderShape  =  flip evalState 1 $
-                      flip  traverse (boundsFormRow rs) $
-                      -- basically accumulating the product of the
-                      -- dimensions
-                          \ val ->
-                               do accum <- get ;
-                                  put (val * accum) ;
-                                  return accum;
+        let !striderShape  = computeStrideShape traverse (boundsFormRow rs)
+
             in
                flip evalState ix $
                   flip (S.backwards traverse)  striderShape $
@@ -547,13 +554,8 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape 
 
 
     {-# INLINE basicToAddress #-}
-    basicToAddress = \rs tup -> let !strider = flip evalState 1 $
-                                      --- using traverse as a scanr
-                                      flip (S.backwards traverse) (boundsColumnContig rs) $
-                                        \ val ->
-                                               do accum <- get ;
-                                                  put (val * accum);
-                                                  return accum;
+    basicToAddress = \rs tup ->
+          let !strider = computeStrideShape  (S.backwards traverse) (boundsColumnContig rs)
                                 in Address $! S.foldl'  (+) 0 $! map2 (*) strider tup
 
     {-# INLINE basicNextAddress#-}
