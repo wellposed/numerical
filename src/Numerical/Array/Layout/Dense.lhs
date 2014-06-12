@@ -563,12 +563,7 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape 
 
     {-# INLINE basicToIndex #-}
     basicToIndex  =   \ rs (Address ix) ->
-            let !striderShape  =  flip evalState 1 $
-                        flip (S.backwards traverse) (boundsColumnContig rs) $
-                                        \ val ->
-                                             do accum <- get ;
-                                                put (val * accum) ;
-                                                return  accum;
+            let !striderShape  =  computeStrideShape  (S.backwards traverse) (boundsColumnContig rs)
                 in
                    flip evalState ix $
                           flip  traverse  striderShape $
