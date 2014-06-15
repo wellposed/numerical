@@ -110,7 +110,11 @@ shapeCompareRightToLeft =   \  ls rs -> foldl majorCompareRightToLeft EQ  $ S.ma
 
 data family Format  lay (contiguity:: Locality)  (rank :: Nat) rep
 
+--type family FormatStorageRep form  where
+--    FormatStorageRep (Format lay locality rank rep)= rep
 
+--type family FormatLayout form where
+--    FormatLayout (Format )
 
 type family  Transposed form
 
