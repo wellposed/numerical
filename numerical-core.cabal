@@ -67,7 +67,6 @@ library
         Numerical.Array.Layout.Dense
         Numerical.Array.Layout.Sparse
         Numerical.Array.Layout.Dense.Builder
-
         Numerical.Array
         Numerical.World
         Control.NumericalMonad.State.Strict
