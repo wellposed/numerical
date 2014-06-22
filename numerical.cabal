@@ -138,7 +138,7 @@ Test-suite testsuite
         ,transformers >= 0.3 && < 0.5
         ,ghc-prim
         ,vector-algorithms >= 0.6.0.1 && < 0.7
-        ,numerical-core
+        ,numerical
    --having an explicit list of other modules breaks hpc
    ghc-options: -threaded -fhpc
    other-modules:
@@ -182,7 +182,7 @@ Test-suite testsuite-O2
         ,transformers >= 0.3 && < 0.5
         ,ghc-prim
         ,vector-algorithms >= 0.6.0.1 && < 0.7
-        ,numerical-core
+        ,numerical
    --having an explicit list of other modules breaks hpc
    ghc-options: -O2  -threaded
     -- -fhpc
@@ -227,7 +227,7 @@ Test-suite testsuite-O2llvm
         ,transformers >= 0.3 && < 0.5
         ,ghc-prim
         ,vector-algorithms >= 0.6.0.1 && < 0.7
-        ,numerical-core
+        ,numerical
    --having an explicit list of other modules breaks hpc
    ghc-options: -O2  -threaded -fllvm
     -- -fhpc
@@ -247,7 +247,7 @@ Test-suite testsuite-O2llvm
         Numerical.Array.Locality
         Numerical.Array.Address
         Numerical.Internal.Data.Vector.Pair
-              Control.NumericalMonad.State.Strict
+        Control.NumericalMonad.State.Strict
         Control.NumericalApplicative.Backwards
         ------
         ------
