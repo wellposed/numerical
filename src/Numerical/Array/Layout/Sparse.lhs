@@ -172,6 +172,13 @@ data instance Format CompressedSparseRow Contiguous (S (S Z)) rep =
       ,logicalRowStartIndexContiguousCSR :: ! (StorageVector rep Int )
   }
 
+{-
+  FormatContiguousCompressedSparseRow rowSize columnSize ColumnaddrShift  columnIndexTable rowStartIndexTable
+
+
+note, columnAddrShift MUST always equal rowStartIndexTable[0]
+-}
+
 
 data instance Format CompressedSparseRow InnerContiguous (S (S Z)) rep =
     FormatInnerContiguousCompressedSparseRow {
@@ -183,6 +190,12 @@ data instance Format CompressedSparseRow InnerContiguous (S (S Z)) rep =
       ,logicalRowEndIndexInnerContiguousCSR :: ! (StorageVector rep Int )
   }
       --deriving (Show,Eq,Data)
+
+{-
+  FormatInnerContiguous rowsize columnsize
+
+-}
+
 
 data instance Format CompressedSparseColumn Contiguous (S (S Z)) rep =
     FormatContiguousCompressedSparseColumn {
@@ -197,7 +210,7 @@ data instance Format CompressedSparseColumn Contiguous (S (S Z)) rep =
 data instance Format CompressedSparseColumn InnerContiguous (S (S Z)) rep =
     FormatInnerContiguousCompressedSparseColumn {
       logicalRowShapeInnerContiguousCSC ::    {-# UNPACK #-} !Int
-        ,logicalColumnShapeInnerContiguousCSC ::  {-# UNPACK #-} !Int
+      ,logicalColumnShapeInnerContiguousCSC ::  {-# UNPACK #-} !Int
       ,logicalValueBufferAddressShiftInnerContiguousCSC:: {-# UNPACK #-} !Int
       ,logicalRowIndexInnerContiguousCSC :: !(StorageVector rep Int)
       ,logicalColumnStartIndexInnerContiguousCSC :: ! (StorageVector rep Int )
@@ -211,9 +224,9 @@ class Layout form rank  => SparseLayout form  (rank :: Nat)  | form -> rank wher
 
     type SparseLayoutAddress form :: *
 
-    leastSparseAddress ::  (address ~ SparseLayoutAddress form)=> form -> address
+    minSparseAddress ::  (address ~ SparseLayoutAddress form)=> form -> address
 
-    greatestSparseAddress ::  (address ~ SparseLayoutAddress form)=> form -> address
+    maxSparseAddress ::  (address ~ SparseLayoutAddress form)=> form -> address
 
     basicToSparseAddress :: (address ~ SparseLayoutAddress form)=>
         form  -> Shape rank Int -> Maybe  address
@@ -234,7 +247,7 @@ class Layout form rank  => SparseLayout form  (rank :: Nat)  | form -> rank wher
             (\x ->  fmap (basicToSparseIndex form)  $  basicNextAddress form x)
 
     {-# MINIMAL basicToSparseAddress, basicToSparseIndex, basicNextAddress
-      ,greatestSparseAddress, leastSparseAddress #-}
+      ,maxSparseAddress, minSparseAddress #-}
 
 \end{code}
 
@@ -304,9 +317,9 @@ instance V.Vector (StorageVector rep) Int
    => SparseLayout  (Format DirectSparse Contiguous (S Z) rep ) (S Z) where
       type SparseLayoutAddress (Format DirectSparse Contiguous (S Z) rep) =  Address
 
-      leastSparseAddress = \ _ -> Address 0
+      minSparseAddress = \ _ -> Address 0
 
-      greatestSparseAddress =
+      maxSparseAddress =
         \ (FormatDirectSparseContiguous _ _   lookupTable)->
             Address (V.length lookupTable - 1 )
 
@@ -351,11 +364,11 @@ instance  (V.Vector (StorageVector rep) Int )
 
       type SparseLayoutAddress (Format CompressedSparseRow Contiguous (S (S Z)) rep ) = SparseAddress
 
-      {-# INLINE leastSparseAddress #-}
-      leastSparseAddress = \_ -> SparseAddress 0 0
+      {-# INLINE minSparseAddress #-}
+      minSparseAddress = \_ -> SparseAddress 0 0
 
-      {-# INLINE greatestSparseAddress#-}
-      greatestSparseAddress  =
+      {-# INLINE maxSparseAddress#-}
+      maxSparseAddress  =
        \ (FormatContiguousCompressedSparseRow _ y_range _
           columnIndex _) ->
               SparseAddress (y_range - 1) (V.length columnIndex - 1 )
@@ -442,12 +455,12 @@ instance Layout (Format CompressedSparseRow InnerContiguous (S (S Z)) rep ) (S (
 
 --      type SparseLayoutAddress (Format CompressedSparseRow InnerContiguous (S (S Z)) rep ) = SparseAddress
 
---      {-# INLINE leastSparseAddress #-}
---      leastSparseAddress = \_ -> SparseAddress 0 0
+--      {-# INLINE minSparseAddress #-}
+--      minSparseAddress = \_ -> SparseAddress 0 0
 
---      {-# INLINE greatestSparseAddress#-}
---      greatestSparseAddress  =
---       \ (FormatContiguousCompressedSparseRow _ y_range _
+--      {-# INLINE maxSparseAddress#-}
+--      maxSparseAddress  =
+--       \ (FormatInnerContiguousCompressedSparseRow _ y_range _
 --          columnIndex _) ->
 --              SparseAddress (y_range - 1) (V.length columnIndex - 1 )
 

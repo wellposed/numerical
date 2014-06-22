@@ -302,24 +302,24 @@ class Layout form rank =>  DenseLayout form  (rank :: Nat) | form -> rank  where
 -- nb, this should actually be "getCurrentAffineAddressInterval"
     --getCurrentAddressInterval :: form -> Shape rank Int -> UniformAddressInterval
 
-    {-  Not sure if the leastAddress and greatestAddress
+    {-  Not sure if the minAddress and maxAddress
   definitions are correct *in general*, but they're
   correct for the example DenseLayout formats thusfar
 
     -}
 
-    leastAddress :: form  -> Address
-    leastAddress = \ _ -> Address 0
-    {-# INLINE leastAddress #-}
+    minAddress :: form  -> Address
+    minAddress = \ _ -> Address 0
+    {-# INLINE minAddress #-}
 
-    greatestAddress :: form -> Address
-    greatestAddress = \form -> basicToAddress form $ greatestIndex form
-
-    leastIndex :: form -> Shape rank Int
-    leastIndex = \ _  -> pure 0
-    {-# INLINE leastIndex #-}
+    maxAddress :: form -> Address
+    maxAddress = \form -> basicToAddress form $ maxIndex form
+    {-# INLINE maxAddress #-}
+    minIndex :: form -> Shape rank Int
+    minIndex = \ _  -> pure 0
+    {-# INLINE minIndex #-}
 {-
-greatestIndex assumes:
+maxIndex assumes:
    basicFormShape form `strictlyDominates` (pure 0)
 
 that is, every axis of a multi dim array, dimension/size must be >=1
@@ -327,9 +327,9 @@ that is, every axis of a multi dim array, dimension/size must be >=1
 FIXME / TODO / AUDIT THIS HARD
 
  -}
-    greatestIndex :: form -> Shape rank Int
-    greatestIndex = \ form -> fmap (flip (-) 1) $  basicFormShape form
-    {-# INLINE greatestIndex #-}
+    maxIndex :: form -> Shape rank Int
+    maxIndex = \ form -> fmap (flip (-) 1) $  basicFormShape form
+    {-# INLINE maxIndex #-}
 
     basicToAddress :: form  -> Shape rank Int ->   Address
 
@@ -392,7 +392,7 @@ computeStrideShape = \trvse shp  ->
 instance DenseLayout (Format Direct Contiguous (S Z) rep)  (S Z)  where
 
 
-    greatestAddress = \ (FormatDirectContiguous ix) -> Address (ix -1)
+    maxAddress = \ (FormatDirectContiguous ix) -> Address (ix -1)
 
 
     {-#INLINE basicToAddress#-}
