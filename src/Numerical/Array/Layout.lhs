@@ -16,7 +16,7 @@ import  Numerical.Array.Layout.Dense
 
 
 class Layout form rank => LayoutBuilder form rank | form -> rank where
-  type Tranposed form
+  type Transposed form
 
   -- this  needs to be in the builder class because i need to resort
   transposedLayout ::  (form ~ Tranposed transform,transform~Tranposed form)=> form  -> transform
