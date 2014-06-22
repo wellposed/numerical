@@ -20,16 +20,18 @@ import Numerical.Array.Storage
 
 
 {-
-
+i'm slightly concerned about how the indirection between
+storageRep and the underlying vector types will work out,
+but lets roll with the indirection for now and drop
 
 -}
 
-class SparseLayout  (Format layout Contiguous rank storagerep) rank
+class SparseLayout  (Format layout Contiguous rank storageRep) rank
   =>  SparseBuilder layout storageRep (rank :: Nat )  where
 
 
-    basicSparseValueBuilder ::(VG.Vector v  elem,VG.Vector v  Int, v~(StorageVector storageRep) )
-        => proxy layout -> proxy storageRep ->Shape rank Int -> [(Shape rank Int, elem)]-> (Format layout Contiguous rank storageRep, StorageVector storageRep elem)
+    basicSparseValueBuilder ::(VG.Vector v  elem,storageRep~VectorName v,VG.Vector v  Int, v~(StorageVector storageRep) )
+        => proxy layout -> proxy storageRep ->Shape rank Int -> [(Shape rank Int, elem)]-> (Format layout Contiguous rank storageRep, v elem)
 
 
     --basicSparseBuilder ::proxy layout -> proxy storageRep -> Shape rank Int -> [Shape rank Int]->  Format layout Contiguous rank storagerep
