@@ -24,7 +24,7 @@ module Numerical.Array.Mutable(
     ,DenseArray(..)
     ,Boxed
     ,Unboxed
-    ,Stored
+    ,Storable
     ) where
 
 import Control.Monad.Primitive ( PrimMonad, PrimState )
@@ -40,10 +40,11 @@ import Numerical.World
 import Numerical.Array.Locality
 
 import qualified Numerical.Array.Pure as A
+import qualified Numerical.Array.Storage as S
 
-import qualified Data.Vector.Storable.Mutable as SM
-import qualified Data.Vector.Unboxed.Mutable as UM
-import qualified Data.Vector.Mutable as BM
+--import qualified Data.Vector.Storable.Mutable as SM
+--import qualified Data.Vector.Unboxed.Mutable as UM
+--import qualified Data.Vector.Mutable as BM
 \end{code}
 
 For now we're going to just crib the vector style api and Lift it
@@ -123,20 +124,26 @@ NB: one important assumption we'll have for now, is that every
 -}
 data family MArray world rep lay (view::Locality) (rank :: Nat ) st  el
 
-data instance  MArray Native Boxed layout locality rank st el =
-  DenseMutableNativeBoxedArray {
-              nativeBoxedBuffer:: {-# UNPACK #-} !(BM.MVector st el)
-              ,nativeBoxedFormat ::  !(Format layout locality rank Boxed)  }
+data instance  MArray Native rep lay locality rank st el =
+  MutableNativeArray {
+          nativeBuffer  :: ! (S.BufferMut rep st el  )
+          ,nativeFormat :: ! (Format lay locality rank rep)
+    }
 
-data instance  MArray Native Stored layout locality rank st el =
-  DenseMutableNativeStoredArray {
-        nativeStoredBuffer:: {-# UNPACK #-} !(SM.MVector st el)
-        ,nativeStoredFormat ::  !(Format layout locality rank Stored)  }
+--data instance  MArray Native Boxed layout locality rank st el =
+--  DenseMutableNativeBoxedArray {
+--              nativeBoxedBuffer:: {-# UNPACK #-} !(BM.MVector st el)
+--              ,nativeBoxedFormat ::  !(Format layout locality rank Boxed)  }
 
-data instance  MArray Native Unboxed layout locality rank st el =
-  DenseMutableNativeUnboxedArray {
-        nativeUnboxedBuffer:: {- UNPACK cant for unboxed :( -} !(UM.MVector st el)
-        ,nativeUnboxedFormat ::  !(Format layout locality rank Unboxed)  }
+--data instance  MArray Native Storable layout locality rank st el =
+--  DenseMutableNativeStoredArray {
+--        nativeStoredBuffer:: {-# UNPACK #-} !(SM.MVector st el)
+--        ,nativeStoredFormat ::  !(Format layout locality rank Stored)  }
+
+--data instance  MArray Native Unboxed layout locality rank st el =
+--  DenseMutableNativeUnboxedArray {
+--        nativeUnboxedBuffer:: {- UNPACK cant for unboxed :( -} !(UM.MVector st el)
+--        ,nativeUnboxedFormat ::  !(Format layout locality rank Unboxed)  }
         -- I have this slight worry that Unboxed arrays will have
         -- an extra indirection vs the storable class
         -- but I think it wont matter in practice

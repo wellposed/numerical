@@ -1,7 +1,11 @@
 \begin{code}
 
 {-# LANGUAGE TypeFamilies #-}
-module Numerical.Array.Storage(Boxed,Unboxed,Stored,StorageVector) where
+module Numerical.Array.Storage(Boxed
+  ,Unboxed
+  ,Storable
+  ,BufferPure(..)
+  ,BufferMut(..)) where
 
 import qualified Data.Vector as BV
 import qualified Data.Vector.Storable as SV
@@ -29,32 +33,21 @@ will do that tomorrow
 
 data Boxed
 data Unboxed
-data Stored
+data Storable
 
 
-type family StorageVector sort  :: (  * -> * )
-type instance StorageVector Boxed = BV.Vector
-type instance StorageVector Unboxed = UV.Vector
-type instance StorageVector Stored = SV.Vector
+data family   BufferPure sort  elem
+newtype instance BufferPure Boxed elem = BoxedBuffer (BV.Vector elem)
+newtype instance BufferPure Unboxed elem = UnboxedBuffer (UV.Vector elem)
+newtype instance BufferPure Storable elem = StorableBuffer (SV.Vector elem)
 
 
-type family StorageVectorMut sort :: (* -> * -> *)
-type instance StorageVectorMut Boxed = BV.MVector
-type instance StorageVectorMut  Unboxed = UV.MVector
-type instance StorageVectorMut Stored = SV.MVector
-
-
-
-
-type family VectorName ( v ::  * -> * ) :: *
-type instance VectorName BV.Vector = Boxed
-type instance VectorName UV.Vector = Unboxed
-type instance VectorName SV.Vector = Stored
+data family   BufferMut sort st elem
+newtype instance BufferMut Boxed st   elem = BoxedBufferMut (BV.MVector st elem)
+newtype instance BufferMut Unboxed st elem = UnboxedBufferMut (UV.MVector st elem)
+newtype instance BufferMut Storable st  elem = StorableBufferMut (SV.MVector st elem)
 
 
 
-type family VectorNameMut (mv :: * -> * -> * ) :: *
-type instance VectorNameMut BV.MVector = Boxed
-type instance VectorNameMut UV.MVector = Unboxed
-type instance VectorNameMut SV.MVector = Stored
+
 \end{code}

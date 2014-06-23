@@ -44,7 +44,7 @@ module Numerical.Array.Layout.Sparse(
   ,CompressedSparseRow
   ,CompressedSparseColumn
   ,Format(..)
-  ,StorageVector
+  ,BufferPure
   ) where
 
 import Data.Data
@@ -73,7 +73,7 @@ data instance Format DirectSparse  Contiguous (S Z) rep =
     FormatDirectSparseContiguous {
       logicalShapeDirectSparse:: {-# UNPACK#-} !Int
       ,logicalBaseIndexShiftDirectSparse::{-# UNPACK#-} !Int
-      ,indexTableDirectSparse :: ! ((StorageVector rep) Int )  }
+      ,indexTableDirectSparse :: ! ((BufferPure rep) Int )  }
     --deriving (Show,Eq,Data)
 
 
@@ -117,16 +117,16 @@ by either a major axis slice
 -}
 
 
---deriving instance (Show (Shape (S (S Z)) Int), Show (StorageVector rep Int) )
+--deriving instance (Show (Shape (S (S Z)) Int), Show (BufferPure rep Int) )
     -- => Show (Format CompressedSparseRow Contiguous (S (S Z)) rep)
 
---deriving instance  (Eq (Shape (S (S Z)) Int), Eq (StorageVector rep Int) )
+--deriving instance  (Eq (Shape (S (S Z)) Int), Eq (BufferPure rep Int) )
     -- => Eq (Format CompressedSparseRow Contiguous (S (S Z)) rep)
 
---deriving instance (Data (Shape (S (S Z)) Int), Data (StorageVector rep Int) )
+--deriving instance (Data (Shape (S (S Z)) Int), Data (BufferPure rep Int) )
   --- => Data (Format CompressedSparseRow Contiguous (S (S Z)) rep)
 
---deriving instance  (Typeable (Shape (S (S Z)) Int ), Typeable (StorageVector rep Int) )
+--deriving instance  (Typeable (Shape (S (S Z)) Int ), Typeable (BufferPure rep Int) )
  -- => Typeable (Format CompressedSparseRow Contiguous (S (S Z)) rep)
     --deriving (Eq,Data,Typeable)
 
@@ -168,8 +168,8 @@ data instance Format CompressedSparseRow Contiguous (S (S Z)) rep =
       logicalRowShapeContiguousCSR ::  {-# UNPACK #-} !Int
       ,logicalColumnShapeContiguousCSR ::  {-# UNPACK #-} !Int
       ,logicalValueBufferAddressShiftContiguousCSR:: {-# UNPACK #-} !Int
-      ,logicalColumnIndexContiguousCSR :: !(StorageVector rep Int)
-      ,logicalRowStartIndexContiguousCSR :: ! (StorageVector rep Int )
+      ,logicalColumnIndexContiguousCSR :: !(BufferPure rep Int)
+      ,logicalRowStartIndexContiguousCSR :: ! (BufferPure rep Int )
   }
 
 {-
@@ -185,9 +185,9 @@ data instance Format CompressedSparseRow InnerContiguous (S (S Z)) rep =
       logicalRowShapeInnerContiguousCSR ::    {-# UNPACK #-} !Int
       ,logicalColumnShapeInnerContiguousCSR ::  {-# UNPACK #-} !Int
       ,logicalValueBufferAddressShiftInnerContiguousCSR:: {-# UNPACK #-} !Int
-      ,logicalColumnIndexInnerContiguousCSR :: !(StorageVector rep Int)
-      ,logicalRowStartIndexInnerContiguousCSR :: ! (StorageVector rep Int )
-      ,logicalRowEndIndexInnerContiguousCSR :: ! (StorageVector rep Int )
+      ,logicalColumnIndexInnerContiguousCSR :: !(BufferPure rep Int)
+      ,logicalRowStartIndexInnerContiguousCSR :: ! (BufferPure rep Int )
+      ,logicalRowEndIndexInnerContiguousCSR :: ! (BufferPure rep Int )
   }
       --deriving (Show,Eq,Data)
 
@@ -202,8 +202,8 @@ data instance Format CompressedSparseColumn Contiguous (S (S Z)) rep =
       logicalRowShapeContiguousCSC ::   {-# UNPACK #-} !Int
       ,logicalColumnShapeContiguousCSC ::   {-# UNPACK #-} !Int
       ,logicalValueBufferAddressShiftContiguousCSC:: {-# UNPACK #-} !Int
-      ,logicalRowIndexContiguousCSC :: !(StorageVector rep Int)
-      ,logicalColumnStartIndexContiguousCSC :: ! (StorageVector rep Int )
+      ,logicalRowIndexContiguousCSC :: !(BufferPure rep Int)
+      ,logicalColumnStartIndexContiguousCSC :: ! (BufferPure rep Int )
   }
     --deriving (Show,Eq,Data)
 
@@ -212,9 +212,9 @@ data instance Format CompressedSparseColumn InnerContiguous (S (S Z)) rep =
       logicalRowShapeInnerContiguousCSC ::    {-# UNPACK #-} !Int
       ,logicalColumnShapeInnerContiguousCSC ::  {-# UNPACK #-} !Int
       ,logicalValueBufferAddressShiftInnerContiguousCSC:: {-# UNPACK #-} !Int
-      ,logicalRowIndexInnerContiguousCSC :: !(StorageVector rep Int)
-      ,logicalColumnStartIndexInnerContiguousCSC :: ! (StorageVector rep Int )
-      ,logicalColumnEndIndexInnerContiguousCSC :: ! (StorageVector rep Int )
+      ,logicalRowIndexInnerContiguousCSC :: !(BufferPure rep Int)
+      ,logicalColumnStartIndexInnerContiguousCSC :: ! (BufferPure rep Int )
+      ,logicalColumnEndIndexInnerContiguousCSC :: ! (BufferPure rep Int )
   }
     --deriving (Show,Eq,Data)
 
@@ -313,7 +313,7 @@ instance Layout   (Format DirectSparse Contiguous (S Z) rep ) (S Z) where
   basicCompareIndex = \ _ (a:* Nil) (b :* Nil) ->compare a b
   {-# INLINE basicCompareIndex#-}
 
-instance V.Vector (StorageVector rep) Int
+instance V.Vector (BufferPure rep) Int
    => SparseLayout  (Format DirectSparse Contiguous (S Z) rep ) (S Z) where
       type SparseLayoutAddress (Format DirectSparse Contiguous (S Z) rep) =  Address
 
@@ -359,7 +359,7 @@ instance Layout (Format CompressedSparseRow Contiguous (S (S Z)) rep ) (S (S Z))
   basicCompareIndex = \ _ as  bs ->shapeCompareRightToLeft as bs
   {-# INLINE basicCompareIndex#-}
 
-instance  (V.Vector (StorageVector rep) Int )
+instance  (V.Vector (BufferPure rep) Int )
   => SparseLayout (Format CompressedSparseRow Contiguous (S (S Z)) rep ) (S (S Z)) where
 
       type SparseLayoutAddress (Format CompressedSparseRow Contiguous (S (S Z)) rep ) = SparseAddress
@@ -450,7 +450,7 @@ instance Layout (Format CompressedSparseRow InnerContiguous (S (S Z)) rep ) (S (
 
 
 
---instance  (V.Vector (StorageVector rep) Int )
+--instance  (V.Vector (BufferPure rep) Int )
 --  => SparseLayout (Format CompressedSparseRow InnerContiguous (S (S Z)) rep ) (S (S Z)) where
 
 --      type SparseLayoutAddress (Format CompressedSparseRow InnerContiguous (S (S Z)) rep ) = SparseAddress
