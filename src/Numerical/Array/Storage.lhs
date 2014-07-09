@@ -7,6 +7,7 @@ module Numerical.Array.Storage(Boxed
   ,BufferPure(..)
   ,BufferMut(..)) where
 
+import qualified Data.Vector.Generic as VG
 import qualified Data.Vector as BV
 import qualified Data.Vector.Storable as SV
 import qualified Data.Vector.Unboxed as UV
