@@ -5,6 +5,8 @@ One easy way is to identify some piece of functionality that doesn't have
 100% testing coverage (in either the unit tests or quick check suite), and
 write some tests for it! Theres a lot that needs better coverage right now.
 
+Also look at the issue tracker and look for tasks that haven't been claimed!
+Note that some of these tickets might be pretty subtle.
 
 
 ## Pull request procedure

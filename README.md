@@ -11,7 +11,7 @@ Numerical-Core is an open source component of the [Wellposed](http://www.wellpos
 
 ##Build Status
 
-[![Build Status](https://secure.travis-ci.org/wellposed/numerical-core.png?branch=master)](http://travis-ci.org/wellposed/numerical-core)
+[![Build Status](https://secure.travis-ci.org/wellposed/numerical.png?branch=master)](http://travis-ci.org/wellposed/numerical-core)
 
 
 #note
