@@ -42,7 +42,7 @@ module Numerical.Array.Layout.Sparse(
   ,CSR
   ,CSC
   ,CompressedSparseRow
-  ,CompressedSparseColumn
+  -- ,CompressedSparseColumn FIX ME, re add column support later
   ,Format(..)
   ,BufferPure
   ) where
@@ -142,6 +142,10 @@ to get the correct offset index into the current SLICE.
 
 Phrased differently, This address shift is the *Discrepancy/Difference*
 between the size of the elided prefix of the Vector and the starting
+position of the manifest entries.
+
+(Q: does this ever ever matter, or can i punt that to vector, and only
+need this )
 
 
 This is kinda a good argument for not punting the Slicing on the raw buffers to
@@ -161,16 +165,54 @@ and either a) doesn't need a shift, or b) only needs an index shift
 commensurate matching the leading implicit index of a Major Axis Slice
 
 
+theres a BIG corner case in most standard CSR / CSC formats which is
+underspecified in most docs about CSC and CSR formats.
+Consider Without loss of generality, CSR format
+  1) how are empty rows modeled/signaled?
+  2) if the last row is empty, how is that signaled?
+
+2) The last row is signaled to be be empty by having
+  the last entry of _outerDim2InnerDim buffer be set to >=
+  length of _innerDimIndex buffer (ie >= 1 + largest index of _innerDimIndex)
+1)
+
 -}
 
-data instance Format CompressedSparseRow Contiguous (S (S Z)) rep =
-    FormatContiguousCompressedSparseRow {
-      logicalRowShapeContiguousCSR ::  {-# UNPACK #-} !Int
-      ,logicalColumnShapeContiguousCSR ::  {-# UNPACK #-} !Int
-      ,logicalValueBufferAddressShiftContiguousCSR:: {-# UNPACK #-} !Int
-      ,logicalColumnIndexContiguousCSR :: !(BufferPure rep Int)
-      ,logicalRowStartIndexContiguousCSR :: ! (BufferPure rep Int )
+data ContiguousCompressedSparseMatrix rep =
+    FormatContiguousCompressedSparseInternal {
+      _outerDimContiguousSparseFormat ::  {-# UNPACK #-} !Int
+      ,_innerDimContiguousSparseFormat ::  {-# UNPACK #-} !Int
+      -- ,logicalValueBufferAddressShiftContiguousCSR:: {-# UNPACK #-} !Int
+      		--- don't think this is needed
+      ,_innerDimIndexContiguousSparseFormat :: !(BufferPure rep Int)
+      ,_outerDim2InnerDimContiguousSparseFormat:: ! (BufferPure rep Int )
   }
+{-
+  outerDim innerDim  innerTable  outer2InnerStart
+-}
+
+
+
+{-
+for Row major Compressed Sparse (CSR)
+the X dim (columns) are the inner dimension, and Y dim (rows) are the outer dim
+-}
+
+
+
+data  InnerContiguousCompressedSparseMatrix rep =
+   FormatInnerContiguousCompressedSparseInternal {
+      _outerDimInnerContiguousSparseFormat ::    {-# UNPACK #-} !Int
+      ,_innerDimInnerContiguousSparseFormat ::  {-# UNPACK #-} !Int
+      ,_innerDimIndexShiftInnerContiguousSparseFormat:: {-# UNPACK #-} !Int
+
+      ,_innerDimIndexInnerContiguousSparseFormat :: !(BufferPure rep Int)
+      ,_outerDim2InnerDimStartInnerContiguousSparseFormat:: ! (BufferPure rep Int )
+      ,_outerDim2InnerDimEndInnerContiguousSparseFormat:: ! (BufferPure rep Int )
+
+newtype instance Format CompressedSparseRow Contiguous (S (S Z)) rep =
+    FormatContiguousCompressedSparseRow {
+      _getFormatContiguousCSR :: !(ContiguousCompressedSparseMatrix rep) }
 
 {-
   FormatContiguousCompressedSparseRow rowSize columnSize ColumnaddrShift  columnIndexTable rowStartIndexTable
@@ -180,14 +222,11 @@ note, columnAddrShift MUST always equal rowStartIndexTable[0]
 -}
 
 
-data instance Format CompressedSparseRow InnerContiguous (S (S Z)) rep =
+  }
+
+newtype instance Format CompressedSparseRow InnerContiguous (S (S Z)) rep =
     FormatInnerContiguousCompressedSparseRow {
-      logicalRowShapeInnerContiguousCSR ::    {-# UNPACK #-} !Int
-      ,logicalColumnShapeInnerContiguousCSR ::  {-# UNPACK #-} !Int
-      ,logicalValueBufferAddressShiftInnerContiguousCSR:: {-# UNPACK #-} !Int
-      ,logicalColumnIndexInnerContiguousCSR :: !(BufferPure rep Int)
-      ,logicalRowStartIndexInnerContiguousCSR :: ! (BufferPure rep Int )
-      ,logicalRowEndIndexInnerContiguousCSR :: ! (BufferPure rep Int )
+      _getFormatInnerContiguousCSR :: !(InnerContiguousCompressedSparseMatrix rep )
   }
       --deriving (Show,Eq,Data)
 
@@ -197,26 +236,17 @@ data instance Format CompressedSparseRow InnerContiguous (S (S Z)) rep =
 -}
 
 
-data instance Format CompressedSparseColumn Contiguous (S (S Z)) rep =
-    FormatContiguousCompressedSparseColumn {
-      logicalRowShapeContiguousCSC ::   {-# UNPACK #-} !Int
-      ,logicalColumnShapeContiguousCSC ::   {-# UNPACK #-} !Int
-      ,logicalValueBufferAddressShiftContiguousCSC:: {-# UNPACK #-} !Int
-      ,logicalRowIndexContiguousCSC :: !(BufferPure rep Int)
-      ,logicalColumnStartIndexContiguousCSC :: ! (BufferPure rep Int )
-  }
+--newtype instance Format CompressedSparseColumn Contiguous (S (S Z)) rep =
+--    FormatContiguousCompressedSparseColumn {
+--      _getFormatContiguousCSC ::  (ContiguousCompressedSparseMatrix rep)
+--  }
     --deriving (Show,Eq,Data)
 
-data instance Format CompressedSparseColumn InnerContiguous (S (S Z)) rep =
-    FormatInnerContiguousCompressedSparseColumn {
-      logicalRowShapeInnerContiguousCSC ::    {-# UNPACK #-} !Int
-      ,logicalColumnShapeInnerContiguousCSC ::  {-# UNPACK #-} !Int
-      ,logicalValueBufferAddressShiftInnerContiguousCSC:: {-# UNPACK #-} !Int
-      ,logicalRowIndexInnerContiguousCSC :: !(BufferPure rep Int)
-      ,logicalColumnStartIndexInnerContiguousCSC :: ! (BufferPure rep Int )
-      ,logicalColumnEndIndexInnerContiguousCSC :: ! (BufferPure rep Int )
-  }
-    --deriving (Show,Eq,Data)
+--newtype  instance Format CompressedSparseColumn InnerContiguous (S (S Z)) rep =
+--    FormatInnerContiguousCompressedSparseColumn {
+--     _getFormatInnerContiguousCSC :: (InnerContiguousCompressedSparseMatrix rep)
+--  }
+--    --deriving (Show,Eq,Data)
 
 
 
@@ -262,12 +292,63 @@ CSR and CSC go here, and their version of lookups and next address and next inde
 
 --  Offset binary search --- cribbed with permission from
 -- edward kmett's structured lib
+
+
+
+-- Assuming @l <= h@. Returns @h@ if the predicate is never @True@ over @[l..h)@
+--searchUp :: (Int -> Bool) -> Int -> Int -> Int
+--searchUp p = go where
+--  go l h
+--    | l == h    = l
+--    | p m       = go l m
+--    | otherwise = go (m+1) h
+--    where hml = h - l
+--          m = l + unsafeShiftR hml 1 + unsafeShiftR hml 6
+--{-# INLINE searchUp #-}
+
+---- Assuming @l <= h@. Returns @l@ if the predicate is never @True@ over @(l..h]@
+--searchDown :: (Int -> Bool) -> Int -> Int -> Int
+--searchDown p = go where
+--  go l h
+--    | l == h    = l
+--    | p (m+1)       = go (m+1) h
+--    | otherwise = go l m
+--    where hml = h - l
+--          m = l + unsafeShiftR hml 1 + unsafeShiftR hml 6
+--{-# INLINE searchDown #-}
+
+
+-- Assuming @l <= h@. Returns @h@ if the predicate is never @True@ over @[l..h)@
+linearSearchUp :: (Int -> Bool)-> Int -> Int -> Int
+linearSearchUp p = go where
+  go l h
+    | l ==h = l
+    | p l = l
+    | otherwise = go (l+1) h
+{-#INLINE linearSearchUp #-}
+
+-- Assuming @l <= h@. Returns @l@ if the predicate is never @True@ over @(l..h]@
+linearSearchDown :: (Int -> Bool)-> Int -> Int -> Int
+linearSearchDown p = go where
+  go l h
+    | l ==h = l
+    | p h = h
+    | otherwise = go l (h-1)
+{-#INLINE linearSearchDown #-}
+
+
+
+
 --
 -- now assumed each key is unique and ordered
 --
 -- Assuming @l <= h@. Returns @h@ if the predicate is never @True@ over @[l..h)@
-search :: (Int -> Ordering) -> Int -> Int -> Int
-search p = go where
+
+-- should at some point try out a ternary search scheme to have even better
+-- cache behavior (and benchmark of course)
+
+searchOrd :: (Int -> Ordering) -> Int -> Int -> Int
+searchOrd  p = go where
   go l h
     | l == h    = l
     | otherwise = case p m of
@@ -279,18 +360,18 @@ search p = go where
                   -- entry is greater than target, go down!
     where hml = h - l
           m = l + unsafeShiftR hml 1 + unsafeShiftR hml 6
-{-# INLINE search #-}
+{-# INLINE searchOrd #-}
 
 lookupExact :: (Ord k, V.Vector vec k) => vec k -> k -> Maybe Int
 lookupExact ks key
-  | j <- search (\i -> compare (ks V.! i)  key) 0 (V.length ks - 1)
+  | j <- searchOrd (\i -> compare (ks V.! i)  key) 0 (V.length ks - 1)
   , ks V.! j == key = Just $! j
   | otherwise = Nothing
 {-# INLINE lookupExact #-}
 
 lookupExactRange :: (Ord k, V.Vector vec k) => vec k -> k -> Int -> Int -> Maybe Int
 lookupExactRange  ks key lo hi
-  | j <- search (\i -> compare (ks V.! i)  key) lo hi
+  | j <- searchOrd (\i -> compare (ks V.! i)  key) lo hi
   , ks V.! j == key = Just $! j
   | otherwise = Nothing
 {-# INLINE lookupExactRange  #-}
@@ -339,6 +420,8 @@ instance V.Vector (BufferPure rep) Int
       basicNextAddress =
         \ (FormatDirectSparseContiguous _ _ lut) (Address addr) ->
           if  addr >= (V.length lut) then Nothing else Just  (Address (addr+1))
+
+
 ------------
 ------------
 
@@ -353,9 +436,11 @@ instance Layout (Format CompressedSparseRow Contiguous (S (S Z)) rep ) (S (S Z))
   transposedLayout  = \(FormatContiguousCompressedSparseRow a b c d e) ->
     (FormatContiguousCompressedSparseColumn a b c d e )
   {-# INLINE transposedLayout #-}
-  basicFormShape = \ form -> logicalRowShapeContiguousCSR form  :*
-         logicalColumnShapeContiguousCSR form :* Nil
+  basicFormShape = \ form ->  (_innerDimContiguousSparseFormat $ _getFormatContiguousCSR  form ) :*
+         ( _outerDimInnerContiguousSparseFormat $ _getFormatContiguousCSR form ):* Nil
   {-# INLINE basicFormShape #-}
+
+
   basicCompareIndex = \ _ as  bs ->shapeCompareRightToLeft as bs
   {-# INLINE basicCompareIndex#-}
 
@@ -365,12 +450,30 @@ instance  (V.Vector (BufferPure rep) Int )
       type SparseLayoutAddress (Format CompressedSparseRow Contiguous (S (S Z)) rep ) = SparseAddress
 
       {-# INLINE minSparseAddress #-}
-      minSparseAddress = \_ -> SparseAddress 0 0
+      minSparseAddress =
+        \(FormatContiguousCompressedSparseRow
+            (FormatContiguousCompressedSparseInternal  y_row_range x_col_range   columnIndex rowStartIndex)) ->
+                if ( y_row_range < 1  || x_col_range < 1|| V.length columnIndex  )
+                  then Nothing
+                  else Just $! SparseAddress candidateRow 0
+                  -- the value buffer has the invariant the the end points
+                  -- of the buffer MUST be valid  in bounds values if length buffer > 0
+                --SparseAddress $! 0 $! 0
+          where
+            !maxIxP1 = V.length columnIndex
+            !candidateRow= linearSearchUp nonZeroRow 0 (y_row_range-1 )
+            nonZeroRow =
+                \row_ix ->
+                  if row_ix < (y_row_range-1)
+                     -- we're not at the last row
+                    then  (rowStartIndex V.! (row_ix+1) - rowStartIndex V.! row_ix)>0
+                      --  last row
+                    else  (maxIxP1 - rowStartIndex V.! row_ix)>0
 
       {-# INLINE maxSparseAddress#-}
       maxSparseAddress  =
-       \ (FormatContiguousCompressedSparseRow _ y_range _
-          columnIndex _) ->
+       \ (FormatContiguousCompressedSparseRow (FormatContiguousCompressedSparseInternal _ y_range _
+                 columnIndex _)) ->
               SparseAddress (y_range - 1) (V.length columnIndex - 1 )
 
 
@@ -450,68 +553,70 @@ instance Layout (Format CompressedSparseRow InnerContiguous (S (S Z)) rep ) (S (
 
 
 
---instance  (V.Vector (BufferPure rep) Int )
---  => SparseLayout (Format CompressedSparseRow InnerContiguous (S (S Z)) rep ) (S (S Z)) where
+instance  (V.Vector (BufferPure rep) Int )
+  => SparseLayout (Format CompressedSparseRow InnerContiguous (S (S Z)) rep ) (S (S Z)) where
 
---      type SparseLayoutAddress (Format CompressedSparseRow InnerContiguous (S (S Z)) rep ) = SparseAddress
+      type SparseLayoutAddress (Format CompressedSparseRow InnerContiguous (S (S Z)) rep ) = SparseAddress
 
---      {-# INLINE minSparseAddress #-}
---      minSparseAddress = \_ -> SparseAddress 0 0
+      {-# INLINE minSparseAddress #-}
+      minSparseAddress = \_ -> SparseAddress 0 0
 
---      {-# INLINE maxSparseAddress#-}
---      maxSparseAddress  =
---       \ (FormatInnerContiguousCompressedSparseRow _ y_range _
---          columnIndex _) ->
---              SparseAddress (y_range - 1) (V.length columnIndex - 1 )
-
-
---      {-#INLINE basicToSparseIndex #-}
---      basicToSparseIndex =
---       \ (FormatContiguousCompressedSparseRow _ _  _ columnIndex _)
---          (SparseAddress outer inner) -> (columnIndex V.! inner ) :* outer :*  Nil
---          -- outer is the row (y index) and inner is the lookup position for the x index
+      {-# INLINE maxSparseAddress#-}
+      maxSparseAddress  =
+       \ (FormatInnerContiguousCompressedSparseInternal _ outer_dim_range _
+          innerDimIndex _) ->
+              SparseAddress (outer_dim_range - 1) (V.length innerDimIndex - 1 )
 
 
---{-
---theres 3 cases for contiguous next address:
---in the middle of a run on a fixed outer dimension,
---need to bump the outer dimension, or we're at the end of the entire array
+      {-#INLINE basicToSparseIndex #-}
+      basicToSparseIndex =
+       \ (FormatInnerContiguousCompressedSparseInternal _ _  _ innerDimIndex _)
+          (SparseAddress outer inner) -> (innerDimIndex V.! inner ) :* outer :*  Nil
+          -- outer is the row (y index) and inner is the lookup position for the x index
 
---we make the VERY strong assumption that no illegal addresses are ever made!
 
---note that for very very small sparse matrices, the branching will have some
---overhead, but in general branch prediction should work out ok.
----}
---      {-# INLINE basicNextAddress #-}
---      basicNextAddress =
---         \ (FormatContiguousCompressedSparseRow _ _ _
---                                                columnIndex rowstartIndex)
---            (SparseAddress outer inner) ->
---              if not  (inner == (V.length columnIndex -1)
---                                          {- && outer == (y_range-1) -}
---                     || (inner +1) == (rowstartIndex V.! (outer + 1)))
---                then
---                  Just (SparseAddress outer (inner+1))
---                else
---                  if inner == (V.length columnIndex -1)
---                    then Nothing
---                    else Just (SparseAddress (outer + 1) (inner + 1 ) )
+{-
+theres 3 cases for contiguous next address:
+in the middle of a run on a fixed outer dimension,
+need to bump the outer dimension, or we're at the end of the entire array
 
---        --  error "finish me damn it"
---      {-# INLINE basicToSparseAddress #-}
---      basicToSparseAddress =
---        \ (FormatContiguousCompressedSparseRow x_range y_range addrShift
---              columnIndex rowstartIndex)
---          (ix_x:*ix_y :* _ ) ->
---            if  not (ix_x >= x_range ||  ix_y >=y_range )
---              then
---              -- slightly different logic when ix_y < range_y-1 vs == range_y-1
---              -- because contiguous, don't need the index space shift though!
---                       SparseAddress ix_y   <$>
---                          lookupExactRange columnIndex ix_x ((rowstartIndex V.! ix_y) - addrShift)
---                            (if  ix_y < (y_range-1)
---                              -- addr shift is for correcting from a major axis slice
---                              then  (rowstartIndex V.! (ix_y+1) ) - addrShift
---                              else V.length columnIndex  - 1 )
---              else   (Nothing :: Maybe SparseAddress )
+we make the VERY strong assumption that no illegal addresses are ever made!
+
+note that for very very small sparse matrices, the branching will have some
+overhead, but in general branch prediction should work out ok.
+-}
+      {-# INLINE basicNextAddress #-}
+      basicNextAddress =
+         \ (FormatInnerContiguousCompressedSparseRow
+                (FormatInnerContiguousCompressedSparseInternal _ _ _
+                                                         columnIndex rowstartIndex))
+            (SparseAddress outer inner) ->
+              if not  (inner == (V.length columnIndex -1)
+                                          {- && outer == (y_range-1) -}
+                     || (inner +1) == (rowstartIndex V.! (outer + 1)))
+                then
+                  Just (SparseAddress outer (inner+1))
+                else
+                  if inner == (V.length columnIndex -1)
+                    then Nothing
+                    else Just (SparseAddress (outer + 1) (inner + 1 ) )
+
+        --  error "finish me damn it"
+      {-# INLINE basicToSparseAddress #-}
+      basicToSparseAddress =
+        \ (FormatInnerContiguousCompressedSparseRow
+            (FormatInnerContiguousCompressedSparseInternal x_range y_range addrShift
+                      columnIndex rowstartIndex))
+          (ix_x:*ix_y :* _ ) ->
+            if  not (ix_x >= x_range ||  ix_y >=y_range )
+              then
+              -- slightly different logic when ix_y < range_y-1 vs == range_y-1
+              -- because contiguous, don't need the index space shift though!
+                       SparseAddress ix_y   <$>
+                          lookupExactRange columnIndex ix_x ((rowstartIndex V.! ix_y) - addrShift)
+                            (if  ix_y < (y_range-1)
+                              -- addr shift is for correcting from a major axis slice
+                              then  (rowstartIndex V.! (ix_y+1) ) - addrShift
+                              else V.length columnIndex  - 1 )
+              else   (Nothing :: Maybe SparseAddress )
 \end{code}
