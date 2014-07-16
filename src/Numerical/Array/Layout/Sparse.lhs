@@ -254,9 +254,9 @@ class Layout form rank  => SparseLayout form  (rank :: Nat)  | form -> rank wher
 
     type SparseLayoutAddress form :: *
 
-    minSparseAddress ::  (address ~ SparseLayoutAddress form)=> form -> address
+    minSparseAddress ::  (address ~ SparseLayoutAddress form)=> form -> Maybe address
 
-    maxSparseAddress ::  (address ~ SparseLayoutAddress form)=> form -> address
+    maxSparseAddress ::  (address ~ SparseLayoutAddress form)=> form -> Maybe address
 
     basicToSparseAddress :: (address ~ SparseLayoutAddress form)=>
         form  -> Shape rank Int -> Maybe  address
