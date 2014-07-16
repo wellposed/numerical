@@ -365,22 +365,22 @@ class A.PureArray (ArrPure marr)  rank a => Array marr (rank:: Nat)  a | marr ->
     basicAddressToIndex :: (address ~ MArrayAddress marr) =>marr s   a -> address ->    Index rank
 
     -- |  return the smallest valid logical address
-    basicSmallestAddress :: (address ~ MArrayAddress marr)=> marr st   a ->  address
+    basicMinAddress :: (address ~ MArrayAddress marr)=> marr st   a ->  address
 
     --  | return the largest valid logical adress
-    basicGreatestAddress :: (address ~ MArrayAddress marr)=> marr st   a ->  address
+    basicMaxAddress :: (address ~ MArrayAddress marr)=> marr st   a ->  address
 
     -- |  return the smallest valid array index
     --  should be weakly dominated by every other valid index
-    basicSmallestIndex ::  marr st   a ->  Index rank
-    basicSmallestIndex = \ marr -> basicAddressToIndex marr $ basicSmallestAddress marr
-    {-# INLINE basicSmallestIndex #-}
+    basicMinIndex ::  marr st   a ->  Index rank
+    basicMinIndex = \ marr -> basicAddressToIndex marr $ basicMinAddress marr
+    {-# INLINE basicMinIndex #-}
 
     -- | return the greatest valid array index
     -- should weakly dominate every
-    basicGreatestIndex ::  marr st  a -> Index rank
-    basicGreatestIndex = \ marr -> basicAddressToIndex marr $ basicGreatestAddress marr
-    {-# INLINE basicGreatestIndex #-}
+    basicMaxIndex ::  marr st  a -> Index rank
+    basicMaxIndex = \ marr -> basicAddressToIndex marr $ basicMaxAddress marr
+    {-# INLINE basicMaxIndex #-}
 
 
     -- | gives the next valid logical address
