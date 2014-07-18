@@ -37,14 +37,16 @@ that acts only on the outermost dimension.
 #endif
 module Numerical.Array.Layout.Sparse(
   SparseLayout(..)
-  ,Layout(..)
   ,DirectSparse
   ,CSR
   ,CSC
   ,CompressedSparseRow
-  -- ,CompressedSparseColumn FIX ME, re add column support later
-  ,Format(..)
-  ,BufferPure
+  ,CompressedSparseColumn --  FIX ME, re add column support later
+  ,Format(FormatDirectSparseContiguous
+      ,FormatContiguousCompressedSparseRow
+      ,FormatInnerContiguousCompressedSparseRow
+      ,FormatContiguousCompressedSparseColumn
+      ,FormatInnerContiguousCompressedSparseColumn)
   ,ContiguousCompressedSparseMatrix(..)
   ,InnerContiguousCompressedSparseMatrix(..)
   ) where
@@ -73,9 +75,9 @@ data DirectSparse
 
 data instance Format DirectSparse  Contiguous (S Z) rep =
     FormatDirectSparseContiguous {
-      logicalShapeDirectSparse:: {-# UNPACK#-} !Int
-      ,logicalBaseIndexShiftDirectSparse::{-# UNPACK#-} !Int
-      ,indexTableDirectSparse :: ! ((BufferPure rep) Int )  }
+      _logicalShapeDirectSparse:: {-# UNPACK#-} !Int
+      ,_logicalBaseIndexShiftDirectSparse::{-# UNPACK#-} !Int
+      ,_indexTableDirectSparse :: ! ((BufferPure rep) Int )  }
     --deriving (Show,Eq,Data)
 
 
@@ -394,7 +396,7 @@ type instance  Transposed (Format DirectSparse Contiguous (S Z) rep )=
 instance Layout   (Format DirectSparse Contiguous (S Z) rep ) (S Z) where
   transposedLayout  = id
   {-# INLINE transposedLayout #-}
-  basicFormShape = \ form -> logicalShapeDirectSparse form  :* Nil
+  basicFormShape = \ form -> _logicalShapeDirectSparse form  :* Nil
   {-# INLINE basicFormShape #-}
   basicCompareIndex = \ _ (a:* Nil) (b :* Nil) ->compare a b
   {-# INLINE basicCompareIndex#-}
