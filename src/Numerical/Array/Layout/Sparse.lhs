@@ -45,6 +45,8 @@ module Numerical.Array.Layout.Sparse(
   -- ,CompressedSparseColumn FIX ME, re add column support later
   ,Format(..)
   ,BufferPure
+  ,ContiguousCompressedSparseMatrix(..)
+  ,InnerContiguousCompressedSparseMatrix(..)
   ) where
 
 import Data.Data
@@ -471,7 +473,6 @@ instance  (V.Vector (BufferPure rep) Int )
                 -- hoisted where into if branch as let so lets could be strict
                     let
                       !addrShift = columnIndex V.! 0
-                      !maxIxP1 = V.length columnIndex
 
                       -- for now assuming candidateRow is ALWAYS valid
                       --- haven't proven this, FIXME
@@ -546,7 +547,7 @@ instance  (V.Vector (BufferPure rep) Int )
       {-# INLINE basicToSparseIndex #-}
       basicToSparseIndex =
         \ (FormatContiguousCompressedSparseRow
-            (FormatContiguousCompressedSparseInternal  y_row_range x_col_range columnIndex rowStartIndex))
+            (FormatContiguousCompressedSparseInternal  _ _ columnIndex _))
             (SparseAddress outer inner) ->
               (columnIndex V.! inner ) :* outer :*  Nil
           -- outer is the row (y index) and inner is the lookup position for the x index
@@ -565,7 +566,7 @@ overhead, but in general branch prediction should work out ok.
       {-# INLINE basicNextAddress #-}
       basicNextAddress =
          \ (FormatContiguousCompressedSparseRow
-            (FormatContiguousCompressedSparseInternal  y_row_range x_col_range
+            (FormatContiguousCompressedSparseInternal  _ _
               columnIndex rowStartIndex))
             (SparseAddress outer inner) ->
               if  inner < (V.length columnIndex -1)
