@@ -1,4 +1,4 @@
-\begin{code}
+
 {-# LANGUAGE DeriveDataTypeable #-}
 module Numerical.Array.Range (Range(..)) where
 
@@ -15,4 +15,4 @@ data Range a =Range {least :: !a
                       ,greatest :: !a}
         deriving (Eq,Show,Data,Typeable)
 
-\end{code}
+

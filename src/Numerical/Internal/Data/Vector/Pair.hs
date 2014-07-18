@@ -1,4 +1,4 @@
-\begin{code}
+
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE DataKinds #-}
@@ -196,4 +196,3 @@ instance (MV.MVector (MVProd mv pra) a,MV.MVector (MVProd mv prb) b) => MV.MVect
 
 
 
-\end{code}

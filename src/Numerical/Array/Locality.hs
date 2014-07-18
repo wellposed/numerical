@@ -1,7 +1,6 @@
-\begin{code}
+
 
 {-# LANGUAGE DataKinds #-}
-
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -75,7 +74,6 @@ type instance  LocalityMinPrivate Strided Strided = Strided
 #endif
 
 
-\end{code}
 
 
 

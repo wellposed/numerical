@@ -1,4 +1,3 @@
-\begin{code}
 
 {-# LANGUAGE TypeFamilies,FlexibleInstances,MultiParamTypeClasses,FlexibleContexts #-}
 module Numerical.Array.Storage(Boxed
@@ -172,4 +171,4 @@ instance (VGM.MVector UV.MVector elem) => VGM.MVector (BufferMut Unboxed)  elem 
 --  {-# INLINE basicUnsafeGrow#-}
 --  {-# INLINE basicUnsafeReplicate#-}
 
-\end{code}
+

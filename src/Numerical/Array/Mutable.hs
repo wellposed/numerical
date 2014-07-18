@@ -1,5 +1,4 @@
-%
-\begin{code}
+
 -- {-# LANGUAGE PolyKinds   #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
@@ -45,8 +44,8 @@ import qualified Numerical.Array.Storage as S
 --import qualified Data.Vector.Storable.Mutable as SM
 --import qualified Data.Vector.Unboxed.Mutable as UM
 --import qualified Data.Vector.Mutable as BM
-\end{code}
 
+{-
 For now we're going to just crib the vector style api and Lift it
 up into a multi dimensional setting.
 
@@ -112,9 +111,9 @@ Dont need them for the alpha, but should think about an
 
 
 NB: one important assumption we'll have for now, is that every
+-}
 
 
-\begin{code}
 
 
 --type family RepConstraint world  rep el :: Constraint
@@ -509,25 +508,23 @@ class ( Array marr rank a, A.PureDenseArray (ArrPure marr) rank a  )=>
     basicNextIndex :: marr st  a -> Index rank  -> Index rank
 
 
-\end{code}
 
---For now I shall assume everything is dense / dense structured
+
+{- -For now I shall assume everything is dense / dense structured
 --- will break that assumption post alpha release
 
 
 now lets write some super generic combinators
-\begin{code}
 
 
 
-\end{code}
 
 
 Now lets write down a bunch of really really simple examples!
 note that these example do not have the right error handling logic currently
 
 
-\begin{code}
+-}
 
 --Num e => matrix st  e -> invect st e -> outvect st e ->
 
@@ -585,5 +582,3 @@ note, needs to be modified to work with sparse arrays
 
 
 
-
-\end{code}

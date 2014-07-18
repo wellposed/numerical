@@ -1,4 +1,3 @@
-\begin{code}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DeriveDataTypeable #-}
@@ -104,5 +103,3 @@ instance  GV.Vector UV.Vector Address where
                 = GV.basicUnsafeCopy mv v
   elemseq _ (Address a) z =   GV.elemseq (undefined :: UV.Vector a) a z
 
-
-\end{code}

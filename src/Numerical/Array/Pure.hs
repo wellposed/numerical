@@ -1,5 +1,4 @@
-%
-\begin{code}
+
 
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
@@ -120,5 +119,3 @@ class PureArray arr rank a => PureDenseArray arr rank a where
 
 
 
-
-\end{code}
