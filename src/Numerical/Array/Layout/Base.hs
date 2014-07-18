@@ -1,4 +1,4 @@
-\begin{code}
+
 
 {- |  Comments for this modules
 
@@ -295,4 +295,4 @@ I will be likely adding this the moment benchmarks validate the distinction
 
 on the
 -}
-\end{code}
+

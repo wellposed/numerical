@@ -1,6 +1,6 @@
 
 
-\begin{code}
+
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -39,4 +39,3 @@ class SparseLayout  (Format layout Contiguous rank storageRep) rank
 
 
 
-\end{code}

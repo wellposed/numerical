@@ -1,4 +1,4 @@
-
+{-
 the following (currently 5) sparse formats will live here
 
 
@@ -16,8 +16,8 @@ Note that in the 2dim case, it still wont quite be zero copy, because the
 offsets into the inner dimension lookup table (not quite the right word)
 will have to change when a general slice is used rather than a slice
 that acts only on the outermost dimension.
+-}
 
-\begin{code}
 
 
 -- {-# LANGUAGE PolyKinds   #-}
@@ -286,16 +286,16 @@ class Layout form rank  => SparseLayout form  (rank :: Nat)  | form -> rank wher
     {-# MINIMAL basicToSparseAddress, basicToSparseIndex, basicNextAddress
       ,maxSparseAddress, minSparseAddress #-}
 
-\end{code}
-
-
-
-CSR and CSC go here, and their version of lookups and next address and next index
 
 
 
 
-\begin{code}
+--CSR and CSC go here, and their version of lookups and next address and next index
+
+
+
+
+
 
 --  Offset binary search --- cribbed with permission from
 -- edward kmett's structured lib
@@ -705,4 +705,3 @@ overhead, but in general branch prediction should work out ok.
 --                              then  (rowstartIndex V.! (ix_y+1) ) - addrShift
 --                              else V.length columnIndex  - 1 )
 --              else   (Nothing :: Maybe SparseAddress )
-\end{code}

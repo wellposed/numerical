@@ -1,5 +1,3 @@
-\begin{code}
-
 
 
 -- {-# LANGUAGE PolyKinds   #-}
@@ -655,4 +653,3 @@ Address 2
 -}
 
 
-\end{code}
