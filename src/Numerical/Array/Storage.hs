@@ -6,7 +6,7 @@ module Numerical.Array.Storage(Boxed
   ,BufferPure(..)
   ,BufferMut(..)) where
 
---import qualified Data.Vector.Generic as VG
+import qualified Data.Vector.Generic as VG
 import qualified Data.Vector.Generic.Mutable as VGM
 import qualified Data.Vector as BV
 import qualified Data.Vector.Storable as SV
@@ -39,7 +39,7 @@ data Unboxed
 data Storable
 
 
-instance VG.Mutable (BufferPure sort) = BufferMut sort
+type instance VG.Mutable (BufferPure sort) = BufferMut sort
 
 
 data family   BufferPure sort  elem
@@ -134,7 +134,67 @@ instance (VGM.MVector UV.MVector elem) => VGM.MVector (BufferMut Unboxed)  elem 
   {-#INLINE basicUnsafeRead#-}
   {-#INLINE basicUnsafeWrite#-}
 
+----
+----
+instance VG.Vector BV.Vector  a  => VG.Vector (BufferPure Boxed) a   where
+
+  basicUnsafeFreeze =
+     \(BoxedBufferMut mv) ->(\ x->return $ BoxedBuffer x) =<<  VG.basicUnsafeFreeze mv
+  basicUnsafeThaw= \(BoxedBuffer v) ->(\x -> return $ BoxedBufferMut x ) =<< VG.basicUnsafeThaw v
+  basicLength = \(BoxedBuffer v) -> VG.basicLength v
+  basicUnsafeSlice =
+    \ start len (BoxedBuffer v) ->  BoxedBuffer $! VG.basicUnsafeSlice start len v
+  basicUnsafeIndexM =
+    \ (BoxedBuffer v) ix  -> VG.basicUnsafeIndexM v ix
+  elemseq = \ (BoxedBuffer v) a b -> VG.elemseq v a b
 
 
+  {-# INLINE basicUnsafeFreeze#-}
+  {-# INLINE basicUnsafeThaw#-}
+  {-# INLINE basicLength#-}
+  {-# INLINE basicUnsafeSlice#-}
+  {-# INLINE basicUnsafeIndexM#-}
+  {-# INLINE elemseq #-}
 
+
+instance VG.Vector SV.Vector  a  => VG.Vector (BufferPure Storable) a   where
+
+  basicUnsafeFreeze =
+     \(StorableBufferMut mv) -> (\x ->return $StorableBuffer x) =<<  VG.basicUnsafeFreeze mv
+  basicUnsafeThaw=
+    \(StorableBuffer v) -> (\x -> return $ StorableBufferMut x) =<< VG.basicUnsafeThaw v
+  basicLength = \(StorableBuffer v) -> VG.basicLength v
+  basicUnsafeSlice =
+    \ start len (StorableBuffer v) ->  StorableBuffer $! VG.basicUnsafeSlice start len v
+  basicUnsafeIndexM =
+    \ (StorableBuffer v) ix  -> VG.basicUnsafeIndexM v ix
+  elemseq = \ (StorableBuffer v) a b -> VG.elemseq v a b
+
+
+  {-# INLINE basicUnsafeFreeze#-}
+  {-# INLINE basicUnsafeThaw#-}
+  {-# INLINE basicLength#-}
+  {-# INLINE basicUnsafeSlice#-}
+  {-# INLINE basicUnsafeIndexM#-}
+  {-# INLINE elemseq #-}
+
+
+instance VG.Vector UV.Vector  a  => VG.Vector (BufferPure Unboxed) a   where
+
+  basicUnsafeFreeze = \(UnboxedBufferMut mv) -> (\x -> return $ UnboxedBuffer x) =<<  VG.basicUnsafeFreeze mv
+  basicUnsafeThaw= \(UnboxedBuffer v) ->(\x -> return $  UnboxedBufferMut x) =<< VG.basicUnsafeThaw v
+  basicLength = \(UnboxedBuffer v) -> VG.basicLength v
+  basicUnsafeSlice =
+    \ start len (UnboxedBuffer v) ->  UnboxedBuffer $! VG.basicUnsafeSlice start len v
+  basicUnsafeIndexM =
+    \ (UnboxedBuffer v) ix  -> VG.basicUnsafeIndexM v ix
+  elemseq = \ (UnboxedBuffer v) a b -> VG.elemseq v a b
+
+
+  {-# INLINE basicUnsafeFreeze#-}
+  {-# INLINE basicUnsafeThaw#-}
+  {-# INLINE basicLength#-}
+  {-# INLINE basicUnsafeSlice#-}
+  {-# INLINE basicUnsafeIndexM#-}
+  {-# INLINE elemseq #-}
 
