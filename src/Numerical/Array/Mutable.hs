@@ -371,15 +371,15 @@ class A.PureArray (ArrPure marr)  rank a => Array marr (rank:: Nat)  a | marr ->
 
     -- |  return the smallest valid array index
     --  should be weakly dominated by every other valid index
-    basicMinIndex ::  marr st   a ->  Index rank
-    basicMinIndex = \ marr -> basicAddressToIndex marr $ basicMinAddress marr
-    {-# INLINE basicMinIndex #-}
+    -- basicMinIndex ::  marr st   a ->  Index rank
+    -- basicMinIndex = \ marr -> basicAddressToIndex marr $ basicMinAddress marr
+    -- {-# INLINE basicMinIndex #-}
 
-    -- | return the greatest valid array index
-    -- should weakly dominate every
-    basicMaxIndex ::  marr st  a -> Index rank
-    basicMaxIndex = \ marr -> basicAddressToIndex marr $ basicMaxAddress marr
-    {-# INLINE basicMaxIndex #-}
+    ---- | return the greatest valid array index
+    ---- should weakly dominate every
+    --basicMaxIndex ::  marr st  a -> Index rank
+    --basicMaxIndex = \ marr -> basicAddressToIndex marr $ basicMaxAddress marr
+    --{-# INLINE basicMaxIndex #-}
 
 
     -- | gives the next valid logical address
