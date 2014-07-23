@@ -69,6 +69,9 @@ instance (VGM.MVector BV.MVector elem) => VGM.MVector (BufferMut Boxed)  elem wh
         return  (BoxedBufferMut res)
   basicUnsafeRead= \(BoxedBufferMut bv) ix -> VGM.basicUnsafeRead bv ix
   basicUnsafeWrite = \(BoxedBufferMut bv ) ix val -> VGM.basicUnsafeWrite bv ix val
+
+  {-Q/todo/check fixme, do these other operations need be provided in a pass through way too?
+  or will there be no difference in the derived code perf ? -}
 --  basicUnsafeClear
 --  basicUnsafeSet
 --  basicUnsafeCopy
