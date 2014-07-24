@@ -62,6 +62,7 @@ flag lib-Werror
 library
     -- Modules exported by the library.
     exposed-modules:
+        Numerical.Matrix.Basic
         Numerical.Array.Layout
         Numerical.Array.Layout.Base
         Numerical.Array.Layout.Dense
