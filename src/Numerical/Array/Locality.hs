@@ -14,9 +14,11 @@ import Data.Data
 data  Locality = Contiguous | Strided  | InnerContiguous
   deriving (Eq,Show,Read,Typeable,Data)
 
+#if defined(__GLASGOW_HASKELL__) && ( __GLASGOW_HASKELL__ >= 707) && ( __GLASGOW_HASKELL__ < 709)
 deriving instance Typeable 'Strided
 deriving instance Typeable 'InnerContiguous
 deriving instance  Typeable 'Contiguous
+#endif
 
 #if defined(__GLASGOW_HASKELL__) && ( __GLASGOW_HASKELL__ >= 707)
 type family LocalityMax (a :: Locality) (b :: Locality)  :: Locality where

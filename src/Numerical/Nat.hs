@@ -23,9 +23,10 @@ type LitNat = TL.Nat
 data Nat = S !Nat  | Z
     deriving (Eq,Show,Read,Typeable,Data)
 
-
+#if defined(__GLASGOW_HASKELL__) && ( __GLASGOW_HASKELL__ >= 707) && ( __GLASGOW_HASKELL__ < 709)
 deriving instance Typeable 'Z
 deriving instance Typeable 'S
+#endif
 
 {-
 use closed type families when available,
