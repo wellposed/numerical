@@ -27,5 +27,6 @@ import Numerical.Array.Mutable as Mut
 --                    ,Array mvecR (S Z) a
 --                    ,Num a)=>
 
+--naiveDotProduct
 
 

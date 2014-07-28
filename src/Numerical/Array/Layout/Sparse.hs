@@ -283,6 +283,12 @@ class Layout form rank  => SparseLayout form  (rank :: Nat)  | form -> rank wher
         \ form shp ->
           basicToSparseAddress form shp >>=
             (\x ->  fmap (basicToSparseIndex form)  $  basicNextSparseAddress form x)
+{-
+THIS IS WRONGGGG WWRONGGG WRONGG.
+
+needs to yield a valid Index > (or maybe >=) the proposed index
+-}
+
 
     {-# MINIMAL basicToSparseAddress, basicToSparseIndex, basicNextSparseAddress
       ,maxSparseAddress, minSparseAddress #-}
