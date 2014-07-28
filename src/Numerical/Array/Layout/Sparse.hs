@@ -284,9 +284,9 @@ class Layout form rank  => SparseLayout form  (rank :: Nat)  | form -> rank wher
           basicToSparseAddress form shp >>=
             (\x ->  fmap (basicToSparseIndex form)  $  basicNextSparseAddress form x)
 {-
-THIS IS WRONGGGG WWRONGGG WRONGG.
-
-needs to yield a valid Index > (or maybe >=) the proposed index
+next sparse index needs to succeed even if the proposed current index Does not
+  have a valid value.  Should return Maybe (Index,Address), and when != Nothing,
+  should yield the minimal valid index strictly greater than the proposed index
 -}
 
 
