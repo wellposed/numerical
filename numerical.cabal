@@ -78,6 +78,7 @@ library
         Numerical.Nat
         Numerical.Array.Mutable
         Numerical.Array.Pure
+        Numerical.Array.Range
         Numerical.Array.Locality
         Numerical.Array.Address
         Numerical.Internal.Data.Vector.Pair

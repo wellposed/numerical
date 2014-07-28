@@ -18,7 +18,7 @@ note, the contents of this module will probably be completely relocated elsewher
 at some point
 
 -}
-import Numerical.Array.Mutable as Mut
+--import Numerical.Array.Mutable as Mut
 
 
 --cleverDotProduct  :: (Address ~ MArrayAddress mvecL
