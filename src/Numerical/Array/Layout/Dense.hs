@@ -26,8 +26,8 @@ module Numerical.Array.Layout.Dense(
   ,Row
   ,Column
   ,Direct
-  ,Address(..)
-  ,UniformAddressInterval(..) ) where
+  ,module Numerical.Array.Address
+   ) where
 
 
 

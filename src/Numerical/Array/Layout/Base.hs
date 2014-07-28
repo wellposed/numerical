@@ -35,6 +35,8 @@ module Numerical.Array.Layout.Base(
   ,shapeCompareRightToLeft
   ,shapeCompareLeftToRight
   ,module Numerical.Array.Storage
+  ,module Numerical.Array.Locality
+  ,module Numerical.Array.Shape
 
 ) where
 
@@ -43,7 +45,7 @@ module Numerical.Array.Layout.Base(
 import Numerical.Nat
 --import Numerical.Array.Address
 import Numerical.Array.Locality
-import Numerical.Array.Shape as S
+import Numerical.Array.Shape  -- as S
 import Numerical.Array.Storage
 
 --import Data.Typeable
@@ -101,11 +103,11 @@ majorCompareRightToLeft _ b = b
 
 {-# INLINE shapeCompareLeftToRight #-}
 shapeCompareLeftToRight :: (F.Foldable (Shape r),A.Applicative (Shape r), Ord a) => Shape r a -> Shape r a -> Ordering
-shapeCompareLeftToRight =   \  ls rs -> foldl majorCompareLeftToRight EQ  $ S.map2 compare ls rs
+shapeCompareLeftToRight =   \  ls rs -> foldl majorCompareLeftToRight EQ  $ map2 compare ls rs
 
 {-# INLINE shapeCompareRightToLeft #-}
 shapeCompareRightToLeft :: ((F.Foldable (Shape r)),A.Applicative (Shape r), Ord a) => Shape r a -> Shape r a -> Ordering
-shapeCompareRightToLeft =   \  ls rs -> foldl majorCompareRightToLeft EQ  $ S.map2 compare ls rs
+shapeCompareRightToLeft =   \  ls rs -> foldl majorCompareRightToLeft EQ  $ map2 compare ls rs
 
 
 data family Format  lay (contiguity:: Locality)  (rank :: Nat) rep

@@ -49,13 +49,14 @@ module Numerical.Array.Layout.Sparse(
       ,FormatInnerContiguousCompressedSparseColumn)
   ,ContiguousCompressedSparseMatrix(..)
   ,InnerContiguousCompressedSparseMatrix(..)
+  ,module Numerical.Array.Layout.Base
   ) where
 
 import Data.Data
 import Data.Bits (unsafeShiftR)
 import Control.Applicative
 import Numerical.Array.Layout.Base
-import Numerical.Array.Shape
+--import Numerical.Array.Shape
 import Numerical.Array.Address
 import qualified  Data.Vector.Generic as V
 
@@ -273,17 +274,17 @@ class Layout form rank  => SparseLayout form  (rank :: Nat)  | form -> rank wher
         form -> address -> Shape rank Int
 
 
-    basicNextAddress :: (address ~ SparseLayoutAddress form)=>
+    basicNextSparseAddress :: (address ~ SparseLayoutAddress form)=>
         form  -> address -> Maybe  address
 
-    {-# INLINE basicNextIndex #-}
-    basicNextIndex :: form  -> Shape rank Int -> Maybe  (Shape rank Int)
-    basicNextIndex =
+    {-# INLINE basicNextSparseIndex #-}
+    basicNextSparseIndex :: form  -> Shape rank Int -> Maybe  (Shape rank Int)
+    basicNextSparseIndex =
         \ form shp ->
           basicToSparseAddress form shp >>=
-            (\x ->  fmap (basicToSparseIndex form)  $  basicNextAddress form x)
+            (\x ->  fmap (basicToSparseIndex form)  $  basicNextSparseAddress form x)
 
-    {-# MINIMAL basicToSparseAddress, basicToSparseIndex, basicNextAddress
+    {-# MINIMAL basicToSparseAddress, basicToSparseIndex, basicNextSparseAddress
       ,maxSparseAddress, minSparseAddress #-}
 
 
@@ -427,8 +428,8 @@ instance V.Vector (BufferPure rep) Int
         \ (FormatDirectSparseContiguous _ shift lut) (Address addr) ->
             ((lut V.! addr ) - shift) :* Nil
 
-      {-# INLINE basicNextAddress #-}
-      basicNextAddress =
+      {-# INLINE basicNextSparseAddress #-}
+      basicNextSparseAddress =
         \ (FormatDirectSparseContiguous _ _ lut) (Address addr) ->
           if  addr >= (V.length lut) then Nothing else Just  (Address (addr+1))
 
@@ -565,8 +566,8 @@ we make the VERY strong assumption that no illegal addresses are ever made!
 note that for very very small sparse matrices, the branching will have some
 overhead, but in general branch prediction should work out ok.
 -}
-      {-# INLINE basicNextAddress #-}
-      basicNextAddress =
+      {-# INLINE basicNextSparseAddress #-}
+      basicNextSparseAddress =
          \ (FormatContiguousCompressedSparseRow
             (FormatContiguousCompressedSparseInternal  _ _
               columnIndex rowStartIndex))

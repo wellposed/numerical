@@ -24,6 +24,8 @@ module Numerical.Array.Mutable(
     ,Boxed
     ,Unboxed
     ,Storable
+    --,module Numerical.Array.Layout
+    ,module Numerical.Array.Shape
     ) where
 
 import Control.Monad.Primitive ( PrimMonad, PrimState )
@@ -34,9 +36,9 @@ import Numerical.Array.Shape
 --import Numerical.Nat
 --import GHC.Prim(Constraint)
 import Numerical.World
-
+import Numerical.Array.Range
 --import Numerical.Array.Storage(Boxed,Unboxed,Stored)
-import Numerical.Array.Locality
+--import Numerical.Array.Locality
 
 import qualified Numerical.Array.Pure as A
 import qualified Numerical.Array.Storage as S
@@ -348,10 +350,10 @@ class A.PureArray (ArrPure marr)  rank a => Array marr (rank:: Nat)  a | marr ->
     basicShape :: marr st    a -> Index rank
 
     -- | 'basicCardinality' reports the number of manifest addresses/entries are
-    -- in the array.
+    -- in the array in a given address sub range.
     -- This is useful for determining when to switch from a recursive algorithm
     -- to a direct algorithm.
-    basicCardinality :: marr st a -> Int
+    basicCardinality ::(address ~ MArrayAddress marr) => marr st a -> Range address  -> Int
 
     --basicUnsafeRead  :: PrimMonad m => marr  (PrimState m)   a -> Shape rank Int -> m (Maybe a)
 
@@ -363,11 +365,13 @@ class A.PureArray (ArrPure marr)  rank a => Array marr (rank:: Nat)  a | marr ->
     -- | 'basicMutableAddressToIndex' assumes you only give it legal manifest addresses
     basicAddressToIndex :: (address ~ MArrayAddress marr) =>marr s   a -> address ->    Index rank
 
-    -- |  return the smallest valid logical address
-    basicMinAddress :: (address ~ MArrayAddress marr)=> marr st   a ->  address
+    -- |  return the smallest and largest valid logical address
+    basicAddressRange :: (address ~ MArrayAddress marr)=> marr st   a ->  Maybe (Range address)
 
-    --  | return the largest valid logical adress
-    basicMaxAddress :: (address ~ MArrayAddress marr)=> marr st   a ->  address
+
+
+    ----  | return the largest valid logical adress
+    --basicMaxAddress :: (address ~ MArrayAddress marr)=> marr st   a ->  address
 
     -- |  return the smallest valid array index
     --  should be weakly dominated by every other valid index
@@ -404,8 +408,8 @@ class A.PureArray (ArrPure marr)  rank a => Array marr (rank:: Nat)  a | marr ->
     -- that contains @addr@. This will be a singleton when the "maximal uniform stride interval"
     -- containing @addr@ has strictly less than 3 elements. Otherwise will return an Address range
     -- covering the maximal interval that will have cardinality at least 3.
-    basicAddressRegion ::(address ~ MArrayAddress marr)
-          => marr st a ->address ->  UniformAddressInterval address
+    basicLocalAffineAddressRegion ::(address ~ MArrayAddress marr)
+          => marr st a ->address ->  AffineRange address
 
 
     -- | this doesn't quite fit in this class, but thats ok, will deal with that later
@@ -445,7 +449,7 @@ class A.PureArray (ArrPure marr)  rank a => Array marr (rank:: Nat)  a | marr ->
     -- called directly, use 'unsafeWrite' instead.
     basicUnsafeSparseWrite :: PrimMonad m => marr (PrimState m) a ->
       Index rank -> m( Maybe (a -> m ()))
-
+-- this might get axed
 
 
 {-
