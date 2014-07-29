@@ -86,7 +86,9 @@ data instance Format DirectSparse  Contiguous (S Z) rep =
 {-
 for some listings of the design space of Sparse matrices
 as found in other tools,
-see < https://software.intel.com/sites/products/documentation/doclib/mkl_sa/11/mklman/GUID-9FCEB1C4-670D-4738-81D2-F378013412B0.htm >
+see < https://software.intel.com/sites/products/documentation/hpc/mkl/mklman/index.htm >
+and then navigate to the section  "Sparse Matrix Storage Formats"  within
+"BLAS and Sparse BLAS Routines"
 
 <  http://netlib.org/linalg/html_templates/node90.html > is also pretty readable
 
