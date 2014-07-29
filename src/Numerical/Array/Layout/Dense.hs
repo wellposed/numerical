@@ -339,12 +339,12 @@ FIXME / TODO / AUDIT THIS HARD
     -- that it will only be invoked on strided/discontiguous dense formats
     -- this
     basicNextAddress :: form  -> Address ->  Address
-    basicNextAddress =  \form shp ->  basicToAddress form $
+    basicNextAddress =  \form shp -> snd
       (basicNextIndex form  $ basicToIndex form  shp )
     {-# INLINE basicNextAddress #-}
 
-    basicNextIndex :: form  -> Shape rank Int ->Shape rank Int
-    basicNextIndex  = \form shp ->  basicToIndex form  $
+    basicNextIndex :: form  -> Shape rank Int ->(Shape rank Int,Address)
+    basicNextIndex  = \form shp -> (\ addr ->( basicToIndex form addr, addr) ) $!
        (basicNextAddress form  $ basicToAddress form  shp )
     {-# INLINE  basicNextIndex #-}
 
@@ -420,7 +420,7 @@ instance DenseLayout (Format Direct Strided (S Z) rep)  (S Z)  where
     basicNextAddress = \ (FormatDirectStrided _ strid) addr ->  addr + Address strid
 
     {-# INLINE basicNextIndex#-}
-    basicNextIndex =  \ _  (i:* Nil ) ->  (i + 1 :* Nil )
+    basicNextIndex =  \ form  (i:* Nil ) ->  (\ix -> (ix,basicToAddress form ix)) $! (i + 1 :* Nil )
 
 
     {-# INLINE basicToIndex#-}
@@ -481,8 +481,9 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape
                          map2 (*) (strideFormRowInnerContig rs ) tup
 
     {-# INLINE basicNextIndex #-}
-    basicNextIndex = \ (FormatRowInnerContiguous shape _) ix ->
+    basicNextIndex = \ form@(FormatRowInnerContiguous shape _) ix ->
         --S.map snd $!
+      (\index -> (index,basicToAddress form  index)) $!
         flip evalState 1 $
            flip traverse  ((,) <$> ix <*> shape) $
               \(ixv ,shpv   )->
@@ -517,8 +518,8 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape 
           S.foldl'  (+) 0 $! map2 (*) (strideFormRowStrided rs ) tup
 
     {-# INLINE basicNextIndex #-}
-    basicNextIndex = \ (FormatRowStrided shape _) ix ->
-        --S.map snd $!
+    basicNextIndex = \ form@(FormatRowStrided shape _) ix ->
+      (\index -> (index,basicToAddress form index)) $!
         flip evalState 1 $
            flip traverse  ((,) <$> ix <*> shape) $
               \(ixv ,shpv   )->
@@ -584,8 +585,9 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape 
     basicToAddress    =   \ form tup -> let !strider =   strideFormColumnInnerContig form
                                 in Address $! foldl' (+) 0  $! map2 (*) strider tup
     {-# INLINE basicNextIndex #-}
-    basicNextIndex = \ (FormatColumnInnerContiguous shape _) ix ->
+    basicNextIndex = \ form@(FormatColumnInnerContiguous shape _) ix ->
         --S.map snd $!
+      (\index -> (index,basicToAddress form index)) $!
         flip evalState 1 $
            flip (S.backwards traverse)  ((,) <$> ix <*> shape) $
               \(ixv ,shpv   )->
@@ -615,8 +617,9 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape
                                 in Address $! foldl' (+) 0  $! map2 (*) strider tup
 
     {-# INLINE basicNextIndex #-}
-    basicNextIndex = \ (FormatColumnStrided shape _) ix ->
+    basicNextIndex = \ form@(FormatColumnStrided shape _) ix ->
         --S.map snd $!
+      (\index -> (index,basicToAddress form index)) $!
         flip evalState 1 $
            flip (S.backwards traverse)  ((,) <$> ix <*> shape) $
               \(ixv ,shpv   )->

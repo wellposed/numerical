@@ -319,11 +319,14 @@ type family MutableArrayContiguous (marr :: * -> * -> *) :: * ->  * -> *
 type instance  MutableArrayContiguous (MArray world rep layout locality rank)= MArray world rep layout Contiguous rank
 #endif
 
+-- | Sadly `ArrMutable` will have to have instances written by hand for now
+-- May later migrate the freeze / thaw machinery to Array.Phased, but lets
+type  family  ArrMutable ( arr :: * -> * )  :: * -> * -> *
 
 class A.PureArray (ArrPure marr)  rank a => Array marr (rank:: Nat)  a | marr -> rank  where
 
     type   ArrPure (marr :: * -> * -> * ) :: * -> *
-    type   ArrMutable ( arr :: * -> * )  :: * -> * -> *
+
 
     -- the type of the underlying storage buffer
     type MutableArrayBuffer marr :: * -> * -> *
@@ -396,9 +399,10 @@ class A.PureArray (ArrPure marr)  rank a => Array marr (rank:: Nat)  a | marr ->
 
     -- I think the case could be made for a basicPreviousAddress opeeration
 
-    -- | gives the next valid array index
-    -- undefined on invalid indices and the greatest valid index
-    basicSparseNextIndex :: marr st  a -> Index rank  -> Maybe (Index rank)
+    -- | gives the next valid array index, the least valid index that is
+    -- or
+    basicSparseNextIndex ::(address ~ MArrayAddress marr)=>
+         marr st  a -> Index rank  -> Maybe (Index rank, address)
 
 
 
