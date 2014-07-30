@@ -310,28 +310,68 @@ next sparse index needs to succeed even if the proposed current index Does not
 -- edward kmett's structured lib
 
 
-
+{-
 -- Assuming @l <= h@. Returns @h@ if the predicate is never @True@ over @[l..h)@
---searchUp :: (Int -> Bool) -> Int -> Int -> Int
---searchUp p = go where
---  go l h
---    | l == h    = l
---    | p m       = go l m
---    | otherwise = go (m+1) h
---    where hml = h - l
---          m = l + unsafeShiftR hml 1 + unsafeShiftR hml 6
---{-# INLINE searchUp #-}
+-- requires p be a "monotonic" predicate  (FFFFFTTTTT)
+-}
+bsearchUp :: (Int -> Bool) -> Int -> Int -> Int
+bsearchUp p = go where
+  go l h
+    | l == h    = l
+    | p m       = go l m
+    | otherwise = go (m+1) h
+    where hml = h - l
+          m = l + unsafeShiftR hml 1 + unsafeShiftR hml 6
+{-# INLINE bsearchUp #-}
+{-
+ Assuming @l <= h@. Returns @l@ if the predicate is never @True@ over @(l..h]@
+  assumes predicate p is monotonic decreasing TTTTTFFFFF
+  -}
+bsearchDown :: (Int -> Bool) -> Int -> Int -> Int
+bsearchDown p = go where
+  go l h
+    | l == h    = l
+    | p (m+1)       = go (m+1) h
+    | otherwise = go l m
+    where hml = h - l
+          m = l + unsafeShiftR hml 1 + unsafeShiftR hml 6
+{-# INLINE bsearchDown #-}
 
----- Assuming @l <= h@. Returns @l@ if the predicate is never @True@ over @(l..h]@
---searchDown :: (Int -> Bool) -> Int -> Int -> Int
---searchDown p = go where
---  go l h
---    | l == h    = l
---    | p (m+1)       = go (m+1) h
---    | otherwise = go l m
---    where hml = h - l
---          m = l + unsafeShiftR hml 1 + unsafeShiftR hml 6
---{-# INLINE searchDown #-}
+{-
+-- Assuming @l <= h@. Returns @h@ if the predicate is never @True@ over @[l..h)@
+-- requires p be a "monotonic" predicate  (FFFFFTTTTT)
+-- does a linear scan on the first constant number of slots
+(for now 97 because i had to pick a number thats ~ log MaxInt)
+and then falls back to binary search.
+Meant to have O(1) average case, O(log n) worst case
+-}
+basicHybridSearchUp :: (Int -> Bool ) -> Int -> Int -> Int
+basicHybridSearchUp  p = goCaseMe where
+  goCaseMe l h  | (h-l <= magicConstant) || p magicConstant
+                  {- either the range is short, OR
+                    we know match happens in the first magicConstant size subrange
+                  -}
+                    = linearSearchUp p l (min h magicConstant)
+                | otherwise = bsearchUp p magicConstant h
+{-# INLINE  basicHybridSearchUp#-}
+
+
+basicHybridSearchDown :: (Int -> Bool)-> Int -> Int -> Int
+basicHybridSearchDown  p = goCaseMe where
+  goCaseMe l h  | (h-l <= magicConstant)  || p (h- magicConstant)
+                {-  either the range is short, OR
+                    we know match happens in the first magicConstant size subrange
+                 -}
+                    = linearSearchDown p  (max l (h-magicConstant)) h
+                | otherwise = bsearchDown p l (h-magicConstant)
+{-# INLINE basicHybridSearchDown#-}
+
+{-
+i chose 97 because it seemed like a number thats ~ log MaxInt always (within 4x)
+And is a range that should stay in L1 cache sizes for most purposes
+-}
+magicConstant :: Int
+magicConstant = 97
 
 
 -- Assuming @l <= h@. Returns @h@ if the predicate is never @True@ over @[l..h)@
