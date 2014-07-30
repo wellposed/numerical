@@ -54,6 +54,7 @@ import qualified Data.Traversable as T
 import Control.NumericalApplicative.Backwards
 
 import Numerical.Nat
+import qualified Data.Monoid as Monoid
 
 import Prelude hiding  (map,foldl,foldr,init,scanl,scanr,scanl1,scanr1,foldl1,foldr1)
 
@@ -303,6 +304,9 @@ instance ( F.Foldable (Shape (S r)) )=> F.Foldable (Shape (S (S r))) where
     {-# INLINE foldl1 #-}
     {-# INLINE foldr1 #-}
 
+instance (Monoid.Monoid a, A.Applicative (Shape n))=> Monoid.Monoid (Shape n a) where
+  mempty = A.pure Monoid.mempty
+  mappend = \ a b -> A.pure Monoid.mappend A.<*> a A.<*> b
 
 
 
