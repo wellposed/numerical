@@ -226,6 +226,16 @@ modify :: (Monad m) => (s -> s) -> StateT s m ()
 modify = \f ->  state $ \s -> ((), f s)
 {-# INLINE modify #-}
 
+-- | A variant of 'modify' in which the computation is strict in the
+-- new state.
+--
+-- * @'modify'' f = 'get' >>= (('$!') 'put' . f)@
+modify' :: (Monad m) => (s -> s) -> StateT s m ()
+modify' f = do
+    s <- get
+    put $! f s
+{-# INLINE  modify' #-}
+
 -- | Get a specific component of the state, using a projection function
 -- supplied.
 --

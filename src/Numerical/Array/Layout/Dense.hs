@@ -377,7 +377,7 @@ computeStrideShape = \trvse shp  ->
                       -- dimensions
                           \ val ->
                                do accum <- get ;
-                                  put (val * accum) ;
+                                  put $! (val * accum) ;
                                   return accum;
 
 
@@ -461,7 +461,7 @@ TODO  AUDIT
                       \ currentStride ->
                              do remainderIx <- get ;
                                 let (!qt,!rm)= quotRem remainderIx currentStride
-                                put rm
+                                put  $! rm
                                 return  qt;
 
 
@@ -489,7 +489,7 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape
               \(ixv ,shpv   )->
                   do  carry <-get
                       let (newCarry,modVal)=divMod (carry + ixv) shpv
-                      put newCarry
+                      put $! newCarry
                       return modVal
 
 
@@ -499,7 +499,7 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape
                               \ currentStride ->
                                      do remainderIx <- get ;
                                         let (!qt,!rm)= quotRem remainderIx currentStride
-                                        put rm
+                                        put $! rm
                                         return  qt;
 
 
@@ -525,7 +525,7 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape 
               \(ixv ,shpv   )->
                   do  carry <-get
                       let (newCarry,modVal)=divMod (carry + ixv) shpv
-                      put newCarry
+                      put $! newCarry
                       return modVal
 
 
@@ -535,7 +535,7 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape 
                               \ currentStride ->
                                      do remainderIx <- get ;
                                         let (!qt,!rm)= quotRem remainderIx currentStride
-                                        put rm
+                                        put $!  rm
                                         return  qt;
 
 
@@ -569,7 +569,7 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape 
                               \ currentStride ->
                                      do remainderIx <- get ;
                                         let (!qt,!rm)= quotRem remainderIx currentStride
-                                        put rm
+                                        put $!  rm
                                         return  qt;
 
 
@@ -593,7 +593,7 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape 
               \(ixv ,shpv   )->
                   do  carry <-get
                       let (newCarry,modVal)=divMod (carry + ixv) shpv
-                      put newCarry
+                      put $! newCarry
                       return modVal
 
 
@@ -603,7 +603,7 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape 
                               \ currentStride ->
                                      do remainderIx <- get ;
                                         let (!qt,!rm)= quotRem remainderIx currentStride
-                                        put rm
+                                        put $! rm
                                         return  qt;
 
 
@@ -625,7 +625,7 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape
               \(ixv ,shpv   )->
                   do  carry <-get
                       let (newCarry,modVal)=divMod (carry + ixv) shpv
-                      put newCarry
+                      put $! newCarry
                       return modVal
 
 
@@ -635,7 +635,7 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape
                               \ currentStride ->
                                      do remainderIx <- get ;
                                         let (!qt,!rm)= quotRem remainderIx currentStride
-                                        put rm
+                                        put $! rm
                                         return  qt;
 
 
