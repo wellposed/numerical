@@ -119,6 +119,9 @@ data family Format  lay (contiguity:: Locality)  (rank :: Nat) rep
 type family FormatStorageRep ( a:: * ) :: *
 type instance FormatStorageRep (Format lay ctg rnk rep)= rep
 --doing an open type family for this for now, might move to closed later
+--Might want to generalize it to just give the pure/impure vector type directly,
+--explore later
+
 
 
 --type family FormatStorageRep form  where
@@ -144,6 +147,8 @@ class (Traversable (Shape rank), Applicative (Shape rank))=>Layout form  (rank :
 
 --- TODO / AUDIT ME, does this work for morton order or hilbert?!
 -- I THINK SO, but not 100%
+-- hilbert might require Shape extent info
+-- but morton wonthave this problem
     basicCompareIndex :: p form-> Shape rank Int ->Shape rank Int -> Ordering
 
 
