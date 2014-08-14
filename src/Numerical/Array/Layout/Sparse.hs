@@ -279,12 +279,10 @@ class Layout form rank  => SparseLayout form  (rank :: Nat)  | form -> rank wher
     basicNextSparseAddress :: (address ~ SparseLayoutAddress form)=>
         form  -> address -> Maybe  address
 
-    {-# INLINE basicNextSparseIndex #-}
-    basicNextSparseIndex :: form  -> Shape rank Int -> Maybe  (Shape rank Int)
-    basicNextSparseIndex =
-        \ form shp ->
-          basicToSparseAddress form shp >>=
-            (\x ->  fmap (basicToSparseIndex form)  $  basicNextSparseAddress form x)
+    basicNextSparseIndex :: (address ~ SparseLayoutAddress form)=>
+          form  -> Shape rank Int-> Maybe address  -> Maybe  ((Shape rank Int), address)
+    basicNextSparseIndex = error "no worky"
+
 {-
 next sparse index needs to succeed even if the proposed current index Does not
   have a valid value.  Should return Maybe (Index,Address), and when != Nothing,
@@ -293,7 +291,9 @@ next sparse index needs to succeed even if the proposed current index Does not
 
 
     {-# MINIMAL basicToSparseAddress, basicToSparseIndex, basicNextSparseAddress
-      ,maxSparseAddress, minSparseAddress #-}
+      ,maxSparseAddress, minSparseAddress  #-}
+      --FIXME add basicNextSparseIndex back into the minimal pragma and
+      -- KILL the default defn
 
 
 
@@ -482,6 +482,14 @@ instance V.Vector (BufferPure rep) Int
           if  addr >= (V.length lut) then Nothing else Just  (Address (addr+1))
 
 
+      --{-# INLINE basicNextSparseIndex #-}
+      --basicNextSparseIndex =
+      --  \ (FormatDirectSparseContiguous size shift lut) (ix:*Nil) mebeAddress ->
+      --    if  ix >= size then Nothing
+      --      else case mebeAddress of
+      --        Nothing -> _noHint
+      --        Just (Address adr)-> _hinted
+
 ------------
 ------------
 
@@ -513,7 +521,8 @@ instance  (V.Vector (BufferPure rep) Int )
       {-# INLINE minSparseAddress #-}
       minSparseAddress =
         \(FormatContiguousCompressedSparseRow
-            (FormatContiguousCompressedSparseInternal  y_row_range x_col_range    columnIndex rowStartIndex)) ->
+            (FormatContiguousCompressedSparseInternal  y_row_range x_col_range
+                                                        columnIndex rowStartIndex)) ->
                 if ( y_row_range < 1  || x_col_range < 1|| (V.length columnIndex  < 1) )
                   then Nothing
                   else
@@ -527,7 +536,8 @@ instance  (V.Vector (BufferPure rep) Int )
 
                       -- for now assuming candidateRow is ALWAYS valid
                       --- haven't proven this, FIXME
-                      !candidateRow= linearSearchUp nonZeroRow 0 (y_row_range-1 )
+                      !candidateRow= {-linearSearchUp-}
+                           basicHybridSearchUp nonZeroRow 0 (y_row_range-1 )
 
 
                       {- FIXME, to get the right complexity
@@ -551,7 +561,8 @@ instance  (V.Vector (BufferPure rep) Int )
       {-# INLINE maxSparseAddress#-}
       maxSparseAddress  =
         \(FormatContiguousCompressedSparseRow
-            (FormatContiguousCompressedSparseInternal  y_row_range x_col_range    columnIndex rowStartIndex)) ->
+            (FormatContiguousCompressedSparseInternal   y_row_range x_col_range
+                                                        columnIndex rowStartIndex)) ->
                 if ( y_row_range < 1  || x_col_range < 1|| (V.length columnIndex  < 1) )
                   then Nothing
                   else
@@ -566,7 +577,8 @@ instance  (V.Vector (BufferPure rep) Int )
 
                       -- for now assuming candidateRow is ALWAYS valid
                       --- haven't proven this, FIXME
-                      !candidateRow= linearSearchDown nonZeroRow 0 (y_row_range-1 )
+                      !candidateRow= {-linearSearchDown-}
+                          basicHybridSearchDown nonZeroRow 0 (y_row_range-1 )
 
 
                       {- FIXME, to get the right complexity
@@ -590,7 +602,8 @@ instance  (V.Vector (BufferPure rep) Int )
                         Just $!
                          SparseAddress  candidateRow $! (V.length columnIndex - 1 )
 
-       -- \ (FormatContiguousCompressedSparseRow (FormatContiguousCompressedSparseInternal _ y_range
+       -- \ (FormatContiguousCompressedSparseRow
+       -- (FormatContiguousCompressedSparseInternal _ y_range
        --          columnIndex _)) ->
        --       SparseAddress (y_range - 1) (V.length columnIndex - 1 )
 
@@ -691,7 +704,8 @@ overhead, but in general branch prediction should work out ok.
 --instance  (V.Vector (BufferPure rep) Int )
 --  => SparseLayout (Format CompressedSparseRow InnerContiguous (S (S Z)) rep ) (S (S Z)) where
 
---      type SparseLayoutAddress (Format CompressedSparseRow InnerContiguous (S (S Z)) rep ) = SparseAddress
+--      type SparseLayoutAddress (Format CompressedSparseRow
+--          InnerContiguous (S (S Z)) rep ) = SparseAddress
 
 --      {-# INLINE minSparseAddress #-}
 --      minSparseAddress = \_ -> SparseAddress 0 0
@@ -748,7 +762,8 @@ overhead, but in general branch prediction should work out ok.
 --              -- slightly different logic when ix_y < range_y-1 vs == range_y-1
 --              -- because contiguous, don't need the index space shift though!
 --                       SparseAddress ix_y   <$>
---                          lookupExactRange columnIndex ix_x ((rowstartIndex V.! ix_y) - addrShift)
+--                          lookupExactRange columnIndex ix_x
+                              -- ((rowstartIndex V.! ix_y) - addrShift)
 --                            (if  ix_y < (y_range-1)
 --                              -- addr shift is for correcting from a major axis slice
 --                              then  (rowstartIndex V.! (ix_y+1) ) - addrShift
