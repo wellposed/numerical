@@ -57,67 +57,37 @@ the tentative design is to have something like
 
 you'd think that the following array type is ``right''
 but then you'll hit problems supporting
-\begin{verbatim}
-
-data MArray world rep lay (view:: Locality) rank elm where
-     MArray
-         {_marrBuffer :: {-# UNPACK #-}!(MBuffer  world rep elm)
-         ,_marrForm :: {-# UNPACK #-} !(Form lay loc rank)
-         --,_marrShift :: {-# UNPACK #-} !Address
-         }
-\end{verbatim}
-
-shift will be zero for most reps i'll ever care about, but in certain cases,
-might not be. So for now not including it, but might be needed later,
-though likely in regards to some sparse format of some sort.
-
-Omitting it for now, but may need to revisit later!
-
-For now any ``Address'' shift will need to be via the buffer
-
-One issue in the formats is ``logical'' vs ``manifest'' Address.
-
-
-we need to have ``RepConstraint'' be decoupled from the type class instances
-because we to sometimes have things that are world parametric
-
-indexing should be oblivious to locality,
-
-
-
-
-not sure where  where to put the Array versions of these operation.
-Dont need them for the alpha, but should think about an
-\begin{verbatim}
-    -- | Set all elements of the vector to the given value. This method should
-    -- not be called directly, use 'set' instead.
-    basicSet         :: PrimMonad m => marr (PrimState m)  rank  a -> a -> m ()
-
-    -- | Copy a vector. The two vectors may not overlap. This method should not
-    -- be called directly, use 'unsafeCopy' instead.
-    basicUnsafeCopy  :: PrimMonad m => marr (PrimState m)  rank a   -- ^ target
-                              -> marr (PrimState m)  rank a   -- ^ source
-                              -> m ()
-
-    -- | Move the contents of a vector. The two vectors may overlap. This method
-    -- should not be called directly, use 'unsafeMove' instead.
-    basicUnsafeMove  :: PrimMonad m => marr (PrimState m) a   -- ^ target
-                              -> v (PrimState m) a   -- ^ source
-                              -> m ()
-    basicUnsafeGrow:: PrimMonad m => v (PrimState m) a -> Int -> m (v (PrimState m) a)
-
-
-
-
-\end{verbatim}
-
-
-NB: one important assumption we'll have for now, is that every
 -}
 
+-- data MArray world rep lay (view:: Locality) rank elm where
+--      MArray
+--          {_marrBuffer :: {-# UNPACK #!(MBuffer  world rep elm)
+--          ,_marrForm :: {-# UNPACK #- } !(Form lay loc rank)
+--          --,_marrShift :: {-# UNPACK #- } !Address
+--          }
+
+
+-- shift will be zero for most reps i'll ever care about, but in certain cases,
+-- might not be. So for now not including it, but might be needed later,
+-- though likely in regards to some sparse format of some sort.
+--Omitting it for now, but may need to revisit later!
+--
+--For now any ``Address'' shift will need to be via the buffer
+--
+-- One ssue in the formats is ``logical'' vs ``manifest'' Address.
+--
+--
+--we eedto have ``RepConstraint'' be decoupled from the type class instances
+-- because we to sometimes have things that are world parametric
+--
+-- indexing should be oblivious to locality,
 
 
 
+--NB: one important assumption we'll have for now, is that every
+
+
+-- dsfdf
 --type family RepConstraint world  rep el :: Constraint
 --type instance MArrayElem
 
@@ -130,6 +100,9 @@ data instance  MArray Native rep lay locality rank st el =
           nativeBuffer  :: ! (S.BufferMut rep st el  )
           ,nativeFormat :: ! (Format lay locality rank rep)
     }
+
+
+
 
 --data instance  MArray Native Boxed layout locality rank st el =
 --  DenseMutableNativeBoxedArray {
@@ -232,81 +205,6 @@ type instance    MArrayRep (MArray world rep lay (view::Locality) rank st  el) =
 
 
 
-
-{-
-data instance MArray Native Storable lay  view
-
--}
---instance Unbox el =>  mutableArray (MArray Native Unboxed) RowMajor (S(S Z)) el
-
-
-{-
-
-Mutable (Dense) Array Builder will only have contiguous instances
-and only makes sense for dense arrays afaik
-
-BE VERY THOUGHTFUL about what instances you write, or i'll be mad
-
-
-not including the general sparse building in the first release,
-will include subsequently
--}
-
---class MutableArray marr (rank:: Nat) a => MutableArrayBuilder marr rank a where
-    --basicBuildArray:: Index rank -> b
-
-class DenseArray marr rank a => DenseArrayBuilder marr rank a where
-    basicUnsafeNew :: PrimMonad m => Index rank -> m (marr (PrimState m)   a)
-    basicUnsafeReplicate :: PrimMonad m => Index rank  -> a -> m (marr (PrimState m)  a)
-
-
-{-
-Mutable
-
--}
-
-class RectilinearArray marr rank a | marr -> rank   where
-
-    -- | @'MutableRectilinearOrientation' marr@ should equal Row or Column for any sane choice
-    -- of instance, because every MutableRectilinear instance will have a notion of
-    -- what the nominal major axix will be.
-    -- The intended use case is side condition constraints like
-    -- @'MutableRectilinearOrientation' marr~Row)=> marr -> b @
-    -- for operations where majorAxix projections are correct only for Row
-    -- major formats. Such  as Row based forward/backward substitution (triangular solvers)
-    type MutableRectilinearOrientation marr :: *
-
-    type MutableArrayDownRank  marr ( st:: * ) a
-
-
-    -- | MutableInnerContigArray is the "meet" (minimum) of the locality level of marr and InnerContiguous.
-    -- Thus both Contiguous and InnerContiguous are made InnerContiguous, and Strided stays Strided
-    -- for now this makes sense to have in the MutableRectilinear class, though that may change.
-    -- This could also be thought of as being the GLB (greatest lower bound) on locality
-    type MutableInnerContigArray (marr :: * ->  * -> *)  st  a
-
-
-
-    --type MutableArrayBuffer
-    --not implementing this .. for now
-
-    -- | @'basicSliceMajorAxis' arr (x,y)@ returns the sub array of the same rank,
-    -- with the outermost (ie major axis) dimension of arr restricted to the
-    -- (x,y) is an inclusive interval, MUST satisfy x<y , and be a valid
-    -- subinterval of the major axis of arr.
-    basicMutableSliceMajorAxis :: PrimMonad m => marr (PrimState m)  a ->
-      (Int,Int)-> m (marr (PrimState m)  a)
-    --but  should it be primmonadic? nah, tis pure!
-
-    --  |  semantically, 'basicProjectMajorAxis' arr ix, is the rank reducing version of what
-    -- basicSliceMajorAxis arr (ix,ix) would mean _if_ the (ix,ix) tuple was a legal major axis slice
-    basicMutableProjectMajorAxis :: PrimMonad m =>marr (PrimState m)  a
-        -> Int -> m (MutableArrayDownRank marr (PrimState m)  a )
-
-    -- | @'basicMutableSlice' arr ix1 ix2@  picks out the (hyper) rectangle in dimension @rank@
-    -- where ix1 is the minimal corner and ix2
-    basicMutableSlice :: PrimMonad m => marr (PrimState m)  a -> Index rank -> Index rank
-        -> m (MutableInnerContigArray marr (PrimState m)  a )
 
 
 #if defined(__GLASGOW_HASKELL__) && ( __GLASGOW_HASKELL__ >= 707)
@@ -518,75 +416,70 @@ class ( Array marr rank a, A.PureDenseArray (ArrPure marr) rank a  )=>
 
 
 
-{- -For now I shall assume everything is dense / dense structured
---- will break that assumption post alpha release
 
 
-now lets write some super generic combinators
-
-
-
-
-
-Now lets write down a bunch of really really simple examples!
-note that these example do not have the right error handling logic currently
-
-
--}
-
---Num e => matrix st  e -> invect st e -> outvect st e ->
-
---{-note needs to be modified to work with sparse arrarys -}
---generalizedMatrixDenseVectorProduct ::  forall m a mvect loc marr.
---                        (MutableArrayBuilder (mvect Direct 'Contiguous) N1 a
---                        ,(MutableArray  (mvect Direct 'Contiguous) N1 a)
---                        , MutableArray marr N2 a
---                        , Num a
---                        , PrimMonad m
---                        , MutableArray (mvect Direct loc) N1 a)=>
---    marr (PrimState m) N2 a ->  mvect Direct loc (PrimState m) N1 a ->
---       m (mvect Direct Contiguous  (PrimState m) N1 a )
---generalizedMatrixDenseVectorProduct mat vect = do
---    -- FIXME : check the dimensions match
---    (x:* y :* Nil )<- return $ basicShape mat
---    resultVector <- basicUnsafeReplicate (y:* Nil ) 0
---    basicIndexedFoldM mat step
-
---    return resultVector
---              where
---                    step =  \matval ix@(ix_x:* ix_y :* Nil )->
---                        do
---                            inVectval <- basicUnsafeRead vect (ix_x :* Nil)
---                            resVectVal <- basicUnsafeRead resVector (ix_y :* Nil)
---                            basicUnsafeWrite resVector (ix_y :* Nil) (resVectVal + (inVectval * matval))
---                            return ()
 
 {-
-note, needs to be modified to work with sparse arrays
+
+Mutable (Dense) Array Builder will only have contiguous instances
+and only makes sense for dense arrays afaik
+
+BE VERY THOUGHTFUL about what instances you write, or i'll be mad
+
+
+not including the general sparse building in the first release,
+will include subsequently
 -}
 
---generalizedMatrixOuterProduct :: forall m  a lvect rvect matv .
---        (MutableArray lvect N1 a
---        ,MutableArray rvect N1 a
---        ,MutableArray matv N2 a
---        ,PrimMonad m
---        ,Num a) => lvect (PrimState m)  a -> rvect (PrimState m)  a -> matv (PrimState m)    a -> m ()
---generalizedMatrixOuterProduct leftV rigthV matV = do
---        (x:* y :* Nil )<- return $ basicShape matV
---        -- use these x and y to check if shape matches the x and y vectors
---        -- or if theres somehow a zero dim and stop early
---        firstIx <- basicSmallestIndex matV
---        lastIx <- basicGreatestIndex matV
---        go firstIx lastIx
---        return ()
---    where
---        go :: Index N2  -> Index N2  -> m ()
---        go ix@(x:* y :* _)  lst@(xl:* yl :* _)
---            | x == xl && y==yl =  do  step x y
---            | otherwise = do step x y ; nextIx  <- basicNextIndex  matV ix ; go nextIx lst
---            where
---            --{-#INLINE #-}
---            step x y = undefined
+--class MutableArray marr (rank:: Nat) a => MutableArrayBuilder marr rank a where
+    --basicBuildArray:: Index rank -> b
+
+class DenseArray marr rank a => DenseArrayBuilder marr rank a where
+    basicUnsafeNew :: PrimMonad m => Index rank -> m (marr (PrimState m)   a)
+    basicUnsafeReplicate :: PrimMonad m => Index rank  -> a -> m (marr (PrimState m)  a)
 
 
 
+
+class RectilinearArray marr rank a | marr -> rank   where
+
+    -- | @'MutableRectilinearOrientation' marr@ should equal Row or Column for any sane choice
+    -- of instance, because every MutableRectilinear instance will have a notion of
+    -- what the nominal major axix will be.
+    -- The intended use case is side condition constraints like
+    -- @'MutableRectilinearOrientation' marr~Row)=> marr -> b @
+    -- for operations where majorAxix projections are correct only for Row
+    -- major formats. Such  as Row based forward/backward substitution (triangular solvers)
+    type MutableRectilinearOrientation marr :: *
+
+    type MutableArrayDownRank  marr ( st:: * ) a
+
+
+    -- | MutableInnerContigArray is the "meet" (minimum) of the locality level of marr and InnerContiguous.
+    -- Thus both Contiguous and InnerContiguous are made InnerContiguous, and Strided stays Strided
+    -- for now this makes sense to have in the MutableRectilinear class, though that may change.
+    -- This could also be thought of as being the GLB (greatest lower bound) on locality
+    type MutableInnerContigArray (marr :: * ->  * -> *)  st  a
+
+
+
+    --type MutableArrayBuffer
+    --not implementing this .. for now
+
+    -- | @'basicSliceMajorAxis' arr (x,y)@ returns the sub array of the same rank,
+    -- with the outermost (ie major axis) dimension of arr restricted to the
+    -- (x,y) is an inclusive interval, MUST satisfy x<y , and be a valid
+    -- subinterval of the major axis of arr.
+    basicMutableSliceMajorAxis :: PrimMonad m => marr (PrimState m)  a ->
+      (Int,Int)-> m (marr (PrimState m)  a)
+    --but  should it be primmonadic? nah, tis pure!
+
+    --  |  semantically, 'basicProjectMajorAxis' arr ix, is the rank reducing version of what
+    -- basicSliceMajorAxis arr (ix,ix) would mean _if_ the (ix,ix) tuple was a legal major axis slice
+    basicMutableProjectMajorAxis :: PrimMonad m =>marr (PrimState m)  a
+        -> Int -> m (MutableArrayDownRank marr (PrimState m)  a )
+
+    -- | @'basicMutableSlice' arr ix1 ix2@  picks out the (hyper) rectangle in dimension @rank@
+    -- where ix1 is the minimal corner and ix2
+    basicMutableSlice :: PrimMonad m => marr (PrimState m)  a -> Index rank -> Index rank
+        -> m (MutableInnerContigArray marr (PrimState m)  a )
