@@ -28,6 +28,7 @@
 module Numerical.Array.Layout.Base(
   Layout(..)
   ,Transposed
+  ,FormatStorageRep
   ,Format
   ,Locality(..)
   ,majorCompareRightToLeft
@@ -110,7 +111,15 @@ shapeCompareRightToLeft :: ((F.Foldable (Shape r)),A.Applicative (Shape r), Ord 
 shapeCompareRightToLeft =   \  ls rs -> foldl majorCompareRightToLeft EQ  $ map2 compare ls rs
 
 
+
+
 data family Format  lay (contiguity:: Locality)  (rank :: Nat) rep
+
+
+type family FormatStorageRep ( a:: * ) :: *
+type instance FormatStorageRep (Format lay ctg rnk rep)= rep
+--doing an open type family for this for now, might move to closed later
+
 
 --type family FormatStorageRep form  where
 --    FormatStorageRep (Format lay locality rank rep)= rep
@@ -297,4 +306,3 @@ I will be likely adding this the moment benchmarks validate the distinction
 
 on the
 -}
-
