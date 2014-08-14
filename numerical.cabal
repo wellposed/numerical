@@ -67,7 +67,8 @@ library
         Numerical.Array.Layout.Base
         Numerical.Array.Layout.Dense
         Numerical.Array.Layout.Sparse
-        Numerical.Array.Layout.Dense.Builder
+        --Numerical.Array.Layout.Dense.Builder
+        Numerical.Array.Layout.Builder
         Numerical.Array
         Numerical.World
         Control.NumericalMonad.State.Strict
@@ -114,6 +115,7 @@ library
                         ,transformers >= 0.3 && < 0.5
                         ,ghc-prim >=0.2 && <0.4
                         ,vector-algorithms >= 0.6.0.1 && < 0.7
+                        ,pqueue >= 1.2 && < 1.3
                          -- , quickcheck >=
 
                         -- what version constraints?
