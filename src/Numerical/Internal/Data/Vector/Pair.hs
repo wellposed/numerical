@@ -10,6 +10,7 @@ module  Numerical.Internal.Data.Vector.Pair(
     ,vUnPair
     ,MVProd(..)
     --,mvUnPair
+    ,Prod(..)
     --,mvPair
       ) where
 
