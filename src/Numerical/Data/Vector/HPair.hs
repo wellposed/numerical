@@ -1,5 +1,5 @@
 {- | This  module is pretty cool because it gives you a way to talk about
-heterogenuous
+heterogeneous representations for different columns!
 
 
 -}
@@ -17,6 +17,8 @@ module  Numerical.Data.Vector.HPair(
     ,vUnHPair
     ,MVHProd(..)
     ,HProd(..)
+    ,MutableHProdTree
+    ,TransformHProdTree
     --,mvUnPair
     --,mvPair
       ) where
