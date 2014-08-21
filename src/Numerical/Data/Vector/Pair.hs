@@ -4,7 +4,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE MultiParamTypeClasses ,FlexibleInstances  , FlexibleContexts,UndecidableInstances #-}
 
-module  Numerical.Internal.Data.Vector.Pair(
+module  Numerical.Data.Vector.Pair(
     VProd(..)
     ,vPair
     ,vUnPair

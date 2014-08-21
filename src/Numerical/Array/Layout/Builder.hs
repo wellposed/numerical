@@ -16,7 +16,7 @@ import Control.Monad.Primitive ( PrimMonad, PrimState )
 import qualified Data.Vector.Generic as VG
 --import qualified Data.Vector.Generic.Mutable as VGM
 import Numerical.Array.Layout.Base
-import Numerical.Internal.Data.Vector.Pair
+import Numerical.Data.Vector.Pair
 import Control.Monad.ST.Safe (runST)
 
 -- this is copied from the Vector 0.11 api,

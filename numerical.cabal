@@ -82,7 +82,7 @@ library
         Numerical.Array.Range
         Numerical.Array.Locality
         Numerical.Array.Address
-        Numerical.Internal.Data.Vector.Pair
+        Numerical.Data.Vector.Pair
 
     ghc-options: -Wall
     -- -ddump-simpl -ddump-to-file
@@ -162,7 +162,7 @@ Test-suite testsuite
         Numerical.Array.Address
         Control.NumericalMonad.State.Strict
         Control.NumericalApplicative.Backwards
-        Numerical.Internal.Data.Vector.Pair
+        Numerical.Data.Vector.Pair
         ------
         ------
         NumericalUnit.Shape
@@ -207,7 +207,7 @@ Test-suite testsuite-O2
         Numerical.Array.Address
         Control.NumericalMonad.State.Strict
         Control.NumericalApplicative.Backwards
-        Numerical.Internal.Data.Vector.Pair
+        Numerical.Data.Vector.Pair
         ------
         ------
         NumericalUnit.Shape
@@ -250,7 +250,7 @@ Test-suite testsuite-O2llvm
         Numerical.Array.Pure
         Numerical.Array.Locality
         Numerical.Array.Address
-        Numerical.Internal.Data.Vector.Pair
+        Numerical.Data.Vector.Pair
         Control.NumericalMonad.State.Strict
         Control.NumericalApplicative.Backwards
         ------
