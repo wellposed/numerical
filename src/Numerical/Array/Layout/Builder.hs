@@ -9,6 +9,7 @@
 {-#  LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes  #-}
 {-# LANGUAGE ScopedTypeVariables#-}
+{-# LANGUAGE DeriveFunctor #-}
 
 module Numerical.Array.Layout.Builder where
 
@@ -20,15 +21,33 @@ import Numerical.Array.Layout.Base
 import Control.Monad.ST.Safe (runST)
 import Data.Typeable
 
--- this is copied from the Vector 0.11 api,
-data Chunk v a = Chunk Int (forall m. (PrimMonad m, VG.Vector v a) => VG.Mutable v (PrimState m) a -> m ())
-  deriving (Typeable )
 
-data BatchInit v rank a = BatchInit {batchInitSize :: !Int  -- this should be Word not Int
-                                ,batchInitIndices :: !(Chunk v (Shape rank Int))
-                                ,batchInitValues:: !(Chunk v a)
-                              }
+
+data BatchInit  rank a = BatchInit    { batchInitSize :: !Int
+             ,batchInitKV :: !(Either [(Shape rank Int,a)]
+                                      (IntFun (Shape rank Int, a))  )   }
             deriving (Typeable)
+newtype IntFun a = Ifun  (forall m. (PrimMonad m,Functor m )=>  Int -> m a )
+-- This may change substantially in a future release, but for now
+-- acts like
+            deriving (Typeable)
+
+instance  Functor IntFun  where
+  fmap f (Ifun g) = (Ifun (\x-> fmap f $ g x  ))
+
+
+instance Functor (BatchInit  rank) where
+  fmap = \f bival ->
+              case  bival of
+                (BatchInit size (Left ls))->
+                       BatchInit size (Left (Prelude.map   (\(ix,val)-> (ix, f val)) ls  ))
+                (BatchInit size (Right gfun))->
+                      BatchInit size (Right  $ fmap  (\(ix,val)-> (ix, f val)) gfun  )
+
+
+
+-- batchInit size should be Word rather than Int for size, but Vector is lame like that
+
 
 {-
 ChoiceT from monad lib is tempting
@@ -44,14 +63,14 @@ class Layout form (rank::Nat) => LayoutBuilder form (rank::Nat) | form -> rank w
   buildFormatM :: (store~FormatStorageRep form,VG.Vector (BufferPure store) Int
       ,VG.Vector (BufferPure store) a,PrimMonad m)=>
          Shape rank Int -> proxy form -> a
-         -> (Maybe (BatchInit (BufferPure store) rank a) )
+         -> (Maybe (BatchInit  rank a) )
          ->m (form, BufferMut store (PrimState m) a )
 
 
 buildFormatPure:: forall store form rank proxy m  a. (LayoutBuilder form (rank::Nat),store~FormatStorageRep form,VG.Vector (BufferPure store) Int
       ,VG.Vector (BufferPure store) a, Monad m ) =>
      Shape rank Int -> proxy form -> a
-         -> (Maybe (BatchInit (BufferPure store) rank a) )
+         -> (Maybe (BatchInit  rank a) )
          ->m (form, BufferPure store  a )
 buildFormatPure shape prox defaultValue builder =
   do  res@(!_,!_)<-return $! theComputation
