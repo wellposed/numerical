@@ -34,9 +34,10 @@ newtype IntFun a = Ifun  (forall m. (PrimMonad m,Functor m )=>  Int -> m a )
 
 instance  Functor IntFun  where
   fmap f (Ifun g) = (Ifun (\x-> fmap f $ g x  ))
-
+  {-# INLINE fmap #-}
 
 instance Functor (BatchInit  rank) where
+  {-# INLINE fmap  #-}
   fmap = \f bival ->
               case  bival of
                 (BatchInit size (Left ls))->
