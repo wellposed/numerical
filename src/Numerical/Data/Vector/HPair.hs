@@ -1,7 +1,7 @@
 {- | This  module is pretty cool because it gives you a way to talk about
 heterogeneous representations for different columns!
 
-
+might be replaced with an HList of Vectors aapproach
 -}
 
 

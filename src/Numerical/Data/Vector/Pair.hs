@@ -1,4 +1,14 @@
 
+{- | This  module is pretty cool because it gives you a way to talk about
+open struct of arrays style vectors
+
+might be replaced with an HList of Vectors approach
+
+
+-}
+
+
+
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE DataKinds #-}
