@@ -1,5 +1,3 @@
-
-
 {- |  Comments for this modules
 
 
@@ -20,6 +18,9 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE StandaloneDeriving#-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-#LANGUAGE UndecidableInstances #-}
+
 #if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
  {-# LANGUAGE AutoDeriveTypeable #-}
 #endif
@@ -31,6 +32,7 @@ module Numerical.Array.Layout.Base(
   ,FormatStorageRep
   ,Format
   ,Locality(..)
+  ,TaggedIndex(..)
   ,majorCompareRightToLeft
   ,majorCompareLeftToRight
   ,shapeCompareRightToLeft
@@ -54,7 +56,6 @@ import Control.Applicative as A
 
 
 --import Control.NumericalMonad.State.Strict
-
 import qualified Data.Foldable as F
 
 import Prelude hiding (foldr,foldl,map,scanl,scanr,scanl1,scanr1)
@@ -132,6 +133,18 @@ type instance FormatStorageRep (Format lay ctg rnk rep)= rep
 
 type family  Transposed form
 
+-- | this is kinda a hack
+newtype TaggedIndex (form :: *) (rank::Nat) = TaggedIndex {unTagIndex:: Shape rank Int }
+
+
+instance Eq (Shape rank Int)=> Eq (TaggedIndex f rank) where
+  (==) l r =  (==) (unTagIndex l) (unTagIndex r )
+instance Show (Shape rank Int) => Show (TaggedIndex f rank) where
+  show (TaggedIndex ix) =  "TaggedIndex (" ++ show ix ++ " )"
+
+
+instance forall form  rank . (Eq (Shape rank Int),Layout form rank) => Ord (TaggedIndex form rank) where
+  compare left right = basicCompareIndex (Proxy:: Proxy form ) (unTagIndex left) (unTagIndex right)
 
 
 
