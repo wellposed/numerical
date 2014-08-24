@@ -10,16 +10,23 @@
 {-# LANGUAGE RankNTypes  #-}
 {-# LANGUAGE ScopedTypeVariables#-}
 {-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE FlexibleInstances #-}
+
 
 module Numerical.Array.Layout.Builder where
 
 import Control.Monad.Primitive ( PrimMonad, PrimState )
 import qualified Data.Vector.Generic as VG
---import qualified Data.Vector.Generic.Mutable as VGM
+import qualified Data.Vector.Generic.Mutable as VGM
 import Numerical.Array.Layout.Base
+import  Numerical.Array.Layout.Dense as Dense
+--import Numerical.Array.Layou.Sparse as Sparse
 --import Numerical.Data.Vector.Pair
 import Control.Monad.ST.Safe (runST)
 import Data.Typeable
+import qualified  Data.Foldable as F
+import  qualified Data.Traversable as T
+import  qualified Control.Applicative as A
 
 
 
@@ -27,6 +34,7 @@ data BatchInit  rank a = BatchInit    { batchInitSize :: !Int
              ,batchInitKV :: !(Either [(Shape rank Int,a)]
                                       (IntFun (Shape rank Int, a))  )   }
             deriving (Typeable)
+
 newtype IntFun a = Ifun  (forall m. (PrimMonad m,Functor m )=>  Int -> m a )
 -- This may change substantially in a future release, but for now
 -- acts like
@@ -54,12 +62,18 @@ instance Functor (BatchInit  rank) where
 ChoiceT from monad lib is tempting
 as is one of the ListT done right
 Bundle from Vector 0.11 and Stream from 0.10 are both alluring too
+
+but all of them make things complicated,
+punt for now
+
+
+ALso: I may want/need to distinguish sparse vs dense builders
+and put them into different classes, punting that for now
 -}
 
 
 
 class Layout form (rank::Nat) => LayoutBuilder form (rank::Nat) | form -> rank where
-
 
   buildFormatM :: (store~FormatStorageRep form,VG.Vector (BufferPure store) Int
       ,VG.Vector (BufferPure store) a,PrimMonad m)=>
@@ -68,11 +82,9 @@ class Layout form (rank::Nat) => LayoutBuilder form (rank::Nat) | form -> rank w
          ->m (form, BufferMut store (PrimState m) a )
 
 
-buildFormatPure:: forall store form rank proxy m  a. (LayoutBuilder form (rank::Nat),store~FormatStorageRep form,VG.Vector (BufferPure store) Int
-      ,VG.Vector (BufferPure store) a, Monad m ) =>
-     Shape rank Int -> proxy form -> a
-         -> (Maybe (BatchInit  rank a) )
-         ->m (form, BufferPure store  a )
+buildFormatPure:: forall store form rank proxy m  a.
+  (LayoutBuilder form (rank::Nat),store~FormatStorageRep form,VG.Vector (BufferPure store) Int  ,VG.Vector (BufferPure store) a, Monad m ) =>
+     Shape rank Int -> proxy form -> a  -> (Maybe (BatchInit  rank a) )  ->m (form, BufferPure store  a )
 buildFormatPure shape prox defaultValue builder =
   do  res@(!_,!_)<-return $! theComputation
       return res
@@ -94,3 +106,28 @@ this api is only meant for internal use for building new array values
 
 TODO: compare using a catenable priority heap vs just doing fast sorting.
 -}
+
+
+instance (VG.Vector (BufferPure rep) Int)=> LayoutBuilder (Format  Direct Contiguous (S Z) rep) (S Z) where
+
+   buildFormatM (size:* _) _ defaultValue _ =
+      do
+        buf<-  VGM.replicate size defaultValue
+        return (FormatDirectContiguous  size,buf)
+
+
+-- really wish I didn't have to write the foldable and traversable constraints
+-- seems like a code smell?!
+instance (VG.Vector (BufferPure rep) Int,F.Foldable (Shape r),T.Traversable (Shape r) ,A.Applicative (Shape r))=> LayoutBuilder (Format  Row Contiguous r rep) r  where
+
+   buildFormatM ix  _ defaultValue _ =
+      do
+        buf<-  VGM.replicate (F.foldl' (*) 0   ix) defaultValue
+        return (FormatRowContiguous   ix,buf)
+
+instance (VG.Vector (BufferPure rep) Int,F.Foldable (Shape r),T.Traversable (Shape r) ,A.Applicative (Shape r))=>  LayoutBuilder (Format  Column Contiguous r rep) r  where
+
+   buildFormatM ix  _ defaultValue _ =
+      do
+        buf<-  VGM.replicate (F.foldl' (*) 0   ix) defaultValue
+        return (FormatColumnContiguous   ix,buf)
