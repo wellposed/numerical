@@ -148,7 +148,7 @@ instance forall form  rank . (Eq (Shape rank Int),Layout form rank) => Ord (Tagg
 
 
 
-class (Traversable (Shape rank), Applicative (Shape rank))=>Layout form  (rank :: Nat) | form -> rank  where
+class Layout form  (rank :: Nat) | form -> rank  where
 
     -- not happy with this name, will change later FIXME TODO
     basicFormShape :: form -> Shape rank Int
