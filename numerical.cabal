@@ -143,7 +143,6 @@ Test-suite testsuite
         ,tagged >= 0.7 && < 0.8
         ,transformers >= 0.3 && < 0.5
         ,ghc-prim
-        ,vector-algorithms >= 0.6.0.1 && < 0.7
         ,numerical
    --having an explicit list of other modules breaks hpc
    ghc-options: -threaded -fhpc
@@ -188,7 +187,6 @@ Test-suite testsuite-O2
         ,tagged >= 0.7 && < 0.8
         ,transformers >= 0.3 && < 0.5
         ,ghc-prim
-        ,vector-algorithms >= 0.6.0.1 && < 0.7
         ,numerical
    --having an explicit list of other modules breaks hpc
    ghc-options: -O2  -threaded
@@ -234,7 +232,6 @@ Test-suite testsuite-O2llvm
         ,tagged >= 0.7 && < 0.8
         ,transformers >= 0.3 && < 0.5
         ,ghc-prim
-        ,vector-algorithms >= 0.6.0.1 && < 0.7
         ,numerical
    --having an explicit list of other modules breaks hpc
    ghc-options: -O2  -threaded -fllvm
