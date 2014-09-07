@@ -87,7 +87,7 @@ library
 
     ghc-options: -Wall
     -- -ddump-simpl -ddump-to-file
-    --  --ghc-option=-ddump-simpl --ghc-option=-ddump-to-file
+    --  --ghc-option=-ddump-simpl --ghc-option=-ddump-to-file  --ghc-options=-dsuppress-all
     -- -O2
     -- Modules included in this library but not exported.
     -- other-modules:
