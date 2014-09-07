@@ -31,8 +31,7 @@ import  qualified Control.Applicative as A
 
 
 data BatchInit  rank a = BatchInit    { batchInitSize :: !Int
-             ,batchInitKV :: !(Either [(Shape rank Int,a)]
-                                      (IntFun (Shape rank Int, a))  )   }
+             ,batchInitKV :: !(Either [(Shape rank Int,a)]  (IntFun (Shape rank Int,a)))    }
             deriving (Typeable)
 
 newtype IntFun a = Ifun  (forall m. (PrimMonad m,Functor m )=>  Int -> m a )
