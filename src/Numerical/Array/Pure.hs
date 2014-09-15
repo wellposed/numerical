@@ -18,9 +18,10 @@
 module Numerical.Array.Pure      where
 
 
-import Numerical.Array.Address
---import Numerical.Array.Layout
-import Numerical.Array.Shape
+--import Numerical.Array.Address
+import Numerical.Array.Layout
+--import Numerical.Array.Shape
+
 
 
 
@@ -86,7 +87,9 @@ class  PureArray arr   (rank:: Nat)   a |  arr -> rank   where
     -- that contains @addr@. This will be a singleton when the "maximal uniform stride interval"
     -- containing @addr@ has strictly less than 3 elements. Otherwise will return an Address range
     -- covering the maximal interval that will have cardinality at least 3.
-    basicAddressRegion :: (address ~PureArrayAddress  arr)=>  arr   a -> address ->  UniformAddressInterval address
+
+
+    --basicAddressRegion :: (address ~PureArrayAddress  arr)=>  arr   a -> address ->  UniformAddressInterval address
 
 
 

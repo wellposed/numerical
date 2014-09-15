@@ -36,7 +36,7 @@ import Numerical.Array.Shape
 --import Numerical.Nat
 --import GHC.Prim(Constraint)
 import Numerical.World
-import Numerical.Array.Range
+--import Numerical.Array.Range
 --import Numerical.Array.Storage(Boxed,Unboxed,Stored)
 --import Numerical.Array.Locality
 

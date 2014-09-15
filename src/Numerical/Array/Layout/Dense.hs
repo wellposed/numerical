@@ -45,6 +45,7 @@ import Data.Data
 import Control.NumericalMonad.State.Strict
 
 import qualified Data.Foldable as F
+import Data.Traversable
 
 import Prelude hiding (foldr,foldl,map,scanl,scanr,scanl1,scanr1)
 
@@ -163,10 +164,11 @@ type instance  Transposed (Format Column  Strided rank rep)=
 -----
 
 
+type instance LayoutAddress (Format Direct Contiguous (S Z) rep) = Address
 instance Layout (Format Direct Contiguous (S Z) rep)  (S Z)  where
 
-    {-# INLINE basicFormShape #-}
-    basicFormShape = \ x -> (logicalShapeDirectContiguous x) :* Nil
+    {-# INLINE basicFormLogicalShape #-}
+    basicFormLogicalShape = \ x -> (logicalShapeDirectContiguous x) :* Nil
 
     transposedLayout = id
 
@@ -174,11 +176,11 @@ instance Layout (Format Direct Contiguous (S Z) rep)  (S Z)  where
     basicCompareIndex = \ _  (l:* _) (r:* _) -> compare l r
 
 
-
+type instance LayoutAddress (Format Direct Strided (S Z) rep) = Address
 instance  Layout (Format Direct Strided (S Z) rep)  (S Z)  where
 
-    {-# INLINE basicFormShape #-}
-    basicFormShape = \x -> (logicalShapeDirectStrided x) :* Nil
+    {-# INLINE basicFormLogicalShape #-}
+    basicFormLogicalShape = \x -> (logicalShapeDirectStrided x) :* Nil
 
     transposedLayout = id
 
@@ -190,14 +192,16 @@ instance  Layout (Format Direct Strided (S Z) rep)  (S Z)  where
 -----
 
 
--- strideRow :: Shape rank Int,
+-- one instance for all the rows
+type instance LayoutAddress (Format Row locality    rank rep) = Address
+
 instance   (Applicative (Shape rank), Traversable (Shape rank))
     =>  Layout (Format Row  Contiguous rank rep) rank where
 
     transposedLayout = \(FormatRowContiguous shp) -> FormatColumnContiguous $ reverseShape shp
 
-    {-# INLINE basicFormShape #-}
-    basicFormShape = \x -> boundsFormRow x
+    {-# INLINE basicFormLogicalShape #-}
+    basicFormLogicalShape =  boundsFormRow
 
     {-# INLINE basicCompareIndex #-}
     basicCompareIndex = \ _  ls rs -> foldl majorCompareLeftToRight EQ  $ S.map2 compare ls rs
@@ -208,11 +212,12 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
 
 
 -- strideRow :: Shape rank Int,
+
 instance   (Applicative (Shape rank), Traversable (Shape rank))
   =>  Layout (Format Row  InnerContiguous rank rep)  rank  where
 
-    {-# INLINE basicFormShape  #-}
-    basicFormShape = \x -> boundsFormRowInnerContig x
+    {-# INLINE basicFormLogicalShape  #-}
+    basicFormLogicalShape = boundsFormRowInnerContig
 
     transposedLayout = \(FormatRowInnerContiguous shp stride) ->
         FormatColumnInnerContiguous  (reverseShape shp)  (reverseShape stride)
@@ -229,8 +234,8 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
 instance  (Applicative (Shape rank),Traversable (Shape rank))
   =>  Layout (Format Row  Strided rank rep) rank  where
 
-    {-# INLINE basicFormShape  #-}
-    basicFormShape = \x -> boundsFormRowStrided x
+    {-# INLINE basicFormLogicalShape  #-}
+    basicFormLogicalShape =  boundsFormRowStrided
 
     transposedLayout = \(FormatRowStrided shp stride) ->
         FormatColumnStrided  (reverseShape shp)  (reverseShape stride)
@@ -243,12 +248,12 @@ instance  (Applicative (Shape rank),Traversable (Shape rank))
 -----
 -----
 
- -- strideRow :: Shape rank Int,
+type instance LayoutAddress (Format Column locality    rank rep) = Address
 instance  (Applicative (Shape rank), Traversable (Shape rank))
   =>  Layout (Format Column  Contiguous rank rep)  rank where
 
-    {-# INLINE basicFormShape  #-}
-    basicFormShape = \x -> boundsColumnContig x
+    {-# INLINE basicFormLogicalShape  #-}
+    basicFormLogicalShape =  boundsColumnContig
 
     transposedLayout = \(FormatColumnContiguous shp)-> FormatRowContiguous $ reverseShape shp
 
@@ -261,8 +266,8 @@ instance  (Applicative (Shape rank), Traversable (Shape rank))
   => Layout (Format Column  InnerContiguous rank rep) rank  where
 
 
-    {-# INLINE basicFormShape  #-}
-    basicFormShape = \x -> boundsColumnInnerContig x
+    {-# INLINE basicFormLogicalShape  #-}
+    basicFormLogicalShape =  boundsColumnInnerContig
 
     transposedLayout = \(FormatColumnInnerContiguous shp stride)->
          FormatRowInnerContiguous (reverseShape shp) (reverseShape stride)
@@ -277,8 +282,8 @@ instance  (Applicative (Shape rank), Traversable (Shape rank))
 instance   (Applicative (Shape rank), Traversable (Shape rank))
   => Layout (Format Column  Strided rank rep) rank where
 
-    {-# INLINE basicFormShape  #-}
-    basicFormShape = \x -> boundsColumnStrided x
+    {-# INLINE basicFormLogicalShape  #-}
+    basicFormLogicalShape = boundsColumnStrided
 
     transposedLayout = \(FormatColumnStrided shp stride)->
          FormatRowStrided (reverseShape shp) (reverseShape stride)
@@ -309,44 +314,44 @@ class Layout form rank =>  DenseLayout form  (rank :: Nat) | form -> rank  where
 fold the min/max into a range
 
 -}
-    minAddress :: form  -> Address
-    minAddress = \format  ->  basicToAddress format $ minIndex format
-    {-# INLINE minAddress #-}
+    minDenseAddress :: form  -> Address
+    minDenseAddress = \format  ->  basicToDenseAddress format $ minDenseIndex format
+    {-# INLINE minDenseAddress #-}
 
-    maxAddress :: form -> Address
-    maxAddress = \format  ->  basicToAddress format $ maxIndex format
-    {-# INLINE maxAddress #-}
+    maxDenseAddress :: form -> Address
+    maxDenseAddress = \format  ->  basicToDenseAddress format $ maxDenseIndex format
+    {-# INLINE maxDenseAddress #-}
 
 
-    minIndex :: form -> Shape rank Int
+    minDenseIndex :: form -> Shape rank Int
 
-    maxIndex :: (Functor (Shape rank))=>form -> Shape rank Int
+    maxDenseIndex :: form -> Shape rank Int
 
-    basicToAddress :: form  -> Shape rank Int ->   Address
+    basicToDenseAddress :: form  -> Shape rank Int ->   Address
 
-    basicToIndex :: form -> Address -> Shape rank Int
+    basicToDenseIndex :: form -> Address -> Shape rank Int
 
 
     -- IMPORTANT NOTE, the NextAddress defined via Next Index seems
     -- that it will only be invoked on strided/discontiguous dense formats
     -- this
-    basicNextAddress :: form  -> Address ->  Address
-    basicNextAddress =  \form shp -> snd
-      (basicNextIndex form  $ basicToIndex form  shp )
-    {-# INLINE basicNextAddress #-}
+    basicNextDenseAddress :: form  -> Address ->  Address
+    basicNextDenseAddress =  \form shp -> snd
+      (basicNextDenseIndex form  $ basicToDenseIndex form  shp )
+    {-# INLINE basicNextDenseAddress #-}
 
-    basicNextIndex :: form  -> Shape rank Int ->(Shape rank Int,Address)
-    basicNextIndex  = \form shp -> (\ addr ->( basicToIndex form addr, addr) ) $!
-       (basicNextAddress form  $ basicToAddress form  shp )
-    {-# INLINE  basicNextIndex #-}
+    basicNextDenseIndex :: form  -> Shape rank Int ->(Shape rank Int,Address)
+    basicNextDenseIndex  = \form shp -> (\ addr ->( basicToDenseIndex form addr, addr) ) $!
+       (basicNextDenseAddress form  $ basicToDenseAddress form  shp )
+    {-# INLINE  basicNextDenseIndex #-}
 
 
 
 
     -- one of basicNextAddress and basicNextIndex must always be implemented
 #if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
-    {-# MINIMAL  basicToIndex, basicToAddress,  (basicNextIndex | basicNextAddress),
-      (minAddress | minIndex), (maxIndex | maxAddress)  #-}
+    {-# MINIMAL  basicToDenseIndex, basicToDenseAddress,  (basicNextDenseIndex | basicNextDenseAddress),
+      (minDenseAddress | minDenseIndex), (maxDenseIndex | maxDenseAddress)  #-}
 #endif
 
 ---
@@ -383,19 +388,19 @@ computeStrideShape = \trvse shp  ->
 instance DenseLayout (Format Direct Contiguous (S Z) rep)  (S Z)  where
 
 
-    maxAddress = \ (FormatDirectContiguous ix) -> Address (ix -1)
+    maxDenseAddress = \ (FormatDirectContiguous ix) -> Address (ix -1)
 
 
-    {-#INLINE basicToAddress #-}
-    basicToAddress   = \ (FormatDirectContiguous _) (j :* _ ) -> Address j
+    {-#INLINE basicToDenseAddress #-}
+    basicToDenseAddress   = \ (FormatDirectContiguous _) (j :* _ ) -> Address j
 
     --basicNextIndex=  undefined -- \ _ x ->  Just $! x + 1
     --note its unchecked!
-    {-# INLINE basicToIndex #-}
-    basicToIndex =  \ (FormatDirectContiguous _) (Address ix)  -> (ix ) :* Nil
+    {-# INLINE basicToDenseIndex #-}
+    basicToDenseIndex =  \ (FormatDirectContiguous _) (Address ix)  -> (ix ) :* Nil
 
-    {-# INLINE basicNextAddress #-}
-    basicNextAddress = \ _ addr -> addr + 1
+    {-# INLINE basicNextDenseAddress #-}
+    basicNextDenseAddress = \ _ addr -> addr + 1
 
 
 
@@ -406,18 +411,18 @@ instance DenseLayout (Format Direct Strided (S Z) rep)  (S Z)  where
 
 
 
-    {-#INLINE basicToAddress #-}
-    basicToAddress   = \ (FormatDirectStrided _ strid) (j :* Nil )->  Address (strid * j)
+    {-#INLINE basicToDenseAddress #-}
+    basicToDenseAddress   = \ (FormatDirectStrided _ strid) (j :* Nil )->  Address (strid * j)
 
-    {-# INLINE basicNextAddress #-}
-    basicNextAddress = \ (FormatDirectStrided _ strid) addr ->  addr + Address strid
+    {-# INLINE basicNextDenseAddress #-}
+    basicNextDenseAddress = \ (FormatDirectStrided _ strid) addr ->  addr + Address strid
 
-    {-# INLINE basicNextIndex #-}
-    basicNextIndex =  \ form  (i:* Nil ) ->  (\ix -> (ix,basicToAddress form ix)) $! (i + 1 :* Nil )
+    {-# INLINE basicNextDenseIndex #-}
+    basicNextDenseIndex =  \ form  (i:* Nil ) ->  (\ix -> (ix,basicToDenseAddress form ix)) $! (i + 1 :* Nil )
 
 
-    {-# INLINE basicToIndex #-}
-    basicToIndex = \ (FormatDirectStrided _ stride) (Address ix)  -> (ix `div` stride ) :* Nil
+    {-# INLINE basicToDenseIndex #-}
+    basicToDenseIndex = \ (FormatDirectStrided _ stride) (Address ix)  -> (ix `div` stride ) :* Nil
 
 
 -----
@@ -434,17 +439,17 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape
 TODO  AUDIT
 
 -}
-    {-# INLINE basicToAddress #-}
+    {-# INLINE basicToDenseAddress #-}
     --basicToAddress = \rs tup -> let !strider =takePrefix $! S.scanr (*) 1 (boundsFormRow rs)
-    basicToAddress = \rs tup ->
-          let !strider =  computeStrideShape (traverse) (boundsFormRow rs)
+    basicToDenseAddress = \rs tup ->
+          let !strider =  computeStrideShape traverse (boundsFormRow rs)
                   in Address $! S.foldl'  (+) 0 $! map2 (*) strider tup
 
-    {-# INLINE basicNextAddress #-}
-    basicNextAddress = \_ addr -> addr + 1
+    {-# INLINE basicNextDenseAddress #-}
+    basicNextDenseAddress = \_ addr -> addr + 1
 
-    {-# INLINE basicToIndex #-}
-    basicToIndex  =   \ rs (Address ix) ->
+    {-# INLINE basicToDenseIndex #-}
+    basicToDenseIndex  =   \ rs (Address ix) ->
         let !striderShape  = computeStrideShape traverse (boundsFormRow rs)
 
             in
@@ -468,17 +473,17 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape
   => DenseLayout (Format Row  InnerContiguous rank rep) rank  where
 
 
-    {-# INLINE basicToAddress #-}
-    basicToAddress = \rs tup ->
+    {-# INLINE basicToDenseAddress #-}
+    basicToDenseAddress = \rs tup ->
                        Address $! S.foldl'  (+) 0 $!
                          map2 (*) (strideFormRowInnerContig rs ) tup
 
-    {-# INLINE basicNextIndex #-}
-    basicNextIndex = \ form@(FormatRowInnerContiguous shape _) ix ->
+    {-# INLINE basicNextDenseIndex #-}
+    basicNextDenseIndex = \ form@(FormatRowInnerContiguous shape _) ix ->
         --S.map snd $!
-      (\index -> (index,basicToAddress form  index)) $!
+      (\index -> (index,basicToDenseAddress form  index)) $!
         flip evalState 1 $
-           flip traverse  ((,) <$> ix <*> shape) $
+           for   ((,) <$> ix <*> shape) $
               \(ixv ,shpv   )->
                   do  carry <-get
                       let (newCarry,modVal)=divMod (carry + ixv) shpv
@@ -486,8 +491,8 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape
                       return modVal
 
 
-    {-# INLINE basicToIndex #-}
-    basicToIndex  =   \ rs (Address ix) ->   flip evalState ix $
+    {-# INLINE basicToDenseIndex #-}
+    basicToDenseIndex  =   \ rs (Address ix) ->   flip evalState ix $
                           flip ( S.backwards traverse)  (strideFormRowInnerContig rs ) $
                               \ currentStride ->
                                      do remainderIx <- get ;
@@ -506,15 +511,15 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape 
 
 
 
-    {-# INLINE basicToAddress #-}
-    basicToAddress = \rs tup ->   Address $!
+    {-# INLINE basicToDenseAddress #-}
+    basicToDenseAddress = \rs tup ->   Address $!
           S.foldl'  (+) 0 $! map2 (*) (strideFormRowStrided rs ) tup
 
-    {-# INLINE basicNextIndex #-}
-    basicNextIndex = \ form@(FormatRowStrided shape _) ix ->
-      (\index -> (index,basicToAddress form index)) $!
+    {-# INLINE basicNextDenseIndex #-}
+    basicNextDenseIndex = \ form@(FormatRowStrided shape _) ix ->
+      (\index -> (index,basicToDenseAddress form index)) $!
         flip evalState 1 $
-           flip traverse  ((,) <$> ix <*> shape) $
+           for  ((,) <$> ix <*> shape) $
               \(ixv ,shpv   )->
                   do  carry <-get
                       let (newCarry,modVal)=divMod (carry + ixv) shpv
@@ -522,8 +527,8 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape 
                       return modVal
 
 
-    {-# INLINE basicToIndex #-}
-    basicToIndex  =   \ rs (Address ix) ->   flip evalState ix $
+    {-# INLINE basicToDenseIndex #-}
+    basicToDenseIndex  =   \ rs (Address ix) ->   flip evalState ix $
                           flip (S.backwards traverse ) (strideFormRowStrided rs ) $
                               \ currentStride ->
                                      do remainderIx <- get ;
@@ -545,20 +550,20 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape 
 
 
 
-    {-# INLINE basicToAddress #-}
-    basicToAddress = \rs tup ->
+    {-# INLINE basicToDenseAddress #-}
+    basicToDenseAddress = \rs tup ->
           let !strider = computeStrideShape  (S.backwards traverse) (boundsColumnContig rs)
                                 in Address $! S.foldl'  (+) 0 $! map2 (*) strider tup
 
-    {-# INLINE basicNextAddress #-}
-    basicNextAddress = \_ addr -> addr + 1
+    {-# INLINE basicNextDenseAddress #-}
+    basicNextDenseAddress = \_ addr -> addr + 1
 
-    {-# INLINE basicToIndex #-}
-    basicToIndex  =   \ rs (Address ix) ->
+    {-# INLINE basicToDenseIndex #-}
+    basicToDenseIndex  =   \ rs (Address ix) ->
             let !striderShape  =  computeStrideShape  (S.backwards traverse) (boundsColumnContig rs)
                 in
                    flip evalState ix $
-                          flip  traverse  striderShape $
+                        for  striderShape $
                               \ currentStride ->
                                      do remainderIx <- get ;
                                         let (!qt,!rm)= quotRem remainderIx currentStride
@@ -574,13 +579,13 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape 
   => DenseLayout (Format Column  InnerContiguous rank rep) rank  where
 
 
-    {-# INLINE basicToAddress #-}
-    basicToAddress    =   \ form tup -> let !strider =   strideFormColumnInnerContig form
+    {-# INLINE basicToDenseAddress #-}
+    basicToDenseAddress    =   \ form tup -> let !strider =   strideFormColumnInnerContig form
                                 in Address $! foldl' (+) 0  $! map2 (*) strider tup
-    {-# INLINE basicNextIndex #-}
-    basicNextIndex = \ form@(FormatColumnInnerContiguous shape _) ix ->
+    {-# INLINE basicNextDenseIndex #-}
+    basicNextDenseIndex = \ form@(FormatColumnInnerContiguous shape _) ix ->
         --S.map snd $!
-      (\index -> (index,basicToAddress form index)) $!
+      (\index -> (index,basicToDenseAddress form index)) $!
         flip evalState 1 $
            flip (S.backwards traverse)  ((,) <$> ix <*> shape) $
               \(ixv ,shpv   )->
@@ -590,8 +595,8 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape 
                       return modVal
 
 
-    {-# INLINE basicToIndex #-}
-    basicToIndex  =   \ rs (Address ix) ->   flip evalState ix $
+    {-# INLINE basicToDenseIndex #-}
+    basicToDenseIndex  =   \ rs (Address ix) ->   flip evalState ix $
                           flip S.traverse  (strideFormColumnInnerContig rs ) $
                               \ currentStride ->
                                      do remainderIx <- get ;
@@ -605,14 +610,14 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape 
 instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape rank))
   => DenseLayout (Format Column  Strided rank rep) rank where
 
-    {-# INLINE basicToAddress #-}
-    basicToAddress    =   \ form tup -> let !strider =   strideFormColumnStrided form
+    {-# INLINE basicToDenseAddress #-}
+    basicToDenseAddress    =   \ form tup -> let !strider =   strideFormColumnStrided form
                                 in Address $! foldl' (+) 0  $! map2 (*) strider tup
 
-    {-# INLINE basicNextIndex #-}
-    basicNextIndex = \ form@(FormatColumnStrided shape _) ix ->
+    {-# INLINE basicNextDenseIndex #-}
+    basicNextDenseIndex = \ form@(FormatColumnStrided shape _) ix ->
         --S.map snd $!
-      (\index -> (index,basicToAddress form index)) $!
+      (\index -> (index,basicToDenseAddress form index)) $!
         flip evalState 1 $
            flip (S.backwards traverse)  ((,) <$> ix <*> shape) $
               \(ixv ,shpv   )->
@@ -622,8 +627,8 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape
                       return modVal
 
 
-    {-# INLINE basicToIndex #-}
-    basicToIndex  =   \ rs (Address ix) ->   flip evalState ix $
+    {-# INLINE basicToDenseIndex #-}
+    basicToDenseIndex  =   \ rs (Address ix) ->   flip evalState ix $
                           flip S.traverse  (strideFormColumnStrided rs ) $
                               \ currentStride ->
                                      do remainderIx <- get ;

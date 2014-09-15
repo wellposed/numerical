@@ -27,6 +27,7 @@
 
 module Numerical.Array.Layout.Base(
   Layout(..)
+  ,LayoutAddress(..)
   ,Transposed
   ,FormatStorageRep
   ,Format
@@ -39,7 +40,7 @@ module Numerical.Array.Layout.Base(
   ,module Numerical.Array.Storage
   ,module Numerical.Array.Locality
   ,module Numerical.Array.Shape
-
+  ,module Numerical.Array.Range
 ) where
 
 
@@ -93,11 +94,13 @@ majorCompareRightToLeft new EQ = new
 majorCompareRightToLeft _ b = b
 
 {-# INLINE shapeCompareLeftToRight #-}
-shapeCompareLeftToRight :: (F.Foldable (Shape r),A.Applicative (Shape r), Ord a) => Shape r a -> Shape r a -> Ordering
+shapeCompareLeftToRight :: (F.Foldable (Shape r),A.Applicative (Shape r), Ord a)
+    => Shape r a -> Shape r a -> Ordering
 shapeCompareLeftToRight =   \  ls rs -> foldl majorCompareLeftToRight EQ  $ map2 compare ls rs
 
 {-# INLINE shapeCompareRightToLeft #-}
-shapeCompareRightToLeft :: ((F.Foldable (Shape r)),A.Applicative (Shape r), Ord a) => Shape r a -> Shape r a -> Ordering
+shapeCompareRightToLeft :: ((F.Foldable (Shape r)),A.Applicative (Shape r), Ord a)
+   => Shape r a -> Shape r a -> Ordering
 shapeCompareRightToLeft =   \  ls rs -> foldl majorCompareRightToLeft EQ  $ map2 compare ls rs
 
 
@@ -105,11 +108,14 @@ shapeCompareRightToLeft =   \  ls rs -> foldl majorCompareRightToLeft EQ  $ map2
 
 -- | this is kinda a hack
 newtype TaggedShape (form :: *) (rank::Nat) = TaggedShape {unTagShape:: Shape rank Int }
-instance Eq (Shape rank Int)=> Eq (TaggeShape f rank) where
+instance Eq (Shape rank Int)=> Eq (TaggedShape f rank) where
   (==) l r =  (==) (unTagShape l) (unTagShape r )
+
 instance Show (Shape rank Int) => Show (TaggedShape f rank) where
   show (TaggedShape ix) =  "TaggedShape (" ++ show ix ++ " )"
-instance forall form  rank . (Eq (Shape rank Int),Layout form rank) => Ord (TaggedShape form rank) where
+
+instance forall form  rank . (Eq (Shape rank Int),Layout form rank)
+  => Ord (TaggedShape form rank) where
   compare left right = basicCompareIndex (Proxy:: Proxy form ) (unTagShape left) (unTagShape right)
 
 
@@ -176,7 +182,7 @@ class Layout form  (rank :: Nat) | form -> rank  where
         form  -> address -> Maybe  address
 
     basicNextIndex :: (address ~ LayoutAddress form)=>
-          form  -> Shape rank Int-> Maybe address  -> Maybe  ((Shape rank Int), address)
+          form  -> Shape rank Int-> Maybe address  -> Maybe ( Shape rank Int, address)
 
 
     basicAddressPopCount :: (address ~ LayoutAddress form)=>
@@ -189,8 +195,8 @@ next sparse index needs to succeed even if the proposed current index Does not
 -}
 
 
-    {-# MINIMAL basicToSparseAddress, basicToSparseIndex, basicNextSparseAddress
-      ,maxSparseAddress, minSparseAddress ,basicFormShape,basicCompareIndex, transposedLayout #-}
+ --    {-# MINIMAL basicToSparseAddress, basicToSparseIndex, basicNextSparseAddress
+   --    ,maxSparseAddress, minSparseAddress ,basicFormShape,basicCompareIndex, transposedLayout #-}
       --FIXME add basicNextSparseIndex back into the minimal pragma and
       -- KILL the default defn
 
