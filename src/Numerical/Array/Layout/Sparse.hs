@@ -31,12 +31,13 @@ that acts only on the outermost dimension.
 {-# LANGUAGE StandaloneDeriving#-}
 {-# LANGUAGE FlexibleInstances  #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 #if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
  {-# LANGUAGE AutoDeriveTypeable #-}
 #endif
 module Numerical.Array.Layout.Sparse(
-  SparseLayout(..)
+  Layout(..)
   ,DirectSparse
   ,CSR
   ,CSC
@@ -58,7 +59,10 @@ import Control.Applicative
 import Numerical.Array.Layout.Base
 --import Numerical.Array.Shape
 import Numerical.Array.Address
+import Numerical.InternalUtils
 import qualified  Data.Vector.Generic as V
+import Prelude hiding (error )
+
 
 data CompressedSparseRow
   deriving Typeable
@@ -461,13 +465,13 @@ instance V.Vector (BufferPure rep) Int
       if  addr >= (V.length lut) then Nothing else Just  (Address (addr+1))
 
 
-  {-# INLINE basicNextIndex #-}
-  basicNextIndex =
-        \ (FormatDirectSparseContiguous size shift lut) (ix:*Nil) mebeAddress ->
-          if  ix >= size then Nothing
-            else case mebeAddress of
-              Nothing -> _noHint
-              Just (Address adr)-> _hinted
+  --{-# INLINE basicNextIndex #-}
+  --basicNextIndex =
+  --      \ (FormatDirectSparseContiguous size shift lut) (ix:*Nil) mebeAddress ->
+  --        if  ix >= size then Nothing
+  --          else case mebeAddress of
+  --            Nothing -> _noHint
+  --            Just (Address adr)-> _hinted
 
 ------------
 ------------
@@ -496,6 +500,20 @@ instance  (V.Vector (BufferPure rep) Int )
   {-# INLINE basicCompareIndex #-}
 
 
+  {-# INLINE basicAddressPopCount #-}
+  basicAddressPopCount = \ form (Range (SparseAddress _ lo) (SparseAddress _ hi)) ->
+    if not ( lo <= hi ) then
+      error $! "basicAddressPopCount was passed a bad Address Range " ++ show lo ++" " ++ show hi
+      else
+        case  rangedFormatAddress form of
+          Nothing -> 0
+          Just (Range (SparseAddress _ loBound) (SparseAddress _ hiBound)) ->
+            if not $ (loBound<= lo ) && (hi <= hiBound)
+              then error $!
+               "basicAddressPopCount was passed a bad SparseAddress Range: "
+                ++show lo++" "++ show hi++"\nwith format SparseAddress range"
+                ++ show loBound ++ " " ++ show hiBound
+              else hi - lo
 
 
   rangedFormatAddress = \ form ->
