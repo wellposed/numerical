@@ -12,27 +12,34 @@ import qualified Foreign.Storable  as Store
 import qualified Data.Vector.Unboxed as UV
 import qualified Data.Vector.Generic as GV
 import qualified Data.Vector.Generic.Mutable as GMV
+
 -- | 'Address' is the type used for addressing into the underlying memory buffers
--- of numerical arrays
+-- of numerical arrays, Used for Dense Rank n arrays, and 1dim sparse arrays.
 newtype Address = Address  Int
   deriving (Eq,Ord,Show,Read,Typeable,Data,Store.Storable)
 
+-- | 'LogicalAddress' is
+newtype LogicalAddress = LogicalAddress Int
+  deriving (Eq,Ord,Show,Read,Typeable,Data,Store.Storable)
+-- todo, add unboxed for
+
+
+-- | this m
+--newtype LogicalExtent
 
 data SparseAddress = SparseAddress {
         outerIndex  :: {-# UNPACK #-} !Int
         ,innerIndex :: {-# UNPACK #-} !Int }
       deriving (Eq,Show,Data,Typeable)
+
 {-
 At some point decouple logical and physical address
-Logical Address should always be Int64
+Logical Address should always be Int64 -- maybe even MORE?!
 physical address should be native IntPtr (aka Int)
 
 -}
 
--- | 'UniformAddressInterval' describes a set of
-data UniformAddressInterval addr = AddressOne !addr
-            |  AddressRange {uniformLow :: !addr, uniformHigh:: !addr , uniformStride :: !Int}
-    deriving (Eq,Show,Typeable,Data)
+
 
 instance Num Address where
     {-# INLINE (+) #-}

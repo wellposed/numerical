@@ -8,7 +8,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
-{-#  LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -32,7 +31,7 @@ module Numerical.Array.Layout.Base(
   ,FormatStorageRep
   ,Format
   ,Locality(..)
-  ,TaggedIndex(..)
+  ,TaggedShape(..)
   ,majorCompareRightToLeft
   ,majorCompareLeftToRight
   ,shapeCompareRightToLeft
@@ -46,10 +45,11 @@ module Numerical.Array.Layout.Base(
 
 
 import Numerical.Nat
---import Numerical.Array.Address
+import Numerical.Array.Address
 import Numerical.Array.Locality
-import Numerical.Array.Shape  -- as S
+import Numerical.Array.Shape
 import Numerical.Array.Storage
+import Numerical.Array.Range
 
 --import Data.Typeable
 import Control.Applicative as A
@@ -59,17 +59,6 @@ import Control.Applicative as A
 import qualified Data.Foldable as F
 
 import Prelude hiding (foldr,foldl,map,scanl,scanr,scanl1,scanr1)
-
-{-|  A major design goal with the Layout module is to
-make it easy to define new dense array layouts
-
-
-
--}
-
-
-
-
 
 
 {-
@@ -114,62 +103,97 @@ shapeCompareRightToLeft =   \  ls rs -> foldl majorCompareRightToLeft EQ  $ map2
 
 
 
+-- | this is kinda a hack
+newtype TaggedShape (form :: *) (rank::Nat) = TaggedShape {unTagShape:: Shape rank Int }
+instance Eq (Shape rank Int)=> Eq (TaggeShape f rank) where
+  (==) l r =  (==) (unTagShape l) (unTagShape r )
+instance Show (Shape rank Int) => Show (TaggedShape f rank) where
+  show (TaggedShape ix) =  "TaggedShape (" ++ show ix ++ " )"
+instance forall form  rank . (Eq (Shape rank Int),Layout form rank) => Ord (TaggedShape form rank) where
+  compare left right = basicCompareIndex (Proxy:: Proxy form ) (unTagShape left) (unTagShape right)
+
+
+-- | Generalized Dense Slice Projection notation,
+-- not sure if it should be defined in this module or elsewhere
+data GDSlice (from :: Nat) (to :: Nat) :: *  where
+  GDNil :: GDSlice Z Z
+  GDPick :: Int -> GDSlice from to -> GDSlice (S from) to
+  GDRange :: (Int,Int,Int)-> GDSlice from to -> GDSlice (S from) (S to)
+  GDAll :: GDSlice from to -> GDSlice (S from) (S to)
+
+
+
+
+
 data family Format  lay (contiguity:: Locality)  (rank :: Nat) rep
 
-
 type family FormatStorageRep ( a:: * ) :: *
+
 type instance FormatStorageRep (Format lay ctg rnk rep)= rep
---doing an open type family for this for now, might move to closed later
---Might want to generalize it to just give the pure/impure vector type directly,
---explore later
-
-
-
---type family FormatStorageRep form  where
---    FormatStorageRep (Format lay locality rank rep)= rep
-
---type family FormatLayout form where
---    FormatLayout (Format )
 
 type family  Transposed form
 
--- | this is kinda a hack
-newtype TaggedIndex (form :: *) (rank::Nat) = TaggedIndex {unTagIndex:: Shape rank Int }
+type family  LayoutAddress (form :: *)
 
-
-instance Eq (Shape rank Int)=> Eq (TaggedIndex f rank) where
-  (==) l r =  (==) (unTagIndex l) (unTagIndex r )
-instance Show (Shape rank Int) => Show (TaggedIndex f rank) where
-  show (TaggedIndex ix) =  "TaggedIndex (" ++ show ix ++ " )"
-
-
-instance forall form  rank . (Eq (Shape rank Int),Layout form rank) => Ord (TaggedIndex form rank) where
-  compare left right = basicCompareIndex (Proxy:: Proxy form ) (unTagIndex left) (unTagIndex right)
-
-
-
+-- |
 class Layout form  (rank :: Nat) | form -> rank  where
 
     -- not happy with this name, will change later FIXME TODO
-    basicFormShape :: form -> Shape rank Int
+    -- | 'basicFormLogicalShape' gives the extent of the format
+    basicFormLogicalShape :: form -> Shape rank Int
 
-    transposedLayout ::  (form ~ Transposed transform,transform~Transposed form)=> form  -> transform
-    --shapeOf
+    -- | 'transposedLayout' transposes the format data type
+    transposedLayout :: (form ~ Transposed transform,transform~Transposed form)=> form  -> transform
 
-
-
---- TODO / AUDIT ME, does this work for morton order or hilbert?!
--- I THINK SO, but not 100%
--- hilbert might require Shape extent info
--- but morton wonthave this problem
+    -- | 'basicCompareIndex' lets you compare where two (presumably inbounds)
+    -- 'Index' values are in a formats ordering. The logical 'Shape' of the array
+    -- is not needed
     basicCompareIndex :: p form-> Shape rank Int ->Shape rank Int -> Ordering
 
+    -- FIX ME TODO: need to have an extra wide int type to do logical address correctly
+    -- this is because spare arrays can have much larger range of dimensions
+    -- than are representable in physical memory
+    -- but dont want to pay for the extended dynamic range when I dont need it
+    --  -- | Given a 'Format' with a known Shape, aka a 'TaggedShape', we can
+    -- always relate any in-bounds index to the corresponding address a
+    -- dense 'Contiguous' analogue of the format will have.
+    -- this is also used to provide efficient sorting for correctly constructing
+    -- arrays efficiently that breaks the @n*log(n)@ barrier of comparison based
+    -- methods.
+    --basicLogicalAddress :: TaggedShape form rank -> Shape rank Int -> Int
+
+    -- | the (possibly empty) min and max of the valid addresses for a given format
+    rangedFormatAddress ::  (address ~ LayoutAddress form)=> form -> Maybe (Range address)
 
 
-    -- one of basicNextAddress and basicNextIndex must always be implemented
-#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
-    {-# MINIMAL basicFormShape,basicCompareIndex, transposedLayout   #-}
-#endif
+    basicToAddress :: (address ~ LayoutAddress form)=>
+        form  -> Shape rank Int -> Maybe  address
+
+    basicToIndex ::(address ~ LayoutAddress form)=>
+        form -> address -> Shape rank Int
+
+    basicNextAddress :: (address ~ LayoutAddress form)=>
+        form  -> address -> Maybe  address
+
+    basicNextIndex :: (address ~ LayoutAddress form)=>
+          form  -> Shape rank Int-> Maybe address  -> Maybe  ((Shape rank Int), address)
+
+
+    basicAddressPopCount :: (address ~ LayoutAddress form)=>
+        form -> (Range address)-> Int
+
+{-
+next sparse index needs to succeed even if the proposed current index Does not
+  have a valid value.  Should return Maybe (Index,Address), and when != Nothing,
+  should yield the minimal valid index strictly greater than the proposed index
+-}
+
+
+    {-# MINIMAL basicToSparseAddress, basicToSparseIndex, basicNextSparseAddress
+      ,maxSparseAddress, minSparseAddress ,basicFormShape,basicCompareIndex, transposedLayout #-}
+      --FIXME add basicNextSparseIndex back into the minimal pragma and
+      -- KILL the default defn
+
 
 
 

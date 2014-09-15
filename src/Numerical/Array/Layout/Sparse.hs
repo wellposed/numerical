@@ -260,40 +260,7 @@ newtype instance Format CompressedSparseColumn InnerContiguous (S (S Z)) rep =
 
 
 
-class Layout form rank  => SparseLayout form  (rank :: Nat)  | form -> rank where
 
-    type SparseLayoutAddress form :: *
-
-    minSparseAddress ::  (address ~ SparseLayoutAddress form)=> form -> Maybe address
-
-    maxSparseAddress ::  (address ~ SparseLayoutAddress form)=> form -> Maybe address
-
-    basicToSparseAddress :: (address ~ SparseLayoutAddress form)=>
-        form  -> Shape rank Int -> Maybe  address
-
-
-    basicToSparseIndex ::(address ~ SparseLayoutAddress form)=>
-        form -> address -> Shape rank Int
-
-
-    basicNextSparseAddress :: (address ~ SparseLayoutAddress form)=>
-        form  -> address -> Maybe  address
-
-    basicNextSparseIndex :: (address ~ SparseLayoutAddress form)=>
-          form  -> Shape rank Int-> Maybe address  -> Maybe  ((Shape rank Int), address)
-    basicNextSparseIndex = error "no worky"
-
-{-
-next sparse index needs to succeed even if the proposed current index Does not
-  have a valid value.  Should return Maybe (Index,Address), and when != Nothing,
-  should yield the minimal valid index strictly greater than the proposed index
--}
-
-
-    {-# MINIMAL basicToSparseAddress, basicToSparseIndex, basicNextSparseAddress
-      ,maxSparseAddress, minSparseAddress  #-}
-      --FIXME add basicNextSparseIndex back into the minimal pragma and
-      -- KILL the default defn
 
 
 
@@ -353,7 +320,7 @@ basicHybridSearchUp  p = goCaseMe where
                   -}
                     = linearSearchUp p l (min h magicConstant)
                 | otherwise = bsearchUp p magicConstant h
-{-# INLINE  basicHybridSearchUp#-}
+{-# INLINE  basicHybridSearchUp #-}
 
 
 basicHybridSearchDown :: (Int -> Bool)-> Int -> Int -> Int
@@ -362,9 +329,9 @@ basicHybridSearchDown  p = goCaseMe where
                 {-  either the range is short, OR
                     we know match happens in the first magicConstant size subrange
                  -}
-                    = linearSearchDown p  (max l (h-magicConstant)) h
-                | otherwise = bsearchDown p l (h-magicConstant)
-{-# INLINE basicHybridSearchDown#-}
+                    = linearSearchDown p  (max l (h - magicConstant)) h
+                | otherwise = bsearchDown p l (h - magicConstant)
+{-# INLINE basicHybridSearchDown #-}
 
 {-
 i chose 97 because it seemed like a number thats ~ log MaxInt always (within 4x)
@@ -448,7 +415,7 @@ instance Layout   (Format DirectSparse Contiguous (S Z) rep ) (S Z) where
   basicFormShape = \ form -> _logicalShapeDirectSparse form  :* Nil
   {-# INLINE basicFormShape #-}
   basicCompareIndex = \ _ (a:* Nil) (b :* Nil) ->compare a b
-  {-# INLINE basicCompareIndex#-}
+  {-# INLINE basicCompareIndex #-}
 
 instance V.Vector (BufferPure rep) Int
    => SparseLayout  (Format DirectSparse Contiguous (S Z) rep ) (S Z) where
@@ -511,7 +478,7 @@ instance Layout (Format CompressedSparseRow Contiguous (S (S Z)) rep ) (S (S Z))
 
 
   basicCompareIndex = \ _ as  bs ->shapeCompareRightToLeft as bs
-  {-# INLINE basicCompareIndex#-}
+  {-# INLINE basicCompareIndex #-}
 
 instance  (V.Vector (BufferPure rep) Int )
   => SparseLayout (Format CompressedSparseRow Contiguous (S (S Z)) rep ) (S (S Z)) where
@@ -558,7 +525,7 @@ instance  (V.Vector (BufferPure rep) Int )
                               --else  maxIxP1 >  rowStartIndex V.! row_ix
                     in Just $! SparseAddress  (candidateRow) $! 0
 
-      {-# INLINE maxSparseAddress#-}
+      {-# INLINE maxSparseAddress #-}
       maxSparseAddress  =
         \(FormatContiguousCompressedSparseRow
             (FormatContiguousCompressedSparseInternal   y_row_range x_col_range

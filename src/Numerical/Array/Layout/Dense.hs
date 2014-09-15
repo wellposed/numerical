@@ -165,7 +165,7 @@ type instance  Transposed (Format Column  Strided rank rep)=
 
 instance Layout (Format Direct Contiguous (S Z) rep)  (S Z)  where
 
-    {-# INLINE basicFormShape#-}
+    {-# INLINE basicFormShape #-}
     basicFormShape = \ x -> (logicalShapeDirectContiguous x) :* Nil
 
     transposedLayout = id
@@ -305,26 +305,24 @@ class Layout form rank =>  DenseLayout form  (rank :: Nat) | form -> rank  where
   correct for the example DenseLayout formats thusfar
 
     -}
+{-
+fold the min/max into a range
 
+-}
     minAddress :: form  -> Address
+    minAddress = \format  ->  basicToAddress format $ minIndex format
+    {-# INLINE minAddress #-}
 
     maxAddress :: form -> Address
+    maxAddress = \format  ->  basicToAddress format $ maxIndex format
+    {-# INLINE maxAddress #-}
 
 
     minIndex :: form -> Shape rank Int
 
-{-
-maxIndex assumes:
-   basicFormShape form `strictlyDominates` (pure 0)
-that is, every axis of a multi dim array, dimension/size must be >=1
-FIXME / TODO / AUDIT THIS HARD
-
- -}
     maxIndex :: (Functor (Shape rank))=>form -> Shape rank Int
 
-
     basicToAddress :: form  -> Shape rank Int ->   Address
-
 
     basicToIndex :: form -> Address -> Shape rank Int
 
@@ -347,7 +345,8 @@ FIXME / TODO / AUDIT THIS HARD
 
     -- one of basicNextAddress and basicNextIndex must always be implemented
 #if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
-    {-# MINIMAL  basicToIndex, basicToAddress,  (basicNextIndex | basicNextAddress)  #-}
+    {-# MINIMAL  basicToIndex, basicToAddress,  (basicNextIndex | basicNextAddress),
+      (minAddress | minIndex), (maxIndex | maxAddress)  #-}
 #endif
 
 ---
@@ -387,12 +386,12 @@ instance DenseLayout (Format Direct Contiguous (S Z) rep)  (S Z)  where
     maxAddress = \ (FormatDirectContiguous ix) -> Address (ix -1)
 
 
-    {-#INLINE basicToAddress#-}
+    {-#INLINE basicToAddress #-}
     basicToAddress   = \ (FormatDirectContiguous _) (j :* _ ) -> Address j
 
     --basicNextIndex=  undefined -- \ _ x ->  Just $! x + 1
     --note its unchecked!
-    {-# INLINE basicToIndex#-}
+    {-# INLINE basicToIndex #-}
     basicToIndex =  \ (FormatDirectContiguous _) (Address ix)  -> (ix ) :* Nil
 
     {-# INLINE basicNextAddress #-}
@@ -407,17 +406,17 @@ instance DenseLayout (Format Direct Strided (S Z) rep)  (S Z)  where
 
 
 
-    {-#INLINE basicToAddress#-}
+    {-#INLINE basicToAddress #-}
     basicToAddress   = \ (FormatDirectStrided _ strid) (j :* Nil )->  Address (strid * j)
 
     {-# INLINE basicNextAddress #-}
     basicNextAddress = \ (FormatDirectStrided _ strid) addr ->  addr + Address strid
 
-    {-# INLINE basicNextIndex#-}
+    {-# INLINE basicNextIndex #-}
     basicNextIndex =  \ form  (i:* Nil ) ->  (\ix -> (ix,basicToAddress form ix)) $! (i + 1 :* Nil )
 
 
-    {-# INLINE basicToIndex#-}
+    {-# INLINE basicToIndex #-}
     basicToIndex = \ (FormatDirectStrided _ stride) (Address ix)  -> (ix `div` stride ) :* Nil
 
 
@@ -441,7 +440,7 @@ TODO  AUDIT
           let !strider =  computeStrideShape (traverse) (boundsFormRow rs)
                   in Address $! S.foldl'  (+) 0 $! map2 (*) strider tup
 
-    {-# INLINE basicNextAddress#-}
+    {-# INLINE basicNextAddress #-}
     basicNextAddress = \_ addr -> addr + 1
 
     {-# INLINE basicToIndex #-}
@@ -551,7 +550,7 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape 
           let !strider = computeStrideShape  (S.backwards traverse) (boundsColumnContig rs)
                                 in Address $! S.foldl'  (+) 0 $! map2 (*) strider tup
 
-    {-# INLINE basicNextAddress#-}
+    {-# INLINE basicNextAddress #-}
     basicNextAddress = \_ addr -> addr + 1
 
     {-# INLINE basicToIndex #-}

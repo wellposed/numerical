@@ -11,7 +11,7 @@
 {-# LANGUAGE ScopedTypeVariables#-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE FlexibleInstances #-}
-
+{-# LANGUAGE UndecidableInstances #-}
 
 module Numerical.Array.Layout.Builder where
 
@@ -33,6 +33,14 @@ import  qualified Control.Applicative as A
 data BatchInit  rank a = BatchInit    { batchInitSize :: !Int
              ,batchInitKV :: !(Either [(Shape rank Int,a)]  (IntFun (Shape rank Int,a)))    }
             deriving (Typeable)
+
+
+--instance (Show  a , Show  (Shape rank Int))=> Show (BatchInit rank a) where
+--  show (BatchInit size ls ) | size > 100 =  "(BatchInit " ++show size  ++
+--                                          "-- only showing the first 100 elements\n"
+--                                          ++ (show $ take 100 ls ) ++ "\n"
+--                             | otherwise = error "FINISH THIS SHIT"
+
 
 newtype IntFun a = Ifun  (forall m. (PrimMonad m,Functor m )=>  Int -> m a )
 -- This may change substantially in a future release, but for now
@@ -106,6 +114,11 @@ this api is only meant for internal use for building new array values
 TODO: compare using a catenable priority heap vs just doing fast sorting.
 -}
 
+
+{-
+the dense instances ignore the builder structure, which does suggest that maybe
+there shoudl be a dense builder layout class and a sparse layout class separately
+-}
 
 instance (VG.Vector (BufferPure rep) Int)=> LayoutBuilder (Format  Direct Contiguous (S Z) rep) (S Z) where
 
