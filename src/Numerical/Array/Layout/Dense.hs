@@ -307,27 +307,21 @@ class Layout form rank =>  DenseLayout form  (rank :: Nat) | form -> rank  where
     -}
 
     minAddress :: form  -> Address
-    minAddress = \ _ -> Address 0
-    {-# INLINE minAddress #-}
 
     maxAddress :: form -> Address
-    maxAddress = \form -> basicToAddress form $ maxIndex form
-    {-# INLINE maxAddress #-}
+
+
     minIndex :: form -> Shape rank Int
-    minIndex = \ _  -> pure 0
-    {-# INLINE minIndex #-}
+
 {-
 maxIndex assumes:
    basicFormShape form `strictlyDominates` (pure 0)
-
 that is, every axis of a multi dim array, dimension/size must be >=1
-
 FIXME / TODO / AUDIT THIS HARD
 
  -}
-    maxIndex :: form -> Shape rank Int
-    maxIndex = \ form -> fmap (flip (-) 1) $  basicFormShape form
-    {-# INLINE maxIndex #-}
+    maxIndex :: (Functor (Shape rank))=>form -> Shape rank Int
+
 
     basicToAddress :: form  -> Shape rank Int ->   Address
 
