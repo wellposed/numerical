@@ -490,7 +490,7 @@ instance  (V.Vector (BufferPure rep) Int )
         \(FormatContiguousCompressedSparseRow
             (FormatContiguousCompressedSparseInternal  y_row_range x_col_range
                                                         columnIndex rowStartIndex)) ->
-                if ( y_row_range < 1  || x_col_range < 1|| (V.length columnIndex  < 1) )
+                if  y_row_range < 1  || x_col_range < 1|| (V.length columnIndex  < 1)
                   then Nothing
                   else
                   -- the value buffer has the invariant the the end points
@@ -523,14 +523,14 @@ instance  (V.Vector (BufferPure rep) Int )
                                 ||  (rowStartIndex V.! row_ix) - addrShift > 0
 
                               --else  maxIxP1 >  rowStartIndex V.! row_ix
-                    in Just $! SparseAddress  (candidateRow) $! 0
+                    in Just $! SparseAddress  candidateRow $! 0
 
       {-# INLINE maxSparseAddress #-}
       maxSparseAddress  =
         \(FormatContiguousCompressedSparseRow
             (FormatContiguousCompressedSparseInternal   y_row_range x_col_range
                                                         columnIndex rowStartIndex)) ->
-                if ( y_row_range < 1  || x_col_range < 1|| (V.length columnIndex  < 1) )
+                if  y_row_range < 1  || x_col_range < 1|| (V.length columnIndex  < 1)
                   then Nothing
                   else
                   -- the value buffer has the invariant the the end points

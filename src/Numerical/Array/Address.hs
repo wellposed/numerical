@@ -3,7 +3,7 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE  TypeFamilies  #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-module Numerical.Array.Address(Address(..),UniformAddressInterval(..),SparseAddress(..)) where
+module Numerical.Array.Address(Address(..),SparseAddress(..)) where
 
 
 import Data.Data

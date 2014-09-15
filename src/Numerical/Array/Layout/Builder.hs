@@ -25,8 +25,8 @@ import  Numerical.Array.Layout.Dense as Dense
 import Control.Monad.ST.Safe (runST)
 import Data.Typeable
 import qualified  Data.Foldable as F
-import  qualified Data.Traversable as T
-import  qualified Control.Applicative as A
+import   Data.Traversable as T
+import   Control.Applicative as A
 
 
 
@@ -48,7 +48,7 @@ newtype IntFun a = Ifun  (forall m. (PrimMonad m,Functor m )=>  Int -> m a )
             deriving (Typeable)
 
 instance  Functor IntFun  where
-  fmap f (Ifun g) = (Ifun (\x-> fmap f $ g x  ))
+  fmap f (Ifun g) = Ifun (\x->  f <$> g x  )
   {-# INLINE fmap #-}
 
 instance Functor (BatchInit  rank) where

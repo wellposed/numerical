@@ -79,12 +79,12 @@ instance (VGM.MVector BV.MVector elem) => VGM.MVector (BufferMut Boxed)  elem wh
 --  basicUnsafeGrow
 --  basicUnsafeReplicate
 
-  {-#INLINE basicLength#-}
-  {-#INLINE basicUnsafeSlice#-}
-  {-#INLINE basicOverlaps#-}
-  {-#INLINE basicUnsafeNew#-}
-  {-#INLINE basicUnsafeRead#-}
-  {-#INLINE basicUnsafeWrite#-}
+  {-# INLINE basicLength #-}
+  {-# INLINE basicUnsafeSlice #-}
+  {-# INLINE basicOverlaps #-}
+  {-# INLINE basicUnsafeNew #-}
+  {-# INLINE basicUnsafeRead #-}
+  {-# INLINE basicUnsafeWrite #-}
 
 --  {-# INLINE basicUnsafeClear#-}
 --  {-# INLINE basicUnsafeSet#-}
@@ -107,12 +107,12 @@ instance (VGM.MVector SV.MVector elem) => VGM.MVector (BufferMut Storable)  elem
   basicUnsafeRead= \(StorableBufferMut bv) ix -> VGM.basicUnsafeRead bv ix
   basicUnsafeWrite = \(StorableBufferMut bv ) ix val -> VGM.basicUnsafeWrite bv ix val
 
-  {-#INLINE basicLength#-}
-  {-#INLINE basicUnsafeSlice#-}
-  {-#INLINE basicOverlaps#-}
-  {-#INLINE basicUnsafeNew#-}
-  {-#INLINE basicUnsafeRead#-}
-  {-#INLINE basicUnsafeWrite#-}
+  {-# INLINE basicLength #-}
+  {-# INLINE basicUnsafeSlice #-}
+  {-# INLINE basicOverlaps #-}
+  {-# INLINE basicUnsafeNew #-}
+  {-# INLINE basicUnsafeRead #-}
+  {-# INLINE basicUnsafeWrite #-}
 
 
 instance (VGM.MVector UV.MVector elem) => VGM.MVector (BufferMut Unboxed)  elem where
@@ -130,12 +130,12 @@ instance (VGM.MVector UV.MVector elem) => VGM.MVector (BufferMut Unboxed)  elem 
   basicUnsafeWrite = \(UnboxedBufferMut bv ) ix val -> VGM.basicUnsafeWrite bv ix val
 
 
-  {-#INLINE basicLength#-}
-  {-#INLINE basicUnsafeSlice#-}
-  {-#INLINE basicOverlaps#-}
-  {-#INLINE basicUnsafeNew#-}
-  {-#INLINE basicUnsafeRead#-}
-  {-#INLINE basicUnsafeWrite#-}
+  {-# INLINE basicLength #-}
+  {-# INLINE basicUnsafeSlice #-}
+  {-# INLINE basicOverlaps #-}
+  {-# INLINE basicUnsafeNew #-}
+  {-# INLINE basicUnsafeRead #-}
+  {-# INLINE basicUnsafeWrite #-}
 
 ----
 ----
@@ -152,12 +152,12 @@ instance VG.Vector BV.Vector  a  => VG.Vector (BufferPure Boxed) a   where
   elemseq = \ (BoxedBuffer v) a b -> VG.elemseq v a b
 
 
-  {-# INLINE basicUnsafeFreeze#-}
-  {-# INLINE basicUnsafeThaw#-}
-  {-# INLINE basicLength#-}
-  {-# INLINE basicUnsafeSlice#-}
-  {-# INLINE basicUnsafeIndexM#-}
-  {-# INLINE elemseq #-}
+  {-# INLINE basicUnsafeFreeze #-}
+  {-# INLINE basicUnsafeThaw #-}
+  {-# INLINE basicLength #-}
+  {-# INLINE basicUnsafeSlice #-}
+  {-# INLINE basicUnsafeIndexM #-}
+  {-# INLINE elemseq  #-}
 
 
 instance VG.Vector SV.Vector  a  => VG.Vector (BufferPure Storable) a   where
@@ -174,12 +174,12 @@ instance VG.Vector SV.Vector  a  => VG.Vector (BufferPure Storable) a   where
   elemseq = \ (StorableBuffer v) a b -> VG.elemseq v a b
 
 
-  {-# INLINE basicUnsafeFreeze#-}
-  {-# INLINE basicUnsafeThaw#-}
-  {-# INLINE basicLength#-}
-  {-# INLINE basicUnsafeSlice#-}
-  {-# INLINE basicUnsafeIndexM#-}
-  {-# INLINE elemseq #-}
+  {-# INLINE basicUnsafeFreeze #-}
+  {-# INLINE basicUnsafeThaw #-}
+  {-# INLINE basicLength #-}
+  {-# INLINE basicUnsafeSlice #-}
+  {-# INLINE basicUnsafeIndexM #-}
+  {-# INLINE elemseq  #-}
 
 
 instance VG.Vector UV.Vector  a  => VG.Vector (BufferPure Unboxed) a   where
@@ -194,10 +194,10 @@ instance VG.Vector UV.Vector  a  => VG.Vector (BufferPure Unboxed) a   where
   elemseq = \ (UnboxedBuffer v) a b -> VG.elemseq v a b
 
 
-  {-# INLINE basicUnsafeFreeze#-}
-  {-# INLINE basicUnsafeThaw#-}
-  {-# INLINE basicLength#-}
-  {-# INLINE basicUnsafeSlice#-}
-  {-# INLINE basicUnsafeIndexM#-}
-  {-# INLINE elemseq #-}
+  {-# INLINE basicUnsafeFreeze #-}
+  {-# INLINE basicUnsafeThaw #-}
+  {-# INLINE basicLength #-}
+  {-# INLINE basicUnsafeSlice #-}
+  {-# INLINE basicUnsafeIndexM #-}
+  {-# INLINE elemseq  #-}
 

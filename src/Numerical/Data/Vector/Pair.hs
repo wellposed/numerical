@@ -121,10 +121,8 @@ instance  (MV.MVector (MVProd (V.Mutable v) Unit  ) a ,V.Vector v a)
     basicLength = \(VLeaf va ) -> V.basicLength va
     basicUnsafeSlice = \start len (VLeaf va ) ->
       VLeaf(V.basicUnsafeSlice start len va)
-    basicUnsafeIndexM = \(VLeaf va) ix ->
-      do
-          a <- V.basicUnsafeIndexM va ix
-          return a
+    basicUnsafeIndexM = \(VLeaf va) ix ->  V.basicUnsafeIndexM va ix
+
 
 instance (MV.MVector mv a) => MV.MVector (MVProd mv Unit) a where
   basicLength = \ (MVLeaf mva) -> MV.basicLength mva
@@ -132,7 +130,7 @@ instance (MV.MVector mv a) => MV.MVector (MVProd mv Unit) a where
 
   basicUnsafeSlice = \ start len (MVLeaf mva  )->
     MVLeaf (MV.basicUnsafeSlice start len mva)
-  {-# INLINE basicUnsafeSlice#-}
+  {-# INLINE basicUnsafeSlice #-}
 
   basicOverlaps = \ (MVLeaf mva ) (MVLeaf mva2 )-> (MV.basicOverlaps mva mva2)
   {-# INLINE basicOverlaps #-}
@@ -149,13 +147,13 @@ instance (MV.MVector mv a) => MV.MVector (MVProd mv Unit) a where
   {-# INLINE basicUnsafeReplicate #-}
 
   basicUnsafeRead = \(MVLeaf mva ) ix ->   MV.basicUnsafeRead mva ix
-  {-#INLINE basicUnsafeRead#-}
+  {-#INLINE basicUnsafeRead #-}
 
   basicUnsafeWrite = \ (MVLeaf mva ) ix a  ->
     do
       MV.basicUnsafeWrite mva ix a
       return ()
-  {-#INLINE basicUnsafeWrite#-}
+  {-#INLINE basicUnsafeWrite #-}
 
   {-#INLINE basicUnsafeGrow #-}
   basicUnsafeGrow = \ (MVLeaf mva ) growth ->
@@ -169,7 +167,7 @@ instance (MV.MVector (MVProd mv pra) a,MV.MVector (MVProd mv prb) b) => MV.MVect
 
   basicUnsafeSlice = \ start len (MVPair mva mvb )->
     MVPair (MV.basicUnsafeSlice start len mva) (MV.basicUnsafeSlice start len mvb)
-  {-# INLINE basicUnsafeSlice#-}
+  {-# INLINE basicUnsafeSlice #-}
 
   basicOverlaps = \ (MVPair mva mvb) (MVPair mva2 mvb2)-> (MV.basicOverlaps mva mva2) || (MV.basicOverlaps mvb mvb2)
   {-# INLINE basicOverlaps #-}
@@ -189,14 +187,14 @@ instance (MV.MVector (MVProd mv pra) a,MV.MVector (MVProd mv prb) b) => MV.MVect
   basicUnsafeRead = \(MVPair mva mvb) ix ->
     (,) <$$$>  MV.basicUnsafeRead mva ix <***> MV.basicUnsafeRead mvb ix
 
-  {-#INLINE basicUnsafeRead#-}
+  {-# INLINE basicUnsafeRead #-}
 
   basicUnsafeWrite = \ (MVPair mva mvb) ix (a,b) ->
     do
       MV.basicUnsafeWrite mva ix a
       MV.basicUnsafeWrite mvb ix b
       return ()
-  {-#INLINE basicUnsafeWrite#-}
+  {-#INLINE basicUnsafeWrite #-}
 
   {-#INLINE basicUnsafeGrow #-}
   basicUnsafeGrow = \ (MVPair mva mvb) growth ->
