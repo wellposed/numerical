@@ -248,8 +248,6 @@ newtype instance Format CompressedSparseColumn InnerContiguous (S (S Z)) rep =
   FormatInnerContiguous rowsize columnsize
 
 -}
-
-
 --newtype instance Format CompressedSparseColumn Contiguous (S (S Z)) rep =
 --    FormatContiguousCompressedSparseColumn {
 --      _getFormatContiguousCSC ::  (ContiguousCompressedSparseMatrix rep)
@@ -262,14 +260,6 @@ newtype instance Format CompressedSparseColumn InnerContiguous (S (S Z)) rep =
 --  }
 --    --deriving (Show,Eq,Data)
 
-
-
-
-
-
-
-
-
 --CSR and CSC go here, and their version of lookups and next address and next index
 
 
@@ -279,6 +269,16 @@ newtype instance Format CompressedSparseColumn InnerContiguous (S (S Z)) rep =
 
 --  Offset binary search --- cribbed with permission from
 -- edward kmett's structured lib
+
+{-
+todo: theres some neat micro optimizations that are
+possible If I know how indexed structures are paged aligned and what not
+eg, when binary search, check both the first and last slot of a page I land on.
+Also on >= Nehalem, pages are "paired" so if you land on the lower page, the
+upper page is always loaded, etc etc. Not doing these for now.
+-}
+
+
 
 
 {-
