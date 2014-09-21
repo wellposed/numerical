@@ -423,13 +423,13 @@ instance V.Vector (BufferPure rep) Int
   => Layout  (Format DirectSparse Contiguous (S Z) rep ) (S Z) where
 
   transposedLayout  = id
-  {-# INLINE transposedLayout #-}
+  -- {-# INLINE transposedLayout #-}
 
   basicFormLogicalShape = \ form -> _logicalShapeDirectSparse form  :* Nil
-  {-# INLINE basicFormLogicalShape #-}
+  -- {-# INLINE basicFormLogicalShape #-}
 
   basicCompareIndex = \ _ (a:* Nil) (b :* Nil) ->compare a b
-  {-# INLINE basicCompareIndex #-}
+  -- {-# INLINE basicCompareIndex #-}
 
   rangedFormatAddress = \form ->
     case (minAddress form , maxAddress form ) of
@@ -464,6 +464,7 @@ instance V.Vector (BufferPure rep) Int
     \ (FormatDirectSparseContiguous _ _ lut) (Address addr) ->
       if  addr >= (V.length lut) then Nothing else Just  (Address (addr+1))
 
+  -- {-# INLINE basicAddressPopCount #-}
 
   --{-# INLINE basicNextIndex #-}
   --basicNextIndex =
@@ -515,14 +516,16 @@ instance  (V.Vector (BufferPure rep) Int )
                 ++ show loBound ++ " " ++ show hiBound
               else hi - lo
 
-
+   -- {-# INLINE rangedFormatAddress #-}
   rangedFormatAddress = \ form ->
     case (minAddress form,maxAddress form) of
       (Just least, Just greatest)-> Just (Range least greatest)
       _ -> Nothing
 
     where
-
+      {-
+      probably should deduplicate min/maxAddress
+      -}
       minAddress =
             \(FormatContiguousCompressedSparseRow
                 (FormatContiguousCompressedSparseInternal  y_row_range x_col_range
