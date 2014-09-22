@@ -465,14 +465,57 @@ instance V.Vector (BufferPure rep) Int
       if  addr >= (V.length lut) then Nothing else Just  (Address (addr+1))
 
   -- {-# INLINE basicAddressPopCount #-}
+  basicAddressPopCount = \ form (Range (Address lo) (Address hi)) ->
+    if not ( lo <= hi ) then
+      error $! "basicAddressPopCount was passed a bad Address Range " ++ show lo ++" " ++ show hi
+      else
+        case  rangedFormatAddress form of
+          Nothing -> 0
+          Just (Range (Address loBound) (Address  hiBound)) ->
+            if not $ (loBound<= lo ) && (hi <= hiBound)
+              then error $!
+               "basicAddressPopCount was passed a bad Address Range: "
+                ++show lo++" "++ show hi++"\nwith format Address range"
+                ++ show loBound ++ " " ++ show hiBound
+              else hi - lo
 
-  --{-# INLINE basicNextIndex #-}
-  --basicNextIndex =
-  --      \ (FormatDirectSparseContiguous size shift lut) (ix:*Nil) mebeAddress ->
-  --        if  ix >= size then Nothing
-  --          else case mebeAddress of
-  --            Nothing -> _noHint
-  --            Just (Address adr)-> _hinted
+
+{-
+    i've said it before, i'll say it again, scanning forward in the index space
+    for sparse structures is really weird, :)
+    but
+-}
+  -- {-# INLINE basicNextIndex #-}
+  basicNextIndex =
+    \form@(FormatDirectSparseContiguous size shift lut) (ix:*Nil) mebeAddress ->
+      if  ix >= size || ix >= lut V.! (V.length lut -1)  then Nothing
+            -- if ix is out of bounds or the last element, we're done!
+      else
+        let
+            resAddr = Address $! bsearchUp  (\lix-> ix < (lut V.! lix) )
+                        0 (V.length lut )
+        in case mebeAddress of
+          Nothing ->  resAddr `seq` (Just (basicToIndex form resAddr ,  resAddr))
+                -- Q: do i want the Index part of the tuple to be strict or not?
+                -- leaving it lazy for now
+                -- TODO / FIX / AUDIT ME / NOT SURE
+              -- this is the fall back binary search based lookup
+
+          Just (Address adr)->
+          -- make sure the address hint is in bounds and
+          -- is <= the current position
+              if adr >0 && adr < (V.length lut -1) && ix >=(lut V.! adr )
+              then
+                -- by construction we know theres at least one applicable index
+                -- thats
+                let !nextAddr = Address $!
+                                basicHybridSearchUp
+                                  (\lix-> ix <  (lut V.! lix) )
+                                  adr (V.length lut -1)
+                  in  Just (basicToIndex form nextAddr ,  nextAddr)
+              else
+                resAddr `seq` (Just (basicToIndex form resAddr ,  resAddr))
+
 
 ------------
 ------------
