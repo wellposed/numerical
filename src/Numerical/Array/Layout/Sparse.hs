@@ -465,9 +465,9 @@ instance V.Vector (BufferPure rep) Int
       if  addr >= (V.length lut) then Nothing else Just  (Address (addr+1))
 
   -- {-# INLINE basicAddressPopCount #-}
-  basicAddressPopCount = \ form (Range (Address lo) (Address hi)) ->
+  basicAddressPopCount = \ form (Range loadr@(Address lo) hiadr@(Address hi)) ->
     if not ( lo <= hi ) then
-      error $! "basicAddressPopCount was passed a bad Address Range " ++ show lo ++" " ++ show hi
+      error $! "basicAddressPopCount was passed a bad Address Range " ++ show loadr ++" " ++ show hiadr
       else
         case  rangedFormatAddress form of
           Nothing -> 0
@@ -697,8 +697,8 @@ overhead, but in general branch prediction should work out ok.
                     then Nothing
                     else Just (SparseAddress (outer + 1) (inner + 1 ) )
 
-        --  error "finish me damn it"
-  {-# INLINE basicToAddress #-}
+
+  -- {-# INLINE basicToAddress #-}
   basicToAddress =
         \ (FormatContiguousCompressedSparseRow
             (FormatContiguousCompressedSparseInternal  y_row_range x_col_range
