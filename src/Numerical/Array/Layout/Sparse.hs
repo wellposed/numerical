@@ -483,16 +483,18 @@ instance V.Vector (BufferPure rep) Int
 {-
     i've said it before, i'll say it again, scanning forward in the index space
     for sparse structures is really weird, :)
-    but
+
+    NOTE: also need to remember to do those index space shifts for
+    1dim direct sparse, and test them thoroughly
 -}
   -- {-# INLINE basicNextIndex #-}
   basicNextIndex =
     \form@(FormatDirectSparseContiguous size shift lut) (ix:*Nil) mebeAddress ->
-      if  ix >= size || ix >= lut V.! (V.length lut -1)  then Nothing
+      if  ix >= size || ix >= (lut V.! (V.length lut -1) - shift ) then Nothing
             -- if ix is out of bounds or the last element, we're done!
       else
         let
-            resAddr = Address $! bsearchUp  (\lix-> ix < (lut V.! lix) )
+            resAddr = Address $! bsearchUp  (\lix-> ix < ((lut V.! lix)-shift) )
                         0 (V.length lut )
         in case mebeAddress of
           Nothing ->  resAddr `seq` (Just (basicToIndex form resAddr ,  resAddr))
@@ -504,13 +506,13 @@ instance V.Vector (BufferPure rep) Int
           Just (Address adr)->
           -- make sure the address hint is in bounds and
           -- is <= the current position
-              if adr >0 && adr < (V.length lut -1) && ix >=(lut V.! adr )
+              if adr >0 && adr < (V.length lut -1) && ix >=((lut V.! adr )-shift)
               then
                 -- by construction we know theres at least one applicable index
                 -- thats
                 let !nextAddr = Address $!
                                 basicHybridSearchUp
-                                  (\lix-> ix <  (lut V.! lix) )
+                                  (\lix-> ix <  ((lut V.! lix)-shift ) )
                                   adr (V.length lut -1)
                   in  Just (basicToIndex form nextAddr ,  nextAddr)
               else
