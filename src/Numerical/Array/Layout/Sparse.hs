@@ -727,7 +727,14 @@ overhead, but in general branch prediction should work out ok.
                           ((rowStartIndex V.! (ix_y+1) ) - shift)
 
               else   (Nothing :: Maybe SparseAddress )
-
+  -- {-# INLINE basicNextIndex #-}
+  basicNextIndex =  error "you didnt fix me basicNextIndex CSR"
+    -- \form@(FormatContiguousCompressedSparseRow
+    --    (FormatContiguousCompressedSparseInternal
+    --       y_row_range x_col_range columnIndex rowStartIndex))
+    --(innerX :* outerY :*Nil) mebeSparseAddress -> -- __FixMe
+    --
+    --- _addBasicNextIndexContigCSR_FIXME
 
 
 -------
