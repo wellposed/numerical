@@ -27,7 +27,7 @@
 
 module Numerical.Array.Layout.Base(
   Layout(..)
-  ,LayoutAddress(..)
+  ,LayoutAddress
   ,Transposed
   ,FormatStorageRep
   ,Format
@@ -47,7 +47,7 @@ module Numerical.Array.Layout.Base(
 
 
 import Numerical.Nat
-import Numerical.Array.Address
+--import Numerical.Array.Address
 import Numerical.Array.Locality
 import Numerical.Array.Shape
 import Numerical.Array.Storage

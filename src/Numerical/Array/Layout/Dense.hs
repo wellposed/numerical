@@ -313,19 +313,17 @@ class Layout form rank =>  DenseLayout form  (rank :: Nat) | form -> rank  where
 {-
 fold the min/max into a range
 
--}
-    minDenseAddress :: form  -> Address
-    minDenseAddress = \format  ->  basicToDenseAddress format $ minDenseIndex format
-    {-# INLINE minDenseAddress #-}
+---}
+--    minDenseAddress :: form  -> Address
+--    minDenseAddress = \format  ->  basicToDenseAddress format $ minDenseIndex format
+--    {-# INLINE minDenseAddress #-}
 
-    maxDenseAddress :: form -> Address
-    maxDenseAddress = \format  ->  basicToDenseAddress format $ maxDenseIndex format
-    {-# INLINE maxDenseAddress #-}
-
-
-    minDenseIndex :: form -> Shape rank Int
-
-    maxDenseIndex :: form -> Shape rank Int
+--    maxDenseAddress :: form -> Address
+--    maxDenseAddress = \format  ->  basicToDenseAddress format $ maxDenseIndex format
+--    {-# INLINE maxDenseAddress #-}
+    --minDenseIndex :: form -> Shape rank Int
+    --maxDenseIndex :: form -> Shape rank Int
+    -- FIXME, add some sort of bounds checking powers
 
     basicToDenseAddress :: form  -> Shape rank Int ->   Address
 
@@ -350,8 +348,8 @@ fold the min/max into a range
 
     -- one of basicNextAddress and basicNextIndex must always be implemented
 #if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
-    {-# MINIMAL  basicToDenseIndex, basicToDenseAddress,  (basicNextDenseIndex | basicNextDenseAddress),
-      (minDenseAddress | minDenseIndex), (maxDenseIndex | maxDenseAddress)  #-}
+    {-# MINIMAL  basicToDenseIndex, basicToDenseAddress,
+     (basicNextDenseIndex | basicNextDenseAddress)   #-}
 #endif
 
 ---
@@ -388,7 +386,7 @@ computeStrideShape = \trvse shp  ->
 instance DenseLayout (Format Direct Contiguous (S Z) rep)  (S Z)  where
 
 
-    maxDenseAddress = \ (FormatDirectContiguous ix) -> Address (ix -1)
+    --maxDenseAddress = \ (FormatDirectContiguous ix) -> Address (ix -1)
 
 
     {-#INLINE basicToDenseAddress #-}
