@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 cabal configure && cabal build && cabal haddock --hyperlink-source \
-                                    --html-location='./' \
-                                    --contents-location='./index.html'
+                                    --html-location='./'  # \
+                                    # --contents-location='./index.html'
+
+                  # --html-location='/package/$pkg-$version/docs' \
+                  #                   --contents-location='/package/$pkg'
 S=$?
 if [ "${S}" -eq "0" ]; then
 
