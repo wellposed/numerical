@@ -33,6 +33,7 @@ module Numerical.Array.Layout.Base(
   ,Format
   ,Locality(..)
   ,TaggedShape(..)
+  ,GDSlice(..) --- right? right?
   ,majorCompareRightToLeft
   ,majorCompareLeftToRight
   ,shapeCompareRightToLeft
@@ -170,7 +171,7 @@ class Layout form  (rank :: Nat) | form -> rank  where
 
     -- | the (possibly empty) min and max of the valid addresses for a given format
     rangedFormatAddress ::  (address ~ LayoutAddress form)=> form -> Maybe (Range address)
-
+    -- FIX ME! this name is crap
 
     basicToAddress :: (address ~ LayoutAddress form)=>
         form  -> Shape rank Int -> Maybe  address
