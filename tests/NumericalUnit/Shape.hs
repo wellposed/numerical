@@ -13,7 +13,7 @@ import qualified Data.Vector.Storable as SV
 import qualified Data.Vector.Unboxed as UV
 import Prelude as P
 import Test.Tasty
-import Test.Tasty.HUnit
+import Test.Tasty.HUnit hiding ((@?=))
 
 unitTestShape = testGroup "Shape Unit tests"
         [ testCase "foldl on shape" $  S.foldl (+) 0 (1:* 2:* 3 :* Nil )  @?=   P.foldl   (+) 0  [1,2,3]
