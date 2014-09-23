@@ -144,12 +144,14 @@ by either a major axis slice
 
 {-
 NOTE!!!!!
-logicalValueBufferAddressShiftContiguousCSR (and friends)
+_logicalBaseIndexShiftDirectSparse (and friends)
 are so that major axis slices can still use the same buffer,
 (needed for both Contiguous and InnerContiguous cases).
 So When looking up the Address for a value based upon its
 Inner dimension, we need to *SUBTRACT* that shift
 to get the correct offset index into the current SLICE.
+
+NB: THIS IS A TERRRIBLE EXPLANATION, FIXMEEEEE
 
 Phrased differently, This address shift is the *Discrepancy/Difference*
 between the size of the elided prefix of the Vector and the starting
