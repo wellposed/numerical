@@ -157,6 +157,61 @@ type instance  Transposed (Format Column  Strided rank rep)=
     Format Row  Strided rank rep
 
 
+{-
+a bunch of routines used to give various Layout operations for
+array Formats that have  DenseLayout instance
+not exported or for human use
+-}
+{-# INLINE rangedFormatAddressDenseGeneric #-}
+rangedFormatAddressDenseGeneric ::
+  (Functor (Shape rank),Applicative (Shape rank),F.Foldable (Shape rank),
+            DenseLayout form rank, Address~LayoutAddress form)=> form -> Maybe (Range Address)
+rangedFormatAddressDenseGeneric = \ form ->
+  if  (fmap (flip (-) 1)$ basicFormLogicalShape form) `strictlyDominates`  pure 0
+    then Just $!
+       Range  (basicToDenseAddress form  $! pure 0)
+              (basicToDenseAddress form $!
+                  fmap (flip (-) 1) $! basicFormLogicalShape form)
+    else Nothing
+
+{-# INLINE basicToAddressDenseGeneric #-}
+basicToAddressDenseGeneric :: (Functor (Shape rank),Applicative (Shape rank),F.Foldable (Shape rank),
+    DenseLayout form rank,Address~LayoutAddress form) => form -> Shape rank Int -> Maybe Address
+basicToAddressDenseGeneric = \ form ix ->
+  if (fmap (flip (-) 1)$ basicFormLogicalShape form) `weaklyDominates`  ix
+    && ix `weaklyDominates` pure 0
+    then Just $ basicToDenseAddress form ix
+    else Nothing
+{-# INLINE basicToIndexDenseGeneric #-}
+basicToIndexDenseGeneric ::
+  (Functor (Shape rank),F.Foldable (Shape rank),
+    DenseLayout form rank,Address~LayoutAddress form) =>  form -> Address -> Shape rank Int
+basicToIndexDenseGeneric = \form addr ->
+  basicToDenseIndex form addr
+
+{-# INLINE basicNextAddressDenseGeneric #-}
+basicNextAddressDenseGeneric ::
+  (Functor (Shape rank),F.Foldable (Shape rank),
+    DenseLayout form rank,Address~LayoutAddress form) =>  form -> Address-> Maybe Address
+basicNextAddressDenseGeneric= \ form addy ->
+  case  rangedFormatAddress form of
+    Just  (Range lo hi ) ->  if addy >= lo && addy < hi
+        then Just $! basicNextDenseAddress form addy
+        else Nothing
+    Nothing -> Nothing
+
+{-# INLINE basicNextIndexDenseGeneric #-}
+basicNextIndexDenseGeneric :: (Functor (Shape rank),F.Foldable (Shape rank),Applicative (Shape rank),
+    DenseLayout form rank,Address~LayoutAddress form)  =>
+    form -> Shape rank Int -> Maybe Address ->Maybe (Shape rank Int,Address)
+basicNextIndexDenseGeneric= \form ix _  ->
+  if (fmap (flip (-) 1)$ basicFormLogicalShape form) `strictlyDominates`  ix
+      && ix `weaklyDominates` pure 0
+    then
+      Just $! basicNextDenseIndex form ix
+    else
+      Nothing
+
 
 
 -----
@@ -175,39 +230,16 @@ instance Layout (Format Direct Contiguous (S Z) rep)  (S Z)  where
     {-# INLINE basicCompareIndex #-}
     basicCompareIndex = \ _  (l:* _) (r:* _) -> compare l r
 
-    rangedFormatAddress = \ form ->
-      if  (fmap (flip (-) 1)$ basicFormLogicalShape form) `strictlyDominates`  pure 0
-        then Just $!
-           Range  (basicToDenseAddress form  $! pure 0)
-                  (basicToDenseAddress form $!
-                      fmap (flip (-) 1) $! basicFormLogicalShape form)
-        else Nothing
+    rangedFormatAddress =  rangedFormatAddressDenseGeneric
 
-    basicToAddress = \ form ix ->
-      if (fmap (flip (-) 1)$ basicFormLogicalShape form) `weaklyDominates`  ix
-        && ix `weaklyDominates` pure 0
-        then Just $ basicToDenseAddress form ix
-        else Nothing
+    basicToAddress = basicToAddressDenseGeneric
 
-    basicToIndex = \form addr ->
-      basicToDenseIndex form addr
+    basicToIndex = basicToIndexDenseGeneric
 
 
+    basicNextAddress=basicNextAddressDenseGeneric
 
-    basicNextAddress= \ form addy ->
-      case  rangedFormatAddress form of
-        Just  (Range lo hi ) ->  if addy >= lo && addy < hi
-            then Just $! basicNextDenseAddress form addy
-            else Nothing
-        Nothing -> Nothing
-
-    basicNextIndex= \form ix _  ->
-      if (fmap (flip (-) 1)$ basicFormLogicalShape form) `strictlyDominates`  ix
-          && ix `weaklyDominates` pure 0
-        then
-          Just $! basicNextDenseIndex form ix
-        else
-          Nothing
+    basicNextIndex= basicNextIndexDenseGeneric
 
 
     basicAddressPopCount = \ _   (Range (Address lo) (Address hi )) -> hi - lo
@@ -226,39 +258,15 @@ instance  Layout (Format Direct Strided (S Z) rep)  (S Z)  where
     {-# INLINE basicCompareIndex #-}
     basicCompareIndex = \ _  (l:* _) (r:* _) -> compare l r
 
-    rangedFormatAddress = \ form ->
-      if  (fmap (flip (-) 1)$ basicFormLogicalShape form) `strictlyDominates`  pure 0
-        then Just $!
-           Range  (basicToDenseAddress form  $! pure 0)
-                  (basicToDenseAddress form $!
-                      fmap (flip (-) 1) $! basicFormLogicalShape form)
-        else Nothing
+    rangedFormatAddress = rangedFormatAddressDenseGeneric
 
-    basicToAddress = \ form ix ->
-      if (fmap (flip (-) 1)$ basicFormLogicalShape form) `weaklyDominates`  ix
-        && ix `weaklyDominates` pure 0
-        then Just $ basicToDenseAddress form ix
-        else Nothing
+    basicToAddress = basicToAddressDenseGeneric
 
-    basicToIndex = \form addr ->
-      basicToDenseIndex form addr
+    basicToIndex = basicToIndexDenseGeneric
 
+    basicNextAddress=  basicNextAddressDenseGeneric
 
-
-    basicNextAddress= \ form addy ->
-      case  rangedFormatAddress form of
-        Just  (Range lo hi ) ->  if addy >= lo && addy < hi
-            then Just $! basicNextDenseAddress form addy
-            else Nothing
-        Nothing -> Nothing
-
-    basicNextIndex= \form ix _  ->
-      if (fmap (flip (-) 1)$ basicFormLogicalShape form) `strictlyDominates`  ix
-          && ix `weaklyDominates` pure 0
-        then
-          Just $! basicNextDenseIndex form ix
-        else
-          Nothing
+    basicNextIndex=  basicNextIndexDenseGeneric
 
     basicAddressPopCount = \form@(FormatDirectStrided size _ ) (Range loA hiA)->
       let newForm = (FormatDirectContiguous size)
@@ -289,40 +297,15 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
     basicAddressPopCount = \ _   (Range (Address lo) (Address hi )) -> hi - lo
       -- FIX me, add the range error checking
       -- in the style of the Sparse instances
+    rangedFormatAddress = rangedFormatAddressDenseGeneric
 
-    rangedFormatAddress = \ form ->
-      if  (fmap (flip (-) 1)$ basicFormLogicalShape form) `strictlyDominates`  pure 0
-        then Just $!
-           Range  (basicToDenseAddress form  $! pure 0)
-                  (basicToDenseAddress form $!
-                      fmap (flip (-) 1) $! basicFormLogicalShape form)
-        else Nothing
+    basicToAddress = basicToAddressDenseGeneric
 
-    basicToAddress = \ form ix ->
-      if (fmap (flip (-) 1)$ basicFormLogicalShape form) `weaklyDominates`  ix
-        && ix `weaklyDominates` pure 0
-        then Just $ basicToDenseAddress form ix
-        else Nothing
+    basicToIndex = basicToIndexDenseGeneric
 
-    basicToIndex = \form addr ->
-      basicToDenseIndex form addr
+    basicNextAddress=  basicNextAddressDenseGeneric
 
-
-
-    basicNextAddress= \ form addy ->
-      case  rangedFormatAddress form of
-        Just  (Range lo hi ) ->  if addy >= lo && addy < hi
-            then Just $! basicNextDenseAddress form addy
-            else Nothing
-        Nothing -> Nothing
-
-    basicNextIndex= \form ix _  ->
-      if (fmap (flip (-) 1)$ basicFormLogicalShape form) `strictlyDominates`  ix
-          && ix `weaklyDominates` pure 0
-        then
-          Just $! basicNextDenseIndex form ix
-        else
-          Nothing
+    basicNextIndex=  basicNextIndexDenseGeneric
 
 -----
 -----
@@ -343,39 +326,15 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
     basicCompareIndex = \ _  ls rs ->
       foldl majorCompareLeftToRight EQ  $ S.map2 compare ls rs
 
-    rangedFormatAddress = \ form ->
-      if  (fmap (flip (-) 1)$ basicFormLogicalShape form) `strictlyDominates`  pure 0
-        then Just $!
-           Range  (basicToDenseAddress form  $! pure 0)
-                  (basicToDenseAddress form $!
-                      fmap (flip (-) 1) $! basicFormLogicalShape form)
-        else Nothing
+    rangedFormatAddress = rangedFormatAddressDenseGeneric
 
-    basicToAddress = \ form ix ->
-      if (fmap (flip (-) 1)$ basicFormLogicalShape form) `weaklyDominates`  ix
-        && ix `weaklyDominates` pure 0
-        then Just $ basicToDenseAddress form ix
-        else Nothing
+    basicToAddress = basicToAddressDenseGeneric
 
-    basicToIndex = \form addr ->
-      basicToDenseIndex form addr
+    basicToIndex = basicToIndexDenseGeneric
 
+    basicNextAddress=  basicNextAddressDenseGeneric
 
-
-    basicNextAddress= \ form addy ->
-      case  rangedFormatAddress form of
-        Just  (Range lo hi ) ->  if addy >= lo && addy < hi
-            then Just $! basicNextDenseAddress form addy
-            else Nothing
-        Nothing -> Nothing
-
-    basicNextIndex= \form ix _  ->
-      if (fmap (flip (-) 1)$ basicFormLogicalShape form) `strictlyDominates`  ix
-          && ix `weaklyDominates` pure 0
-        then
-          Just $! basicNextDenseIndex form ix
-        else
-          Nothing
+    basicNextIndex=  basicNextIndexDenseGeneric
 
     basicAddressPopCount = \form@(FormatRowInnerContiguous size _) (Range loA hiA)->
       let newForm = (FormatRowContiguous size)
@@ -403,39 +362,15 @@ instance  (Applicative (Shape rank),Traversable (Shape rank))
     basicCompareIndex = \ _  ls rs ->
         foldl majorCompareLeftToRight EQ  $ S.map2 compare ls rs
 
-    rangedFormatAddress = \ form ->
-      if  (fmap (flip (-) 1)$ basicFormLogicalShape form) `strictlyDominates`  pure 0
-        then Just $!
-           Range  (basicToDenseAddress form  $! pure 0)
-                  (basicToDenseAddress form $!
-                      fmap (flip (-) 1) $! basicFormLogicalShape form)
-        else Nothing
+    rangedFormatAddress = rangedFormatAddressDenseGeneric
 
-    basicToAddress = \ form ix ->
-      if (fmap (flip (-) 1)$ basicFormLogicalShape form) `weaklyDominates`  ix
-        && ix `weaklyDominates` pure 0
-        then Just $ basicToDenseAddress form ix
-        else Nothing
+    basicToAddress = basicToAddressDenseGeneric
 
-    basicToIndex = \form addr ->
-      basicToDenseIndex form addr
+    basicToIndex = basicToIndexDenseGeneric
 
+    basicNextAddress=  basicNextAddressDenseGeneric
 
-
-    basicNextAddress= \ form addy ->
-      case  rangedFormatAddress form of
-        Just  (Range lo hi ) ->  if addy >= lo && addy < hi
-            then Just $! basicNextDenseAddress form addy
-            else Nothing
-        Nothing -> Nothing
-
-    basicNextIndex= \form ix _  ->
-      if (fmap (flip (-) 1)$ basicFormLogicalShape form) `strictlyDominates`  ix
-          && ix `weaklyDominates` pure 0
-        then
-          Just $! basicNextDenseIndex form ix
-        else
-          Nothing
+    basicNextIndex=  basicNextIndexDenseGeneric
 
     basicAddressPopCount = \form@(FormatRowStrided size _) (Range loA hiA)->
       let newForm = (FormatRowContiguous size)
@@ -463,40 +398,15 @@ instance  (Applicative (Shape rank), Traversable (Shape rank))
     basicAddressPopCount = \ _   (Range (Address lo) (Address hi )) -> hi - lo
       -- FIX me, add the range error checking
       -- in the style of the Sparse instances
+    rangedFormatAddress = rangedFormatAddressDenseGeneric
 
-    rangedFormatAddress = \ form ->
-      if  (fmap (flip (-) 1)$ basicFormLogicalShape form) `strictlyDominates`  pure 0
-        then Just $!
-           Range  (basicToDenseAddress form  $! pure 0)
-                  (basicToDenseAddress form $!
-                      fmap (flip (-) 1) $! basicFormLogicalShape form)
-        else Nothing
+    basicToAddress = basicToAddressDenseGeneric
 
-    basicToAddress = \ form ix ->
-      if (fmap (flip (-) 1)$ basicFormLogicalShape form) `weaklyDominates`  ix
-        && ix `weaklyDominates` pure 0
-        then Just $ basicToDenseAddress form ix
-        else Nothing
+    basicToIndex = basicToIndexDenseGeneric
 
-    basicToIndex = \form addr ->
-      basicToDenseIndex form addr
+    basicNextAddress=  basicNextAddressDenseGeneric
 
-
-
-    basicNextAddress= \ form addy ->
-      case  rangedFormatAddress form of
-        Just  (Range lo hi ) ->  if addy >= lo && addy < hi
-            then Just $! basicNextDenseAddress form addy
-            else Nothing
-        Nothing -> Nothing
-
-    basicNextIndex= \form ix _  ->
-      if (fmap (flip (-) 1)$ basicFormLogicalShape form) `strictlyDominates`  ix
-          && ix `weaklyDominates` pure 0
-        then
-          Just $! basicNextDenseIndex form ix
-        else
-          Nothing
+    basicNextIndex=  basicNextIndexDenseGeneric
 
  -- strideRow :: Shape rank Int,
 instance  (Applicative (Shape rank), Traversable (Shape rank))
@@ -512,39 +422,16 @@ instance  (Applicative (Shape rank), Traversable (Shape rank))
     {-# INLINE basicCompareIndex #-}
     basicCompareIndex = \ _  ls rs -> foldr majorCompareRightToLeft EQ  $ S.map2 compare ls rs
 
-    rangedFormatAddress = \ form ->
-      if  (fmap (flip (-) 1)$ basicFormLogicalShape form) `strictlyDominates`  pure 0
-        then Just $!
-           Range  (basicToDenseAddress form  $! pure 0)
-                  (basicToDenseAddress form $!
-                      fmap (flip (-) 1) $! basicFormLogicalShape form)
-        else Nothing
+    rangedFormatAddress = rangedFormatAddressDenseGeneric
 
-    basicToAddress = \ form ix ->
-      if (fmap (flip (-) 1)$ basicFormLogicalShape form) `weaklyDominates`  ix
-        && ix `weaklyDominates` pure 0
-        then Just $ basicToDenseAddress form ix
-        else Nothing
+    basicToAddress = basicToAddressDenseGeneric
 
-    basicToIndex = \form addr ->
-      basicToDenseIndex form addr
+    basicToIndex = basicToIndexDenseGeneric
 
+    basicNextAddress=  basicNextAddressDenseGeneric
 
+    basicNextIndex=  basicNextIndexDenseGeneric
 
-    basicNextAddress= \ form addy ->
-      case  rangedFormatAddress form of
-        Just  (Range lo hi ) ->  if addy >= lo && addy < hi
-            then Just $! basicNextDenseAddress form addy
-            else Nothing
-        Nothing -> Nothing
-
-    basicNextIndex= \form ix _  ->
-      if (fmap (flip (-) 1)$ basicFormLogicalShape form) `strictlyDominates`  ix
-          && ix `weaklyDominates` pure 0
-        then
-          Just $! basicNextDenseIndex form ix
-        else
-          Nothing
     basicAddressPopCount = \form@(FormatColumnInnerContiguous size _) (Range loA hiA)->
       let newForm = (FormatColumnContiguous size)
         in
@@ -567,39 +454,15 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
     {-# INLINE basicCompareIndex #-}
     basicCompareIndex = \ _  ls rs -> foldr majorCompareRightToLeft EQ $ S.map2 compare ls rs
 
-    rangedFormatAddress = \ form ->
-      if  (fmap (flip (-) 1)$ basicFormLogicalShape form) `strictlyDominates`  pure 0
-        then Just $!
-           Range  (basicToDenseAddress form  $! pure 0)
-                  (basicToDenseAddress form $!
-                      fmap (flip (-) 1) $! basicFormLogicalShape form)
-        else Nothing
+    rangedFormatAddress = rangedFormatAddressDenseGeneric
 
-    basicToAddress = \ form ix ->
-      if (fmap (flip (-) 1)$ basicFormLogicalShape form) `weaklyDominates`  ix
-        && ix `weaklyDominates` pure 0
-        then Just $ basicToDenseAddress form ix
-        else Nothing
+    basicToAddress = basicToAddressDenseGeneric
 
-    basicToIndex = \form addr ->
-      basicToDenseIndex form addr
+    basicToIndex = basicToIndexDenseGeneric
 
+    basicNextAddress=  basicNextAddressDenseGeneric
 
-
-    basicNextAddress= \ form addy ->
-      case  rangedFormatAddress form of
-        Just  (Range lo hi ) ->  if addy >= lo && addy < hi
-            then Just $! basicNextDenseAddress form addy
-            else Nothing
-        Nothing -> Nothing
-
-    basicNextIndex= \form ix _  ->
-      if (fmap (flip (-) 1)$ basicFormLogicalShape form) `strictlyDominates`  ix
-          && ix `weaklyDominates` pure 0
-        then
-          Just $! basicNextDenseIndex form ix
-        else
-          Nothing
+    basicNextIndex=  basicNextIndexDenseGeneric
 
     basicAddressPopCount = \form@(FormatColumnStrided size _) (Range loA hiA)->
       let newForm = (FormatColumnContiguous size)
