@@ -27,6 +27,7 @@
 
 module Numerical.Array.Layout.Base(
   Layout(..)
+  ,DenseLayout(..)
   ,LayoutAddress
   ,Transposed
   ,FormatStorageRep
@@ -42,12 +43,13 @@ module Numerical.Array.Layout.Base(
   ,module Numerical.Array.Locality
   ,module Numerical.Array.Shape
   ,module Numerical.Array.Range
+  ,module Numerical.Array.Address
 ) where
 
 
 
 import Numerical.Nat
---import Numerical.Array.Address
+import Numerical.Array.Address
 import Numerical.Array.Locality
 import Numerical.Array.Shape
 import Numerical.Array.Storage
@@ -171,7 +173,7 @@ class Layout form  (rank :: Nat) | form -> rank  where
 
     -- | the (possibly empty) min and max of the valid addresses for a given format
     rangedFormatAddress ::  (address ~ LayoutAddress form)=> form -> Maybe (Range address)
-    -- FIX ME! this name is crap
+    -- FIX ME! this name is crap, i dont like it 
 
     basicToAddress :: (address ~ LayoutAddress form)=>
         form  -> Shape rank Int -> Maybe  address
@@ -189,20 +191,47 @@ class Layout form  (rank :: Nat) | form -> rank  where
     basicAddressPopCount :: (address ~ LayoutAddress form)=>
         form -> (Range address)-> Int
 
-{-
-next sparse index needs to succeed even if the proposed current index Does not
+    {-# MINIMAL basicToAddress, basicToIndex, basicNextAddress,basicNextIndex 
+          ,rangedFormatAddress,basicFormLogicalShape,basicCompareIndex
+          , transposedLayout, basicAddressPopCount #-}
+
+
+      --FIXME add basicNextSparseIndex back into the minimal pragma and
+      -- KILL the default defn
+{-next sparse index needs to succeed even if the proposed current index Does not
   have a valid value.  Should return Maybe (Index,Address), and when != Nothing,
   should yield the minimal valid index strictly greater than the proposed index
 -}
 
 
- --    {-# MINIMAL basicToSparseAddress, basicToSparseIndex, basicNextSparseAddress
-   --    ,maxSparseAddress, minSparseAddress ,basicFormShape,basicCompareIndex, transposedLayout #-}
-      --FIXME add basicNextSparseIndex back into the minimal pragma and
-      -- KILL the default defn
 
 
 
+class Layout form rank =>  DenseLayout form  (rank :: Nat) | form -> rank  where
+
+
+
+    basicToDenseAddress :: form  -> Shape rank Int ->   Address
+
+    basicToDenseIndex :: form -> Address -> Shape rank Int
+
+
+
+    basicNextDenseAddress :: form  -> Address ->  Address
+    basicNextDenseAddress =  \form shp -> snd
+      (basicNextDenseIndex form  $ basicToDenseIndex form  shp )
+    {-# INLINE basicNextDenseAddress #-}
+
+    basicNextDenseIndex :: form  -> Shape rank Int ->(Shape rank Int,Address)
+    basicNextDenseIndex  = \form shp -> (\ addr ->( basicToDenseIndex form addr, addr) ) $!
+       (basicNextDenseAddress form  $ basicToDenseAddress form  shp )
+    {-# INLINE  basicNextDenseIndex #-}
+
+
+#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
+    {-# MINIMAL  basicToDenseIndex, basicToDenseAddress,
+     (basicNextDenseIndex | basicNextDenseAddress)   #-}
+#endif
 
 {-
 *Numerical.Array.Layout> basicToAddress (FormColumn (2 :* 3 :* 7 :* Nil)) (0:* 2 :* 2 :* Nil)

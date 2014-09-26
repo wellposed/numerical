@@ -58,7 +58,6 @@ import Data.Bits (unsafeShiftR)
 import Control.Applicative
 import Numerical.Array.Layout.Base
 --import Numerical.Array.Shape
-import Numerical.Array.Address
 import Numerical.InternalUtils
 import qualified  Data.Vector.Generic as V
 import Prelude hiding (error )

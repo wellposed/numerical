@@ -26,14 +26,13 @@ module Numerical.Array.Layout.Dense(
   ,Row
   ,Column
   ,Direct
-  ,module Numerical.Array.Address
+  ,module Numerical.Array.Layout.Base 
    ) where
 
 
 
 import Numerical.Nat
 import Control.Applicative
-import Numerical.Array.Address
 import Numerical.Array.Locality
 import Numerical.Array.Layout.Base
 import Numerical.Array.Shape as S
@@ -479,57 +478,6 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
 ----------------------
 
 
-class Layout form rank =>  DenseLayout form  (rank :: Nat) | form -> rank  where
-
--- nb, this should actually be "getCurrentAffineAddressInterval"
-    --getCurrentAddressInterval :: form -> Shape rank Int -> UniformAddressInterval
-
-    {-  Not sure if the minAddress and maxAddress
-  definitions are correct *in general*, but they're
-  correct for the example DenseLayout formats thusfar
-
-    -}
-{-
-fold the min/max into a range
-
----}
---    minDenseAddress :: form  -> Address
---    minDenseAddress = \format  ->  basicToDenseAddress format $ minDenseIndex format
---    {-# INLINE minDenseAddress #-}
-
---    maxDenseAddress :: form -> Address
---    maxDenseAddress = \format  ->  basicToDenseAddress format $ maxDenseIndex format
---    {-# INLINE maxDenseAddress #-}
-    --minDenseIndex :: form -> Shape rank Int
-    --maxDenseIndex :: form -> Shape rank Int
-    -- FIXME, add some sort of bounds checking powers
-
-    basicToDenseAddress :: form  -> Shape rank Int ->   Address
-
-    basicToDenseIndex :: form -> Address -> Shape rank Int
-
-
-    -- IMPORTANT NOTE, the NextAddress defined via Next Index seems
-    -- that it will only be invoked on strided/discontiguous dense formats
-    -- this
-    basicNextDenseAddress :: form  -> Address ->  Address
-    basicNextDenseAddress =  \form shp -> snd
-      (basicNextDenseIndex form  $ basicToDenseIndex form  shp )
-    {-# INLINE basicNextDenseAddress #-}
-
-    basicNextDenseIndex :: form  -> Shape rank Int ->(Shape rank Int,Address)
-    basicNextDenseIndex  = \form shp -> (\ addr ->( basicToDenseIndex form addr, addr) ) $!
-       (basicNextDenseAddress form  $ basicToDenseAddress form  shp )
-    {-# INLINE  basicNextDenseIndex #-}
-
-
-
-
-    -- one of basicNextAddress and basicNextIndex must always be implemented
-#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
-    {-# MINIMAL  basicToDenseIndex, basicToDenseAddress,
-     (basicNextDenseIndex | basicNextDenseAddress)   #-}
-#endif
 
 ---
 ---
