@@ -16,21 +16,14 @@ import qualified Data.Vector.Unboxed as UV
 --import qualified Data.Vector.Unboxed.Mutable as UVM
 
 {-
-not sure if this is the right design, or should just use the vector types
-directly, doing this for now :)
+Maybe I should define
+
+class Vector (BufferPure mode) a => Buffer mode a where
 
 
-the correct design will be to have
+class MVector (BufferMut mode) a=> MBuffer mode a where
 
-data family PureBuffer sort elem
-
-data family Buffer sort st elem
-
-and then have these be newtyped wrappers around
-the corresponding vector types,
-
-will do that tomorrow
-
+so i can reduce the boilerplate?
 
 -}
 
@@ -200,4 +193,3 @@ instance VG.Vector UV.Vector  a  => VG.Vector (BufferPure Unboxed) a   where
   {-# INLINE basicUnsafeSlice #-}
   {-# INLINE basicUnsafeIndexM #-}
   {-# INLINE elemseq  #-}
-

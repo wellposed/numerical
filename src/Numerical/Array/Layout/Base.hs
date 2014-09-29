@@ -189,7 +189,7 @@ class Layout form  (rank :: Nat) | form -> rank  where
 
 
     basicAddressPopCount :: (address ~ LayoutAddress form)=>
-        form -> (Range address)-> Int
+        form -> Range address -> Int
 
     {-# MINIMAL basicToAddress, basicToIndex, basicNextAddress,basicNextIndex 
           ,rangedFormatAddress,basicFormLogicalShape,basicCompareIndex

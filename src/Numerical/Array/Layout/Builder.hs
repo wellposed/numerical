@@ -32,7 +32,7 @@ import   Control.Applicative as A
 
 data BatchInit  rank a = BatchInit    { batchInitSize :: !Int
              ,batchInitKV :: !(Either [(Shape rank Int,a)]  (IntFun (Shape rank Int,a)))    }
-            deriving (Typeable)
+            deriving (Typeable,Functor)
 
 
 --instance (Show  a , Show  (Shape rank Int))=> Show (BatchInit rank a) where
@@ -85,13 +85,13 @@ class Layout form (rank::Nat) => LayoutBuilder form (rank::Nat) | form -> rank w
   buildFormatM :: (store~FormatStorageRep form,VG.Vector (BufferPure store) Int
       ,VG.Vector (BufferPure store) a,PrimMonad m)=>
          Shape rank Int -> proxy form -> a
-         -> (Maybe (BatchInit  rank a) )
+         -> Maybe (BatchInit  rank a) 
          ->m (form, BufferMut store (PrimState m) a )
 
 
 buildFormatPure:: forall store form rank proxy m  a.
   (LayoutBuilder form (rank::Nat),store~FormatStorageRep form,VG.Vector (BufferPure store) Int  ,VG.Vector (BufferPure store) a, Monad m ) =>
-     Shape rank Int -> proxy form -> a  -> (Maybe (BatchInit  rank a) )  ->m (form, BufferPure store  a )
+     Shape rank Int -> proxy form -> a  -> Maybe (BatchInit  rank a)   ->m (form, BufferPure store  a )
 buildFormatPure shape prox defaultValue builder =
   do  res@(!_,!_)<-return $! theComputation
       return res

@@ -261,7 +261,7 @@ class A.PureArray (ArrPure marr)  rank a => Array marr (rank:: Nat)  a | marr ->
     --  | basicMutableSparseIndexToAddres checks if a index is present or not
     -- helpful primitive for authoring codes for (un)structured sparse array format
     basicSparseIndexToAddress :: (address ~ MArrayAddress marr)
-      => marr s   a -> Index rank  ->  (Maybe address)
+      => marr s   a -> Index rank  ->  Maybe address
 
     -- | 'basicMutableAddressToIndex' assumes you only give it legal manifest addresses
     basicAddressToIndex :: (address ~ MArrayAddress marr) =>marr s   a -> address ->    Index rank
