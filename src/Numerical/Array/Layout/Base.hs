@@ -32,8 +32,10 @@ module Numerical.Array.Layout.Base(
   ,LayoutAddress
   ,Transposed
   ,FormatStorageRep
+  ,RectOrientationForm
+  ,RectDownRankForm
+  ,InnerContigForm
   ,Format
-  ,Locality(..)
   ,TaggedShape(..)
   ,GDSlice(..) --- right? right?
   ,SMajorOrientation(..)
@@ -216,9 +218,9 @@ data SMajorOrientation (o :: MajorOrientation) where
 
 
 
-type RectOrientationForm form :: MajorOrientation
-type RectDownRankForm   form :: *
-type InnerContigForm form :: *
+type family RectOrientationForm form :: MajorOrientation
+type family RectDownRankForm   form :: *
+type family InnerContigForm form :: *
 
 {- | 'RectilinearLayout' is the type class that supports the modle widely
   usable class of slicing operations in Numerical.
