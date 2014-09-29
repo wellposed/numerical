@@ -4,7 +4,7 @@
 -}
 
 -- {-# LANGUAGE PolyKinds   #-}
-{-# LANGUAGE BangPatterns #-}
+-- {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -16,7 +16,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE StandaloneDeriving#-}
+-- {-# LANGUAGE StandaloneDeriving#-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-#LANGUAGE UndecidableInstances #-}
 
@@ -28,6 +28,7 @@
 module Numerical.Array.Layout.Base(
   Layout(..)
   ,DenseLayout(..)
+  ,RectilinearLayout(..)
   ,LayoutAddress
   ,Transposed
   ,FormatStorageRep
@@ -35,10 +36,13 @@ module Numerical.Array.Layout.Base(
   ,Locality(..)
   ,TaggedShape(..)
   ,GDSlice(..) --- right? right?
+  ,SMajorOrientation(..)
+  ,MajorOrientation(..)
   ,majorCompareRightToLeft
   ,majorCompareLeftToRight
   ,shapeCompareRightToLeft
   ,shapeCompareLeftToRight
+  -- * All the various helper types
   ,module Numerical.Array.Storage
   ,module Numerical.Array.Locality
   ,module Numerical.Array.Shape
@@ -47,6 +51,7 @@ module Numerical.Array.Layout.Base(
 ) where
 
 
+import Data.Data
 
 import Numerical.Nat
 import Numerical.Array.Address
@@ -173,7 +178,7 @@ class Layout form  (rank :: Nat) | form -> rank  where
 
     -- | the (possibly empty) min and max of the valid addresses for a given format
     rangedFormatAddress ::  (address ~ LayoutAddress form)=> form -> Maybe (Range address)
-    -- FIX ME! this name is crap, i dont like it 
+    -- FIX ME! this name is crap, i dont like it
 
     basicToAddress :: (address ~ LayoutAddress form)=>
         form  -> Shape rank Int -> Maybe  address
@@ -191,21 +196,55 @@ class Layout form  (rank :: Nat) | form -> rank  where
     basicAddressPopCount :: (address ~ LayoutAddress form)=>
         form -> Range address -> Int
 
-    {-# MINIMAL basicToAddress, basicToIndex, basicNextAddress,basicNextIndex 
+    {-# MINIMAL basicToAddress, basicToIndex, basicNextAddress,basicNextIndex
           ,rangedFormatAddress,basicFormLogicalShape,basicCompareIndex
           , transposedLayout, basicAddressPopCount #-}
 
 
-      --FIXME add basicNextSparseIndex back into the minimal pragma and
-      -- KILL the default defn
-{-next sparse index needs to succeed even if the proposed current index Does not
-  have a valid value.  Should return Maybe (Index,Address), and when != Nothing,
-  should yield the minimal valid index strictly greater than the proposed index
+{-
+these names aren't ideal, but lets punt on bikeshedding till theres >= 2 serious
+users
 -}
+data MajorOrientation = Rowed | Columned | BlockedColumn | BlockedRow
+  deriving(Data,Typeable)
+
+data SMajorOrientation (o :: MajorOrientation) where
+    SRowed :: SMajorOrientation Rowed
+    SColumned :: SMajorOrientation Columned
+    SBlockedRow :: SMajorOrientation BlockedRow
+    SBlockedColumn :: SMajorOrientation BlockedColumn
+
+
+
+type RectOrientationForm form :: MajorOrientation
+type RectDownRankForm   form :: *
+type InnerContigForm form :: *
+
+{- | 'RectilinearLayout' is the type class that supports the modle widely
+  usable class of slicing operations in Numerical.
+  for every instance @'RectilinearLayout' form n@, a corresponding
+  @'RectOrientationForm' form @, @'RectDownRankForm' form@
+  and
+
+-}
+class Layout form rank =>
+  RectilinearLayout form (rank :: Nat) | form -> rank  where
 
 
 
 
+    unconsOuter:: (S down ~ rank)=> p form -> Shape rank a -> (a, Shape down a)
+    consOuter ::  (S down ~ rank)=> p form -> a -> Shape down a -> Shape rank a
+
+    majorAxisSlice :: form -> (Int,Int)-> form  -- should this be maybe form?
+    --majorAxisProject :: form -> Int -> form
+
+    majorAxisProject :: (RectilinearLayout downForm subRank
+        , rank ~ (S subRank)
+        , downForm~ RectDownRankForm form) => form -> Int -> form
+
+
+    rectlinearSlice :: (RectilinearLayout icForm rank,icForm~InnerContigForm form )=>form -> Index rank -> Index rank -> icForm
 
 class Layout form rank =>  DenseLayout form  (rank :: Nat) | form -> rank  where
 
@@ -224,7 +263,7 @@ class Layout form rank =>  DenseLayout form  (rank :: Nat) | form -> rank  where
 
     basicNextDenseIndex :: form  -> Shape rank Int ->(Shape rank Int,Address)
     basicNextDenseIndex  = \form shp -> (\ addr ->( basicToDenseIndex form addr, addr) ) $!
-       (basicNextDenseAddress form  $ basicToDenseAddress form  shp )
+       basicNextDenseAddress form  $ basicToDenseAddress form  shp
     {-# INLINE  basicNextDenseIndex #-}
 
 
