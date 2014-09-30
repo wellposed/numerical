@@ -37,11 +37,17 @@ data BatchInit  rank a = BatchInit    { batchInitSize :: !Int
 
 
 
---instance (Show  a , Show  (Shape rank Int))=> Show (BatchInit rank a) where
---  show (BatchInit size ls ) | size > 100 =  "(BatchInit " ++show size  ++
---                                          "-- only showing the first 100 elements\n"
---                                          ++ (show $ take 100 ls ) ++ "\n"
---                             | otherwise = error "FINISH THIS SHIT"
+instance (Show  a , Show  (Shape rank Int))=> Show (BatchInit rank a) where
+  show (BatchInit size (Left ls) )  | size > 100 =  "(BatchInit " ++show size  ++
+                                          "-- only showing the first 100 elements\n"
+                                          ++ "(Left "++(show $ take 100 ls ) ++ "))\n"
+                                    | otherwise ="(BatchInit " ++show size  ++
+                                     " (Left "++(show  ls ) ++ "))\n"
+  show (BatchInit size (Right (Ifun f)) ) | size > 100 =  "(BatchInit " ++show size  ++
+                                          "-- only showing the first 100 elements\n"
+                                          ++ "(Left "++(show $ runST (Prelude.mapM f [0..100]) ) ++ "))\n"
+                             | otherwise ="(BatchInit " ++show size
+                                          ++ "(Left "++(show $ runST (Prelude.mapM f [0,1..size -1]) ) ++ "))\n"
 
 
 newtype IntFun a = Ifun  (forall m. (PrimMonad m,Functor m )=>  Int -> m a )
