@@ -1,10 +1,14 @@
 
 {-# LANGUAGE TypeFamilies,FlexibleInstances,MultiParamTypeClasses,FlexibleContexts #-}
+{-# LANGUAGE UndecidableInstances #-}
 module Numerical.Array.Storage(Boxed
   ,Unboxed
   ,Storable
   ,BufferPure(..)
-  ,BufferMut(..)) where
+  ,BufferMut(..)
+  ,Buffer
+  ,MBuffer
+  ,) where
 
 import qualified Data.Vector.Generic as VG
 import qualified Data.Vector.Generic.Mutable as VGM
@@ -26,6 +30,12 @@ class MVector (BufferMut mode) a=> MBuffer mode a where
 so i can reduce the boilerplate?
 
 -}
+
+class VG.Vector (BufferPure mode) a => Buffer mode a
+class VGM.MVector (BufferMut mode) a=> MBuffer mode a
+
+instance VG.Vector (BufferPure mode) a => Buffer mode a
+instance VGM.MVector (BufferMut mode) a=> MBuffer mode a
 
 data Boxed
 data Unboxed
