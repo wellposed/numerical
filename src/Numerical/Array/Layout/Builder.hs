@@ -188,7 +188,9 @@ isStrictlyMonotonicV cmp v = go  0 (VG.length v)
                   _ -> False
 
 
-instance  (Buffer rep Int) =>LayoutBuilder (Format DirectSparse Contiguous (S Z) rep ) (S Z) where
+instance (Buffer rep Int)=>LayoutBuilder (Format DirectSparse Contiguous (S Z) rep ) (S Z) where
+
+
   buildFormatM (size:* _) _ _ Nothing  = do
       mvI <- VGM.new 0
       vI <- VG.unsafeFreeze mvI
@@ -196,12 +198,14 @@ instance  (Buffer rep Int) =>LayoutBuilder (Format DirectSparse Contiguous (S Z)
       return $!  (FormatDirectSparseContiguous size 0 vI, mvV)
 
   buildFormatM (size:* _) _ _ (Just builder)= do
-    builtTup <- return $  fmap  ( \((ix:*Nil),v)-> (ix,v)) builder
-    --(MVPair (MVLeaf ix) (MVLeaf val)) <- materializeBatchMV $ fmap  ( \((ix:*Nil),v)-> (ix,v)) builder
-    -- if i swap to using this i get CRAZY type errors
-    ix <- materializeBatchMV $ fmap fst builtTup
-    val <- materializeBatchMV $ fmap snd builtTup
-    _<- IntroSort.sortBy  (\x y -> compare (fst x) (fst y)) (MVPair (MVLeaf ix) (MVLeaf val))
+    -- need to use let so type inference doesnt totally barf
+    mvt@(MVPair (MVLeaf ix) (MVLeaf val)) <- materializeBatchMV $ fmap  ( \((ix:*_),v)-> (ix,v)) builder
+    -- if i swap to using this  instead of  ix <- mat.. ; val <- mat..
+    --i get CRAZY type errors
+    -- could this be a ghc bug?
+    --ix <- materializeBatchMV $ fmap fst builtTup
+    --val <- materializeBatchMV $ fmap snd builtTup
+    _<- IntroSort.sortBy  (\x y -> compare (fst x) (fst y)) mvt
                                                               -- this lets me sort a pair of arrays!
     vIx <- VG.unsafeFreeze ix
     optFail  <- return $ isStrictlyMonotonicV   compare vIx
