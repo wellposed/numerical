@@ -12,6 +12,7 @@
 -- {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Numerical.Array.Layout.Builder where
 
@@ -28,14 +29,22 @@ import qualified  Data.Foldable as F
 import   Data.Traversable as T
 import   Control.Applicative as A
 
+import Numerical.Data.Vector.Pair
+
+import Numerical.Array.Layout.Sparse
+
+import Data.Vector.Algorithms.Intro as IntroSort
+
+import Numerical.InternalUtils
+
+import Prelude hiding (error)
 
 
 data BatchInit   v = BatchInit    { batchInitSize :: !Int
              ,batchInitKV :: !(Either [v]  (IntFun v))    }
             deriving (Typeable)
 
-materializeBatchMV :: (PrimMonad m, VGM.MVector mv a)
-      => BatchInit a  -> m (mv (PrimState m) a)
+materializeBatchMV :: (PrimMonad m, VGM.MVector mv a)  => BatchInit a  -> m (mv (PrimState m) a)
 materializeBatchMV  (BatchInit size (Left ls )) =
          do
             newMV <- VGM.new size
@@ -109,9 +118,10 @@ class Layout form (rank::Nat) => LayoutBuilder form (rank::Nat) | form -> rank w
          ->m (form, BufferMut store (PrimState m) a )
 
 
-buildFormatPure:: forall store form rank proxy m  a.
-  (LayoutBuilder form (rank::Nat),store~FormatStorageRep form,Buffer store Int  ,Buffer store  a, Monad m ) =>
-     Shape rank Int -> proxy form -> a  -> Maybe (BatchInit  (Shape rank Int,a))   ->m (form, BufferPure store  a )
+buildFormatPure:: forall store form rank proxy m  a. (LayoutBuilder form (rank::Nat)
+  ,store~FormatStorageRep form,Buffer store Int  ,Buffer store  a, Monad m ) =>
+     Shape rank Int -> proxy form -> a  -> Maybe (BatchInit  (Shape rank Int,a))
+                                              ->m (form, BufferPure store  a )
 buildFormatPure shape prox defaultValue builder =
   do  res@(!_,!_)<-return $! theComputation
       return res
@@ -150,16 +160,63 @@ instance LayoutBuilder (Format  Direct Contiguous (S Z) rep) (S Z) where
 
 -- really wish I didn't have to write the foldable and traversable constraints
 -- seems like a code smell?!
-instance (F.Foldable (Shape r),T.Traversable (Shape r) ,A.Applicative (Shape r))=> LayoutBuilder (Format  Row Contiguous r rep) r  where
+instance (F.Foldable (Shape r),T.Traversable (Shape r) ,A.Applicative (Shape r))
+  => LayoutBuilder (Format  Row Contiguous r rep) r  where
 
    buildFormatM ix  _ defaultValue _ =
       do
         buf<-  VGM.replicate (F.foldl' (*) 0   ix) defaultValue
         return (FormatRowContiguous   ix,buf)
 
-instance (F.Foldable (Shape r),T.Traversable (Shape r) ,A.Applicative (Shape r))=>  LayoutBuilder (Format  Column Contiguous r rep) r  where
+instance (F.Foldable (Shape r),T.Traversable (Shape r) ,A.Applicative (Shape r))
+  =>  LayoutBuilder (Format  Column Contiguous r rep) r  where
 
    buildFormatM ix  _ defaultValue _ =
       do
         buf<-  VGM.replicate (F.foldl' (*) 0   ix) defaultValue
         return (FormatColumnContiguous   ix,buf)
+
+isStrictlyMonotonicV ::(VG.Vector v e)=> (e -> e->Ordering)-> v e -> Maybe Int
+isStrictlyMonotonicV cmp v = go  0 (VG.length v)
+  where
+    go !i !len  | i+1 >= len   = Nothing
+              |  (v VG.! i) `lt` (v VG.! (i+1))= go (i+1) len
+             | otherwise = Just i
+
+    lt a b = case cmp a b  of
+                  LT -> True
+                  _ -> False
+
+
+instance  (Buffer rep Int) =>LayoutBuilder (Format DirectSparse Contiguous (S Z) rep ) (S Z) where
+  buildFormatM (size:* _) _ _ Nothing  = do
+      mvI <- VGM.new 0
+      vI <- VG.unsafeFreeze mvI
+      mvV <- VGM.new 0
+      return $!  (FormatDirectSparseContiguous size 0 vI, mvV)
+
+  buildFormatM (size:* _) _ _ (Just builder)= do
+    builtTup <- return $  fmap  ( \((ix:*Nil),v)-> (ix,v)) builder
+    --(MVPair (MVLeaf ix) (MVLeaf val)) <- materializeBatchMV $ fmap  ( \((ix:*Nil),v)-> (ix,v)) builder
+    -- if i swap to using this i get CRAZY type errors
+    ix <- materializeBatchMV $ fmap fst builtTup
+    val <- materializeBatchMV $ fmap snd builtTup
+    _<- IntroSort.sortBy  (\x y -> compare (fst x) (fst y)) (MVPair (MVLeaf ix) (MVLeaf val))
+                                                              -- this lets me sort a pair of arrays!
+    vIx <- VG.unsafeFreeze ix
+    optFail  <- return $ isStrictlyMonotonicV   compare vIx
+    --_hoelly
+    case optFail of
+      Nothing -> return (FormatDirectSparseContiguous size 0 vIx, val)
+      Just ixWrong ->  error $ "DirectSparse Index duplication at index "++ show (vIx VG.! ixWrong)
+
+
+--instance LayoutBuilder (Format CompressedSparseRow Contiguous (S (S Z)) rep ) (S (S Z)) where
+--  buildFormatM (x:* y :* _) proxy  defaultVal Nothing= do
+
+--    return
+--      FormatContiguousCompressedSparseRow
+--        (FormatContiguousCompressedSparseInternal y x  )
+
+
+
