@@ -34,6 +34,19 @@ data BatchInit  rank a = BatchInit    { batchInitSize :: !Int
              ,batchInitKV :: !(Either [(Shape rank Int,a)]  (IntFun (Shape rank Int,a)))    }
             deriving (Typeable)
 
+materializeBatchMV :: (PrimMonad m, VGM.MVector mv (Shape rank Int,a))
+      => BatchInit rank a -> m (mv (PrimState m) (Shape rank Int,a))
+materializeBatchMV  (BatchInit size (Left ls )) =
+         do
+            newMV <- VGM.new size
+            _ <- Prelude.mapM (\(ix ,val )-> VGM.unsafeWrite newMV  ix val ) (zip [0..] $ take size ls)
+            return newMV
+materializeBatchMV  (BatchInit size (Right (Ifun f) )) =
+         do
+            newMV <- VGM.new size
+            _ <- Prelude.mapM (\ix -> do v <- (f ix) ; VGM.unsafeWrite newMV  ix  v ) $ take size  [0..]
+            return newMV
+
 
 
 
@@ -50,13 +63,13 @@ instance (Show  a , Show  (Shape rank Int))=> Show (BatchInit rank a) where
                                           ++ "(Left "++(show $ runST (Prelude.mapM f [0,1..size -1]) ) ++ "))\n"
 
 
-newtype IntFun a = Ifun  (forall m. (PrimMonad m,Functor m )=>  Int -> m a )
+newtype IntFun a = Ifun  (forall m. (PrimMonad m)=>  Int -> m a )
 -- This may change substantially in a future release, but for now
 -- acts like
             deriving (Typeable)
 
 instance  Functor IntFun  where
-  fmap f (Ifun g) = Ifun (\x->  f <$> g x  )
+  fmap f (Ifun g) = Ifun (\x->   g x  >>= (\ y -> return (f y))  )
   {-# INLINE fmap #-}
 
 instance Functor (BatchInit  rank) where
@@ -90,15 +103,14 @@ and put them into different classes, punting that for now
 
 class Layout form (rank::Nat) => LayoutBuilder form (rank::Nat) | form -> rank where
 
-  buildFormatM :: (store~FormatStorageRep form,VG.Vector (BufferPure store) Int
-      ,VG.Vector (BufferPure store) a,PrimMonad m)=>
+  buildFormatM :: (store~FormatStorageRep form,Buffer store Int ,Buffer store a,PrimMonad m)=>
          Shape rank Int -> proxy form -> a
          -> Maybe (BatchInit  rank a)
          ->m (form, BufferMut store (PrimState m) a )
 
 
 buildFormatPure:: forall store form rank proxy m  a.
-  (LayoutBuilder form (rank::Nat),store~FormatStorageRep form,VG.Vector (BufferPure store) Int  ,VG.Vector (BufferPure store) a, Monad m ) =>
+  (LayoutBuilder form (rank::Nat),store~FormatStorageRep form,Buffer store Int  ,Buffer store  a, Monad m ) =>
      Shape rank Int -> proxy form -> a  -> Maybe (BatchInit  rank a)   ->m (form, BufferPure store  a )
 buildFormatPure shape prox defaultValue builder =
   do  res@(!_,!_)<-return $! theComputation
