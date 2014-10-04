@@ -140,7 +140,7 @@ the dense instances ignore the builder structure, which does suggest that maybe
 there shoudl be a dense builder layout class and a sparse layout class separately
 -}
 
-instance (VG.Vector (BufferPure rep) Int)=> LayoutBuilder (Format  Direct Contiguous (S Z) rep) (S Z) where
+instance LayoutBuilder (Format  Direct Contiguous (S Z) rep) (S Z) where
 
    buildFormatM (size:* _) _ defaultValue _ =
       do
@@ -150,14 +150,14 @@ instance (VG.Vector (BufferPure rep) Int)=> LayoutBuilder (Format  Direct Contig
 
 -- really wish I didn't have to write the foldable and traversable constraints
 -- seems like a code smell?!
-instance (VG.Vector (BufferPure rep) Int,F.Foldable (Shape r),T.Traversable (Shape r) ,A.Applicative (Shape r))=> LayoutBuilder (Format  Row Contiguous r rep) r  where
+instance (F.Foldable (Shape r),T.Traversable (Shape r) ,A.Applicative (Shape r))=> LayoutBuilder (Format  Row Contiguous r rep) r  where
 
    buildFormatM ix  _ defaultValue _ =
       do
         buf<-  VGM.replicate (F.foldl' (*) 0   ix) defaultValue
         return (FormatRowContiguous   ix,buf)
 
-instance (VG.Vector (BufferPure rep) Int,F.Foldable (Shape r),T.Traversable (Shape r) ,A.Applicative (Shape r))=>  LayoutBuilder (Format  Column Contiguous r rep) r  where
+instance (F.Foldable (Shape r),T.Traversable (Shape r) ,A.Applicative (Shape r))=>  LayoutBuilder (Format  Column Contiguous r rep) r  where
 
    buildFormatM ix  _ defaultValue _ =
       do
