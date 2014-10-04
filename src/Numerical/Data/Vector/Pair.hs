@@ -53,12 +53,18 @@ probably should just
 
 data Prod = Pair Prod Prod | Unit
 
-data  VProd  (vect :: * -> * ) (prd:: Prod ) val where
+
+data family   VProd  (vect :: * -> * ) (prd:: Prod ) val  -- where
+data instance VProd v Unit a where
     VLeaf ::  !(v a) -> VProd v   Unit a
+
+data instance VProd v (Pair pra prb )  (a,b) where
     VPair  :: !(VProd v pra a) -> !(VProd v prb b ) ->VProd v (Pair  pra prb) (a,b)
 
-data  MVProd  (vect :: * -> * -> * )  (prd:: Prod ) (st :: * ) val where
-    MVLeaf :: !(mv  st a) -> MVProd mv  Unit st  a
+data family   MVProd  (vect :: * -> * -> * )  (prd:: Prod ) (st :: * ) val  -- where
+data instance   MVProd mv Unit  st a where
+  MVLeaf :: !(mv  st a) -> MVProd mv  Unit st  a
+data instance   MVProd mv (Pair pra prb)  st (a,b) where
     MVPair  :: !(MVProd mv pra st a) -> !(MVProd mv  prb   st b ) -> MVProd mv  (Pair pra prb) st (a,b)
 
 
