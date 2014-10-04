@@ -29,13 +29,12 @@ install:
  - sudo /opt/ghc/$GHCVER/bin/ghc-pkg recache
  - /opt/ghc/$GHCVER/bin/ghc-pkg recache --user
  - cabal-1.20 update
- - cabal-1.20 install --only-dependencies
+ - cabal-1.20 install --only-dependencies --enable-tests --enable-benchmarks
 
 # Here starts the actual work to be performed for the package under test; any command which exits with a non-zero exit code causes the build to fail.
 script:
  - cabal-1.20 configure  -flib-Werror --enable-tests --enable-benchmarks -v2 # --ghc-options="-Werror"  # -v2 provides useful information for debugging
  - cabal-1.20 build   # this builds all libraries and executables (including tests/benchmarks)
- - cabal-1.20 install --only-dependencies --enable-tests --enable-benchmarks --allow-newer=base
  - cabal-1.20 test   --show-details=always
  # - cabal-1.20 check
  - cabal-1.20 sdist   # tests that a source-distribution can be generated
