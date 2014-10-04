@@ -30,12 +30,12 @@ import   Control.Applicative as A
 
 
 
-data BatchInit  rank a = BatchInit    { batchInitSize :: !Int
-             ,batchInitKV :: !(Either [(Shape rank Int,a)]  (IntFun (Shape rank Int,a)))    }
+data BatchInit   v = BatchInit    { batchInitSize :: !Int
+             ,batchInitKV :: !(Either [v]  (IntFun v))    }
             deriving (Typeable)
 
-materializeBatchMV :: (PrimMonad m, VGM.MVector mv (Shape rank Int,a))
-      => BatchInit rank a -> m (mv (PrimState m) (Shape rank Int,a))
+materializeBatchMV :: (PrimMonad m, VGM.MVector mv a)
+      => BatchInit a  -> m (mv (PrimState m) a)
 materializeBatchMV  (BatchInit size (Left ls )) =
          do
             newMV <- VGM.new size
@@ -50,7 +50,7 @@ materializeBatchMV  (BatchInit size (Right (Ifun f) )) =
 
 
 
-instance (Show  a , Show  (Shape rank Int))=> Show (BatchInit rank a) where
+instance (Show  a)=> Show (BatchInit a) where
   show (BatchInit size (Left ls) )  | size > 100 =  "(BatchInit " ++show size  ++
                                           "-- only showing the first 100 elements\n"
                                           ++ "(Left "++(show $ take 100 ls ) ++ "))\n"
@@ -72,14 +72,14 @@ instance  Functor IntFun  where
   fmap f (Ifun g) = Ifun (\x->   g x  >>= (\ y -> return (f y))  )
   {-# INLINE fmap #-}
 
-instance Functor (BatchInit  rank) where
+instance Functor BatchInit  where
   {-# INLINE fmap  #-}
   fmap = \f bival ->
               case  bival of
                 (BatchInit size (Left ls))->
-                       BatchInit size (Left (Prelude.map   (\(ix,val)-> (ix, f val)) ls  ))
+                       BatchInit size (Left (Prelude.map   f  ls  ))
                 (BatchInit size (Right gfun))->
-                      BatchInit size (Right  $ fmap  (\(ix,val)-> (ix, f val)) gfun  )
+                      BatchInit size (Right  $ fmap  f gfun  )
 
 
 
@@ -105,13 +105,13 @@ class Layout form (rank::Nat) => LayoutBuilder form (rank::Nat) | form -> rank w
 
   buildFormatM :: (store~FormatStorageRep form,Buffer store Int ,Buffer store a,PrimMonad m)=>
          Shape rank Int -> proxy form -> a
-         -> Maybe (BatchInit  rank a)
+         -> Maybe (BatchInit  (Shape rank Int,a))
          ->m (form, BufferMut store (PrimState m) a )
 
 
 buildFormatPure:: forall store form rank proxy m  a.
   (LayoutBuilder form (rank::Nat),store~FormatStorageRep form,Buffer store Int  ,Buffer store  a, Monad m ) =>
-     Shape rank Int -> proxy form -> a  -> Maybe (BatchInit  rank a)   ->m (form, BufferPure store  a )
+     Shape rank Int -> proxy form -> a  -> Maybe (BatchInit  (Shape rank Int,a))   ->m (form, BufferPure store  a )
 buildFormatPure shape prox defaultValue builder =
   do  res@(!_,!_)<-return $! theComputation
       return res
