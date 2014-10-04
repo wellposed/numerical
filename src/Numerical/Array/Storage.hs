@@ -8,7 +8,11 @@ module Numerical.Array.Storage(Boxed
   ,BufferMut(..)
   ,Buffer
   ,MBuffer
-  ,) where
+  ,unsafeBufferThaw
+  ,unsafeBufferFreeze) where
+
+
+import Control.Monad.Primitive ( PrimMonad, PrimState )
 
 import qualified Data.Vector.Generic as VG
 import qualified Data.Vector.Generic.Mutable as VGM
@@ -57,7 +61,12 @@ newtype instance BufferMut Unboxed st elem = UnboxedBufferMut (UV.MVector st ele
 newtype instance BufferMut Storable st  elem = StorableBufferMut (SV.MVector st elem)
 
 
+unsafeBufferFreeze :: (Buffer rep a,MBuffer rep a,PrimMonad m) =>BufferMut rep (PrimState m )  a -> m (BufferPure rep a)
+unsafeBufferFreeze =  VG.basicUnsafeFreeze
 
+unsafeBufferThaw :: (Buffer rep a,MBuffer rep a,PrimMonad m)
+        =>(BufferPure rep a) -> m (BufferMut rep (PrimState m )  a)
+unsafeBufferThaw = VG.basicUnsafeThaw
 
 instance (VGM.MVector BV.MVector elem) => VGM.MVector (BufferMut Boxed)  elem where
   basicLength = \(BoxedBufferMut v) -> VGM.basicLength v
