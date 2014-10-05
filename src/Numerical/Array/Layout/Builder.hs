@@ -34,6 +34,7 @@ import Numerical.Data.Vector.Pair
 import Numerical.Array.Layout.Sparse
 
 import Data.Vector.Algorithms.Intro as IntroSort
+import Data.List (group)
 
 import Numerical.InternalUtils
 
@@ -215,12 +216,66 @@ instance (Buffer rep Int)=>LayoutBuilder (Format DirectSparse Contiguous (S Z) r
       Just ixWrong ->  error $ "DirectSparse Index duplication at index "++ show (vIx VG.! ixWrong)
 
 
---instance LayoutBuilder (Format CompressedSparseRow Contiguous (S (S Z)) rep ) (S (S Z)) where
---  buildFormatM (x:* y :* _) proxy  defaultVal Nothing= do
+instance (Buffer rep Int) => LayoutBuilder (Format CompressedSparseRow Contiguous (S (S Z)) rep ) (S (S Z)) where
 
---    return
---      FormatContiguousCompressedSparseRow
---        (FormatContiguousCompressedSparseInternal y x  )
+  buildFormatM (x:* y :* _) _  _ Nothing= do
+    mvi <-  VGM.new 0
+    vi <-  VG.unsafeFreeze  mvi
+    mvval <- VGM.new 0
+    return $
+      (FormatContiguousCompressedSparseRow
+              (FormatContiguousCompressedSparseInternal y x  vi vi), mvval )
+
+  buildFormatM (x:* y :* _) prox  _ (Just builder) = do
+    mvtup@(MVPair (MVPair (MVLeaf mvectYs) (MVLeaf mvectXs)) (MVLeaf mvectVals))<-
+          materializeBatchMV  $ fmap (\((xix:* yix :* _),val)-> ((yix,xix),val) ) builder
+    _ <-  IntroSort.sortBy (\((y1,x1),_) ((y2,x2),_) ->  basicCompareIndex  prox (x1:*y1 :* Nil) (x2:*y2:* Nil)  )
+                  mvtup
+    vectXs <- unsafeBufferFreeze mvectXs
+    vectYs <- unsafeBufferFreeze mvectYs
+    --- predicate check here wrt monotonicity of
+    --- compute runlength partial sums of where ys go
+
+    -- need to actually check
+    yRunsVect <- return $
+          VG.replicate (y) (0::Int) VG.//  computeStarts  (computeRunLengths vectYs) 0 y
+    --_ <- (error "computeRUnCount") vectYs yRunsMVect
+    --yRunsVect <- unsafeBufferFreeze yRunsMVect
+
+    return $
+      (FormatContiguousCompressedSparseRow
+              (FormatContiguousCompressedSparseInternal y x  vectXs yRunsVect), mvectVals )
+
+  buildFormatM _ _  _ _= error "this is actually impossible"
+        --- needed to placate coverage checker
+
+computeRunLengths :: (VG.Vector v e, Eq e)=> v e -> [(e,Int)]
+computeRunLengths =  \y ->   fmap   (\x ->(head x,length x)) $ group $ VG.toList y
 
 
 
+{-# SPECIALIZE computeStarts :: [(Int,Int)]->Int->Int ->[(Int,Int)] #-}
+
+computeStarts:: (Enum a, Ord a, Num b )=>[(a,b)]-> a -> a -> [(a,b)]
+computeStarts [] start end | start <= end  = fmap (\x -> (x ,0)) [start..end]
+                          |  otherwise = error "bad start end arguments to computeStarts"
+computeStarts ls start end | start <= end  = go start 0 ls
+                            | otherwise =  error "bad start end arguments to computeStarts"
+  where
+    --go :: a ->b->[(a,b)]-> [(a,b)]
+    go !posNext preSum [] | posNext <= end = fmap (\x -> (x,preSum)) [posNext .. end]
+                      | otherwise  = error "impossible go computeStarts "
+    go !posNext !preSum gls@((posAt,atSum):rest)
+            | posNext < posAt= (posNext,preSum):  go (succ posNext) preSum gls
+            | posNext == posAt = (posNext,preSum) : go (succ posNext) (preSum + atSum) rest
+            | otherwise = error "bad position in prefix stream for computeStarts go, literally unpossible "
+
+
+
+--computeStarts :: (Eq a, Num a)=> [(a,Int)]->Int -> [(a,Int)]
+--computeStarts [] len = map (\x -> (x ,0)) [0..len]
+--computeStarts ls len = go 0 0 ls
+--   where
+--    go preSum place [] |  place > len = []
+--                        | place == len = [(place,preSum)]
+--                        | otherwise = map
