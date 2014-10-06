@@ -238,7 +238,7 @@ instance (Buffer rep Int) => LayoutBuilder (Format CompressedSparseRow Contiguou
 
     -- need to actually check
     yRunsVect <- return $
-          VG.replicate (y) (0::Int) VG.//  computeStarts  (computeRunLengths vectYs) 0 y
+          VG.replicate (y+1) (0::Int) VG.//  computeStarts  (computeRunLengths vectYs) 0 y
     --_ <- (error "computeRUnCount") vectYs yRunsMVect
     --yRunsVect <- unsafeBufferFreeze yRunsMVect
 
