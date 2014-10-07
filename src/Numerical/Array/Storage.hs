@@ -60,7 +60,6 @@ newtype instance BufferPure Unboxed elem = UnboxedBuffer (UV.Vector elem)
   deriving Show
 
 newtype instance BufferPure Storable elem = StorableBuffer (SV.Vector elem)
-
   deriving Show
 
 data family   BufferMut sort st elem
