@@ -1,6 +1,6 @@
 
 {-# LANGUAGE TypeFamilies,FlexibleInstances,MultiParamTypeClasses,FlexibleContexts #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE UndecidableInstances,StandaloneDeriving,  DeriveDataTypeable #-}
 module Numerical.Array.Storage(Boxed
   ,Unboxed
   ,Storable
@@ -19,21 +19,21 @@ import qualified Data.Vector.Generic.Mutable as VGM
 import qualified Data.Vector as BV
 import qualified Data.Vector.Storable as SV
 import qualified Data.Vector.Unboxed as UV
+
+import Data.Typeable
 --import qualified Data.Vector.Mutable as BVM
 --import qualified Data.Vector.Storable.Mutable as SVM
 --import qualified Data.Vector.Unboxed.Mutable as UVM
 
 {-
-Maybe I should define
+FIXME : should i require that the element type and
+mode are both instance of Typeable for Buffers?
 
-class Vector (BufferPure mode) a => Buffer mode a where
-
-
-class MVector (BufferMut mode) a=> MBuffer mode a where
-
-so i can reduce the boilerplate?
-
+forcing typeable everywhre
 -}
+
+
+
 
 class VG.Vector (BufferPure mode) a => Buffer mode a
 class VGM.MVector (BufferMut mode) a=> MBuffer mode a
@@ -50,12 +50,24 @@ type instance VG.Mutable (BufferPure sort) = BufferMut sort
 
 
 data family   BufferPure sort  elem
+
+deriving instance Typeable BufferPure
+
 newtype instance BufferPure Boxed elem = BoxedBuffer (BV.Vector elem)
+  deriving Show
+
 newtype instance BufferPure Unboxed elem = UnboxedBuffer (UV.Vector elem)
+  deriving Show
+
 newtype instance BufferPure Storable elem = StorableBuffer (SV.Vector elem)
 
+  deriving Show
 
 data family   BufferMut sort st elem
+
+deriving instance Typeable BufferMut
+
+
 newtype instance BufferMut Boxed st   elem = BoxedBufferMut (BV.MVector st elem)
 newtype instance BufferMut Unboxed st elem = UnboxedBufferMut (UV.MVector st elem)
 newtype instance BufferMut Storable st  elem = StorableBufferMut (SV.MVector st elem)
