@@ -16,7 +16,9 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE CPP #-}
--- {-# LANGUAGE StandaloneDeriving#-}
+
+{-# LANGUAGE StandaloneDeriving #-}
+
 {-# LANGUAGE ScopedTypeVariables #-}
 {-#LANGUAGE UndecidableInstances #-}
 
@@ -143,6 +145,8 @@ data GDSlice (from :: Nat) (to :: Nat) :: *  where
 
 data family Format  lay (contiguity:: Locality)  (rank :: Nat) rep
 
+deriving instance Typeable Format
+
 type family FormatStorageRep ( a:: * ) :: *
 
 type instance FormatStorageRep (Format lay ctg rnk rep)= rep
@@ -150,6 +154,7 @@ type instance FormatStorageRep (Format lay ctg rnk rep)= rep
 type family  Transposed form
 
 type family  LayoutAddress (form :: *)
+
 
 -- |
 class Layout form  (rank :: Nat) | form -> rank  where

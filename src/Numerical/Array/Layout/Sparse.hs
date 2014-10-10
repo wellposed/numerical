@@ -32,6 +32,7 @@ that acts only on the outermost dimension.
 {-# LANGUAGE FlexibleInstances  #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 #if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
  {-# LANGUAGE AutoDeriveTypeable #-}
@@ -64,16 +65,17 @@ import Prelude hiding (error )
 
 
 data CompressedSparseRow
-  deriving Typeable
+  deriving (Typeable)
+
 type CSR = CompressedSparseRow
 
 data CompressedSparseColumn
-    deriving Typeable
+    deriving (Typeable)
 
 type CSC = CompressedSparseColumn
 
 data DirectSparse
-    deriving Typeable
+    deriving (Typeable)
 
 
 
@@ -81,8 +83,10 @@ data instance Format DirectSparse  Contiguous (S Z) rep =
     FormatDirectSparseContiguous {
       _logicalShapeDirectSparse:: {-# UNPACK#-} !Int
       ,_logicalBaseIndexShiftDirectSparse::{-# UNPACK#-} !Int
-      ,_indexTableDirectSparse :: ! ((BufferPure rep) Int )  }
-    --deriving (Show,Eq,Data)
+      ,_indexTableDirectSparse :: ! (BufferPure rep Int )  }
+
+
+deriving instance Show  (BufferPure rep Int )  => Show (Format DirectSparse  Contiguous (S Z) rep)
 
 
 
@@ -200,6 +204,10 @@ data ContiguousCompressedSparseMatrix rep =
       ,_innerDimIndexContiguousSparseFormat :: !(BufferPure rep Int)
       ,_outerDim2InnerDimContiguousSparseFormat:: ! (BufferPure rep Int )
   }
+  deriving (Typeable)
+
+deriving instance (Show (BufferPure rep Int))=> Show (ContiguousCompressedSparseMatrix rep)
+
 {-
   outerDim innerDim  innerTable  outer2InnerStart
 -}
@@ -223,25 +231,35 @@ data  InnerContiguousCompressedSparseMatrix rep =
       ,_outerDim2InnerDimStartInnerContiguousSparseFormat:: ! (BufferPure rep Int )
       ,_outerDim2InnerDimEndInnerContiguousSparseFormat:: ! (BufferPure rep Int )
          }
+     deriving Typeable
+
+deriving instance (Show (BufferPure rep Int))=> Show (InnerContiguousCompressedSparseMatrix rep)
+
+
 newtype instance Format CompressedSparseRow Contiguous (S (S Z)) rep =
     FormatContiguousCompressedSparseRow {
       _getFormatContiguousCSR :: (ContiguousCompressedSparseMatrix rep) }
+
+deriving instance Show (ContiguousCompressedSparseMatrix rep)=> Show (Format CompressedSparseRow Contiguous (S (S Z)) rep)
 
 newtype instance Format CompressedSparseColumn Contiguous (S (S Z)) rep =
     FormatContiguousCompressedSparseColumn {
       _getFormatContiguousCSC :: (ContiguousCompressedSparseMatrix rep) }
 
+deriving instance Show (ContiguousCompressedSparseMatrix rep)=> Show (Format CompressedSparseColumn Contiguous (S (S Z)) rep)
 
 newtype instance Format CompressedSparseRow InnerContiguous (S (S Z)) rep =
     FormatInnerContiguousCompressedSparseRow {
       _getFormatInnerContiguousCSR :: (InnerContiguousCompressedSparseMatrix rep )
   }
-
+deriving instance  Show (InnerContiguousCompressedSparseMatrix rep )=>  Show (Format CompressedSparseRow InnerContiguous (S (S Z)) rep)
 
 newtype instance Format CompressedSparseColumn InnerContiguous (S (S Z)) rep =
     FormatInnerContiguousCompressedSparseColumn {
       _getFormatInnerContiguousCSC :: (InnerContiguousCompressedSparseMatrix rep )
   }
+
+deriving instance Show (InnerContiguousCompressedSparseMatrix rep )=>  Show (Format CompressedSparseColumn InnerContiguous (S (S Z)) rep)
 
       --deriving (Show,Eq,Data)
 
