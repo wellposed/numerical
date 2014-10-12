@@ -268,12 +268,20 @@ instance (Buffer rep Int) => LayoutBuilder (Format CompressedSparseRow Contiguou
           VG.replicate (y+1) (0::Int) VG.//  computeStarts  (computeRunLengths vectYs) 0 y
     --_ <- (error "computeRUnCount") vectYs yRunsMVect
     --yRunsVect <- unsafeBufferFreeze yRunsMVect
-
-    return $
-      (FormatContiguousCompressedSparseRow
+    let xyVect =         (VPair (VLeaf vectXs) (VLeaf vectYs))
+    optFail <- return $
+      isStrictlyMonotonicV (\(x1,y1) (x2,y2)->basicCompareIndex proxyFormat (x1:*y1:*Nil) (x2:*y2:*Nil))
+        xyVect
+    case optFail of
+      Nothing ->  return $
+        (FormatContiguousCompressedSparseRow
               (FormatContiguousCompressedSparseInternal y x  vectXs yRunsVect), mvectVals )
+      Just i ->
+        error  $ "illegal duplication in CSR builder (x,y) coordinates  "
+            ++ show (xyVect VG.! i) ++ " and " ++ show (xyVect VG.! (i+1))
+            ++ "starting at position "  ++ show i
 
-  buildFormatM _ _  _ _= error "this is actually impossible"
+  buildFormatM _ _  _ _= error "this is actually impossible, what'd you do ?! CSR builder"
         --- needed to placate coverage checker
 
 computeRunLengths :: (VG.Vector v e, Eq e)=> v e -> [(e,Int)]
@@ -281,7 +289,7 @@ computeRunLengths =  \y ->   fmap   (\x ->(head x,length x)) $ group $ VG.toList
 
 
 
-{-# SPECIALIZE computeStarts :: [(Int,Int)]->Int->Int ->[(Int,Int)] #-}
+{-# SPECIALIZE INLINE  computeStarts :: [(Int,Int)]->Int->Int ->[(Int,Int)] #-}
 
 computeStarts:: (Enum a, Ord a, Num b )=>[(a,b)]-> a -> a -> [(a,b)]
 computeStarts [] start end | start <= end  = fmap (\x -> (x ,0)) [start..end]
