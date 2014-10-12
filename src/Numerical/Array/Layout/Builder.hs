@@ -51,13 +51,14 @@ materializeBatchMV  (BatchInit size (Left ls )) =
             newMV <- VGM.new size
             _ <- Prelude.mapM (\(ix ,val )-> VGM.unsafeWrite newMV  ix val ) (zip [0..] $ take size ls)
             return newMV
-materializeBatchMV  (BatchInit size (Right (Ifun f) )) =
+materializeBatchMV  (BatchInit size (Right (IntFun f) )) =
          do
             newMV <- VGM.new size
             _ <- Prelude.mapM (\ix -> do v <- (f ix) ; VGM.unsafeWrite newMV  ix  v ) $ take size  [0..]
             return newMV
 
-
+--- not sure if this is EVER useful
+newtype AnyMV mv e = AMV (forall s . mv s e )
 
 
 instance (Show  a)=> Show (BatchInit a) where
@@ -66,20 +67,20 @@ instance (Show  a)=> Show (BatchInit a) where
                                           ++ "(Left "++(show $ take 100 ls ) ++ "))\n"
                                     | otherwise ="(BatchInit " ++show size  ++
                                      " (Left "++(show  ls ) ++ "))\n"
-  show (BatchInit size (Right (Ifun f)) ) | size > 100 =  "(BatchInit " ++show size  ++
+  show (BatchInit size (Right (IntFun f)) ) | size > 100 =  "(BatchInit " ++show size  ++
                                           "-- only showing the first 100 elements\n"
                                           ++ "(Left "++(show $ runST (Prelude.mapM f [0..100]) ) ++ "))\n"
                              | otherwise ="(BatchInit " ++show size
                                           ++ "(Left "++(show $ runST (Prelude.mapM f [0,1..size -1]) ) ++ "))\n"
 
 
-newtype IntFun a = Ifun  (forall m. (PrimMonad m)=>  Int -> m a )
+newtype IntFun a = IntFun  (forall m. (PrimMonad m)=>  Int -> m a )
 -- This may change substantially in a future release, but for now
 -- acts like
             deriving (Typeable)
 
 instance  Functor IntFun  where
-  fmap f (Ifun g) = Ifun (\x->   g x  >>= (\ y -> return (f y))  )
+  fmap f (IntFun g) = IntFun (\x->   g x  >>= (\ y -> return (f y))  )
   {-# INLINE fmap #-}
 
 instance Functor BatchInit  where
@@ -218,7 +219,7 @@ instance (Buffer rep Int)=>LayoutBuilder (Format DirectSparse Contiguous (S Z) r
 
 instance (Buffer rep Int) => LayoutBuilder (Format CompressedSparseRow Contiguous (S (S Z)) rep ) (S (S Z)) where
 
-  buildFormatM (x:* y :* _) _  _ Nothing= do
+  buildFormatM (x:* y :* _) _   _ Nothing= do
     mvi <-  VGM.new 0
     vi <-  VG.unsafeFreeze  mvi
     mvval <- VGM.new 0
@@ -226,10 +227,10 @@ instance (Buffer rep Int) => LayoutBuilder (Format CompressedSparseRow Contiguou
       (FormatContiguousCompressedSparseRow
               (FormatContiguousCompressedSparseInternal y x  vi vi), mvval )
 
-  buildFormatM (x:* y :* _) prox  _ (Just builder) = do
+  buildFormatM (x:* y :* _) proxyFormat  _ (Just builder) = do
     mvtup@(MVPair (MVPair (MVLeaf mvectYs) (MVLeaf mvectXs)) (MVLeaf mvectVals))<-
           materializeBatchMV  $ fmap (\((xix:* yix :* _),val)-> ((yix,xix),val) ) builder
-    _ <-  IntroSort.sortBy (\((y1,x1),_) ((y2,x2),_) ->  basicCompareIndex  prox (x1:*y1 :* Nil) (x2:*y2:* Nil)  )
+    _ <-  IntroSort.sortBy (\((y1,x1),_) ((y2,x2),_) ->  basicCompareIndex  proxyFormat (x1:*y1 :* Nil) (x2:*y2:* Nil)  )
                   mvtup
     vectXs <- unsafeBufferFreeze mvectXs
     vectYs <- unsafeBufferFreeze mvectYs
