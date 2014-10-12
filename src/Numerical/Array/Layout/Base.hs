@@ -188,16 +188,16 @@ class Layout form  (rank :: Nat) | form -> rank  where
     -- FIX ME! this name is crap, i dont like it
 
     basicToAddress :: (address ~ LayoutAddress form)=>
-        form  -> Shape rank Int -> Maybe  address
+        form  -> Index rank  -> Maybe  address
 
     basicToIndex ::(address ~ LayoutAddress form)=>
-        form -> address -> Shape rank Int
+        form -> address -> Index rank
 
     basicNextAddress :: (address ~ LayoutAddress form)=>
         form  -> address -> Maybe  address
 
     basicNextIndex :: (address ~ LayoutAddress form)=>
-          form  -> Shape rank Int-> Maybe address  -> Maybe ( Shape rank Int, address)
+          form  -> Index rank -> Maybe address  -> Maybe ( Index rank, address)
 
 
     basicAddressPopCount :: (address ~ LayoutAddress form)=>
@@ -237,7 +237,8 @@ type family InnerContigForm form :: *
 class Layout form rank =>
   RectilinearLayout form (rank :: Nat) | form -> rank  where
 
-
+    -- | 'formRectOrientation' provides a runtime mechanism for
+    formRectOrientation :: p form -> SMajorOrientation oriented
 
 
     unconsOuter:: (S down ~ rank)=> p form -> Shape rank a -> (a, Shape down a)
@@ -257,9 +258,9 @@ class Layout form rank =>  DenseLayout form  (rank :: Nat) | form -> rank  where
 
 
 
-    basicToDenseAddress :: form  -> Shape rank Int ->   Address
+    basicToDenseAddress :: form  -> Index rank  ->   Address
 
-    basicToDenseIndex :: form -> Address -> Shape rank Int
+    basicToDenseIndex :: form -> Address -> Index rank
 
 
 
@@ -268,7 +269,7 @@ class Layout form rank =>  DenseLayout form  (rank :: Nat) | form -> rank  where
       (basicNextDenseIndex form  $ basicToDenseIndex form  shp )
     {-# INLINE basicNextDenseAddress #-}
 
-    basicNextDenseIndex :: form  -> Shape rank Int ->(Shape rank Int,Address)
+    basicNextDenseIndex :: form  -> Index rank ->(Index rank ,Address)
     basicNextDenseIndex  = \form shp -> (\ addr ->( basicToDenseIndex form addr, addr) ) $!
        basicNextDenseAddress form  $ basicToDenseAddress form  shp
     {-# INLINE  basicNextDenseIndex #-}

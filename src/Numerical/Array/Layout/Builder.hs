@@ -141,14 +141,14 @@ fromMVectorBI (AMV v) =  BatchInit size
 class Layout form (rank::Nat) => LayoutBuilder form (rank::Nat) | form -> rank where
 
   buildFormatM :: (store~FormatStorageRep form,Buffer store Int ,Buffer store a,PrimMonad m)=>
-         Shape rank Int -> proxy form -> a
-         -> Maybe (BatchInit  (Shape rank Int,a))
+         Index rank  -> proxy form -> a
+         -> Maybe (BatchInit  (Index rank ,a))
          ->m (form, BufferMut store (PrimState m) a )
 
 
 buildFormatPure:: forall store form rank proxy m  a. (LayoutBuilder form (rank::Nat)
   ,store~FormatStorageRep form,Buffer store Int  ,Buffer store  a, Monad m ) =>
-     Shape rank Int -> proxy form -> a  -> Maybe (BatchInit  (Shape rank Int,a))
+     Index rank -> proxy form -> a  -> Maybe (BatchInit  (Index rank ,a))
                                               ->m (form, BufferPure store  a )
 buildFormatPure shape prox defaultValue builder =
   do  res@(!_,!_)<-return $! theComputation
