@@ -111,6 +111,32 @@ and put them into different classes, punting that for now
 -}
 
 
+fromListBI :: [a] -> BatchInit a
+fromListBI ls = BatchInit (length ls) (Left ls)
+
+fromVectorBI :: VG.Vector v e => v e -> BatchInit e
+fromVectorBI v =  BatchInit size
+      (Right
+        (IntFun $
+          \i -> if i >= size
+              then error  $ " out of bounds index on IntFun of size: " ++ show i
+              else return $ v VG.! i
+            ))
+  where
+    size = VG.length v
+
+fromMVectorBI :: (VGM.MVector mv e ) => AnyMV mv e -> BatchInit e
+fromMVectorBI (AMV v) =  BatchInit size
+      (Right
+        (IntFun $
+          \i -> if i >= size
+              then error  $ " out of bounds index on IntFun of size: " ++ show i
+              else  v `VGM.read` i
+            ))
+  where
+    size = VGM.length v
+
+
 
 class Layout form (rank::Nat) => LayoutBuilder form (rank::Nat) | form -> rank where
 
