@@ -171,18 +171,6 @@ class Layout form  (rank :: Nat) | form -> rank  where
     -- is not needed
     basicCompareIndex :: p form-> Shape rank Int ->Shape rank Int -> Ordering
 
-    -- FIX ME TODO: need to have an extra wide int type to do logical address correctly
-    -- this is because spare arrays can have much larger range of dimensions
-    -- than are representable in physical memory
-    -- but dont want to pay for the extended dynamic range when I dont need it
-    --  -- | Given a 'Format' with a known Shape, aka a 'TaggedShape', we can
-    -- always relate any in-bounds index to the corresponding address a
-    -- dense 'Contiguous' analogue of the format will have.
-    -- this is also used to provide efficient sorting for correctly constructing
-    -- arrays efficiently that breaks the @n*log(n)@ barrier of comparison based
-    -- methods.
-    --basicLogicalAddress :: TaggedShape form rank -> Shape rank Int -> Int
-
     -- | the (possibly empty) min and max of the valid addresses for a given format
     rangedFormatAddress ::  (address ~ LayoutAddress form)=> form -> Maybe (Range address)
     -- FIX ME! this name is crap, i dont like it
