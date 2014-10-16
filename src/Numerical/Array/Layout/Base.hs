@@ -223,24 +223,28 @@ type family InnerContigForm form :: *
 
 -}
 class Layout form rank =>
-  RectilinearLayout form (rank :: Nat) | form -> rank  where
+  RectilinearLayout form (rank :: Nat) oriented | form -> rank oriented where
 
-    -- | 'formRectOrientation' provides a runtime mechanism for
+    -- | 'formRectOrientation' provides a runtime mechanism for reflecting
+    -- the orientation of the format
     formRectOrientation :: p form -> SMajorOrientation oriented
 
 
     unconsOuter:: (S down ~ rank)=> p form -> Shape rank a -> (a, Shape down a)
     consOuter ::  (S down ~ rank)=> p form -> a -> Shape down a -> Shape rank a
 
-    majorAxisSlice :: form -> (Int,Int)-> form  -- should this be maybe form?
+    -- | @'majorAxisSlice' fm (x,y)@ requires that y-x>=1, ie that more than
+    -- one sub range wrt the major axis be selected
+    majorAxisSlice :: form -> (Int,Int)-> form  -- should this be -> Maybe form?
     --majorAxisProject :: form -> Int -> form
 
-    majorAxisProject :: (RectilinearLayout downForm subRank
-        , rank ~ (S subRank)
-        , downForm~ RectDownRankForm form) => form -> Int -> form
+    -- |
+    majorAxisProject :: (RectilinearLayout downForm subRank oriented,
+     rank ~ (S subRank) , downForm~ RectDownRankForm form) => form -> Int -> downForm
+
+    rectlinearSlice :: (RectilinearLayout icForm rank oriented,icForm~InnerContigForm form )=>form -> Index rank -> Index rank -> icForm
 
 
-    rectlinearSlice :: (RectilinearLayout icForm rank,icForm~InnerContigForm form )=>form -> Index rank -> Index rank -> icForm
 
 class Layout form rank =>  DenseLayout form  (rank :: Nat) | form -> rank  where
 
