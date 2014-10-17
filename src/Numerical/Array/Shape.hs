@@ -17,7 +17,10 @@
 
 -- {-# LANGUAGE OverlappingInstances #-}
 
-module Numerical.Array.Shape(Shape(..)
+module Numerical.Array.Shape(
+  -- * Shape
+    Shape(..)
+    -- * Shape Utilities
     ,foldl
     ,foldr
     ,foldl'
@@ -33,10 +36,13 @@ module Numerical.Array.Shape(Shape(..)
     ,strictlyDominates
     ,shapeToList
     ,Index
-    ,UV.Vector(UV.V_ShapeZ,UV.V_ShapeSZ,UV.V_ShapeSSN)
-    ,UV.MVector(UV.MV_ShapeZ,UV.MV_ShapeSZ,UV.MV_ShapeSSN)
-    ,T.Traversable(..)
     ,backwards
+    -- * Unboxed Vector Morphism
+    ,UnBoxedShapeMorphism(..)
+    ,unShapeVector
+    ,reShapeVector
+    ,T.Traversable(..)
+
     )
     where
 
@@ -48,10 +54,12 @@ import qualified Data.Functor as Fun
 import qualified  Data.Foldable as F
 import qualified Control.Applicative as A
 import Control.Monad (liftM)
+import Control.Monad.ST (runST)
 import qualified Data.Traversable as T
 
 --import Control.NumericalMonad.State.Strict
 import Control.NumericalApplicative.Backwards
+
 
 import Numerical.Nat
 import qualified Data.Monoid as Monoid
@@ -62,6 +70,7 @@ import qualified Foreign.Storable  as Store
 import qualified Foreign.Ptr as Ptr
 
 import qualified Data.Vector.Unboxed as UV
+import  qualified  Data.Vector.Unboxed.Mutable as UVM
 import qualified Data.Vector.Generic as GV
 import qualified Data.Vector.Generic.Mutable as GMV
 
@@ -460,7 +469,53 @@ instance Store.Storable a =>Store.Storable (Shape Z a) where
 shapeSize :: F.Foldable (Shape n)=>Shape n a -> Int
 shapeSize  = \ as -> ( F.foldl (\ct _ -> ct +1) 0 as )
 
+unShapeVector ::(UnBoxedShapeMorphism n a, T.Traversable (Shape n), UV.Unbox a) => UV.Vector  (Shape n a) -> (Int, Shape n (UV.Vector  a))
+unShapeVector vs = runST  $
+            do  (l,mvs) <- fmap unShapeMVector $  UV.unsafeThaw vs
+                shpvs <- T.traverse UV.unsafeFreeze mvs
+                return (l,shpvs)
 
+
+reShapeVector::(UnBoxedShapeMorphism n a, T.Traversable (Shape n), UV.Unbox a)=>
+      (Int, Shape n (UV.Vector   a)) -> UV.Vector (Shape n a)
+reShapeVector (l,vs) = runST $
+          do  mShapeV <-  T.traverse UV.unsafeThaw  vs
+              mvShp <- return $ reShapeMVector (l,mShapeV)
+              UV.unsafeFreeze mvShp
+
+
+{- THis is a convenience type class so i dont have to export the constructors -}
+class (UV.Unbox (Shape n a)) => UnBoxedShapeMorphism n a  where
+   --unShapeVector :: UV.Vector (Shape n a) -> (Int, Shape n (UV.Vector a))
+   --reShapeVector :: (Int, Shape n (UV.Vector a)) -> UV.Vector (Shape n a)
+
+   unShapeMVector :: UVM.MVector s (Shape n a) -> (Int, Shape n (UV.MVector s a))
+   reShapeMVector :: (Int, Shape n (UVM.MVector s  a)) -> UVM.MVector s (Shape n a)
+
+instance (UV.Unbox a)=>  UnBoxedShapeMorphism Z a where
+  --unShapeVector (V_ShapeZ l)= (l,Nil)
+  unShapeMVector (MV_ShapeZ l) = (l,Nil )
+
+  --reShapeVector (l,Nil)  = (V_ShapeZ l)
+  reShapeMVector (l,Nil ) = (MV_ShapeZ l)
+
+
+instance (UV.Unbox a)=>  UnBoxedShapeMorphism (S Z) a  where
+  --unShapeVector (V_ShapeSZ v)= (UV.length v, v :* Nil)
+
+  unShapeMVector (MV_ShapeSZ v) = (UVM.length v,v:* Nil )
+
+  --reShapeVector (l,v :* Nil)  = (V_ShapeSZ v)
+  reShapeMVector (_,v :* _ ) = (MV_ShapeSZ v)
+
+--UV.V_2
+--UVM.MV_2
+instance ((UV.Unbox a),UnBoxedShapeMorphism (S n) a )=> UnBoxedShapeMorphism (S (S n)) a where
+  --unShapeVector (V_ShapeSSN (UV.V_2 l vhead vtail))= (l, vhead :* snd (unShapeVector vtail)  )
+  unShapeMVector (MV_ShapeSSN (UVM.MV_2 l vhead vtail)) = (l,vhead:*  snd (unShapeMVector vtail ))
+
+  --reShapeVector (l,vh :* vt)  = (V_ShapeSSN (UV.V_2 l vh (reShapeVector (l,vt) )))
+  reShapeMVector (l,vh :* vt ) = (MV_ShapeSSN (UVM.MV_2 l vh (reShapeMVector (l,vt) )))
 
 newtype instance UV.MVector s (Shape Z a)  = MV_ShapeZ  Int
 newtype instance UV.Vector    (Shape Z a) = V_ShapeZ  Int
