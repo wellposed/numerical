@@ -133,13 +133,53 @@ instance forall form  rank . (Eq (Shape rank Int),Layout form rank)
 
 -- | Generalized Dense Slice Projection notation,
 -- not sure if it should be defined in this module or elsewhere
+-- This provides a type safe interface for the classical
+-- general array slice notation.
+-- That said, its only useful for dense array formats,
+-- at least in general. For formats that aren't "rectilinear dense",
+-- this COULD be used as a description format for traversing
+-- over various rectilinear subsets of points though?
 data GDSlice (from :: Nat) (to :: Nat) :: *  where
   GDNil :: GDSlice Z Z
   GDPick :: Int -> GDSlice from to -> GDSlice (S from) to
   GDRange :: (Int,Int,Int)-> GDSlice from to -> GDSlice (S from) (S to)
   GDAll :: GDSlice from to -> GDSlice (S from) (S to)
 
+{-
+TODO: for things that
 
+-}
+
+
+instance Show (GDSlice Z Z) where
+  show _ = "GDNil"
+
+instance (Show (GDSlice (f) (S t)),Show (GDSlice f t))=> Show (GDSlice (S f) (S t)) where
+  show (tup `GDRange` rest) = show tup ++ " `GDRange` (" ++ show rest ++ ")"
+  show (GDAll rest) =  "GDAll " ++ show rest
+  show (ix `GDPick` rest) = show ix ++" `GDPick` " ++ show rest
+
+instance Show (GDSlice f Z)=> Show (GDSlice (S f) Z) where
+  show (ix `GDPick` rest) = show ix ++" `GDPick` " ++ show rest
+--instance Show (GDSlice f t)  where
+--  func =
+
+{-
+In some (moderately precise sense)
+
+-}
+
+
+-- GDRange (from,step,to)
+  -- GDAll is just sugar for a special case of GDRange, but maybe its worthwhile sugar?
+
+--computeSlicePlan:: GDSlice from to -> Shape from Int -> Shape from (Either Int (AffineRange Int))
+--computeSlicePlan GDNil  Nil = Nil
+--computeSlicePlan  ( ix `GDPick` gdRest )
+--                  (bd:* shpRest)| ix < bd   && ix >= 0 = Left ix :* computeSlicePlan gdRest shpRest
+--                      | otherwise = error
+--                          $ "bad indices for computeSlicePlan " ++ show (ix,bd)
+--computeSlicePlan ( (strt,step,end) `GDRange` grest) (bd:* shprest)
 
 
 
@@ -210,42 +250,73 @@ data SMajorOrientation (o :: MajorOrientation) where
     SBlockedColumn :: SMajorOrientation BlockedColumn
 
 
-
+-- |  Every instance of 'RectilinearLayout' needs to have a corresponding
+-- 'RectOrientationForm', 'RectDownRankForm', and 'InnerContigForm'
 type family RectOrientationForm form :: MajorOrientation
+
 type family RectDownRankForm   form :: *
+
 type family InnerContigForm form :: *
 
 {- | 'RectilinearLayout' is the type class that supports the modle widely
   usable class of slicing operations in Numerical.
-  for every instance @'RectilinearLayout' form n@, a corresponding
+  for every instance @'RectilinearLayout' format rank orientation@, a corresponding
   @'RectOrientationForm' form @, @'RectDownRankForm' form@
-  and
+  and @'InnerContigForm' form@ type family instance should be defined
+
+  The purpose of 'RectilinearLayout' class is to provide
 
 -}
 class Layout form rank =>
-  RectilinearLayout form (rank :: Nat) oriented | form -> rank oriented where
+  RectilinearLayout form (rank :: Nat) (oriented :: MajorOrientation) | form -> rank oriented where
 
     -- | 'formRectOrientation' provides a runtime mechanism for reflecting
     -- the orientation of the format
     formRectOrientation :: p form -> SMajorOrientation oriented
 
+    -- | For  @'rectlinearShape' form==shp@, we always have that
+    -- @'basicFormLogicalShape' form  `weaklyDominates` shp@.
+    -- when 'strictlyDominates' holds, that implies that the underlying array format
+    -- is a rectilinear layout whose "elements" are tiles of a fixed size array format.
+    -- For this initial release and initial set of applicable rectilinear array formats,
+    -- the following is always true @'basicFormLogicalShape' form  == basicFormLogicalShape' form @
+    -- Should be @O(1)@ always. Or more precisely @O(rank)@
+    rectlinearShape :: form -> Index rank
 
     unconsOuter:: (S down ~ rank)=> p form -> Shape rank a -> (a, Shape down a)
     consOuter ::  (S down ~ rank)=> p form -> a -> Shape down a -> Shape rank a
 
     -- | @'majorAxisSlice' fm (x,y)@ requires that y-x>=1, ie that more than
-    -- one sub range wrt the major axis be selected
-    majorAxisSlice :: form -> (Int,Int)-> form  -- should this be -> Maybe form?
-    --majorAxisProject :: form -> Int -> form
+    -- one sub range wrt the major axis be selected, so that the logical
+    -- rank of the selected array stays the same. This operation also preserves
+    -- memory locality as applicable.
+    -- @O(1)@ / @O(rank)@
+    majorAxisSlice :: form -> (Int,Int)-> form
+     -- should this be -> Maybe form?
 
-    -- |
+
+    -- | @'majorAxixProject' form x@ picks a "row" with respect to the outer most
+    -- dimension of the array format. This will
+    -- @O(1)@ or @O(rank)@
     majorAxisProject :: (RectilinearLayout downForm subRank oriented,
      rank ~ (S subRank) , downForm~ RectDownRankForm form) => form -> Int -> downForm
 
-    rectlinearSlice :: (RectilinearLayout icForm rank oriented,icForm~InnerContigForm form )=>form -> Index rank -> Index rank -> icForm
+    -- | this is the nonstrided subset of general array slice notation.
+    --  Invoke as @'rectilinearSlice'  form  leastCorner greatestCorner@,
+    -- where the least and greatest corners of the sub array are determined
+    -- by the 'strictlyDominates' partial order on the bounds of the sub array.
+    -- For Dense array formats, this should be @O(1)@ or more precisely @O(rank)@
+    -- For the basic Sparse array formats thus far the complexity should be
+    -- @O(size of outermost dimension)@, which could be computed by
+    --  @fst . unconsOuter [form] . rectilinearShape $ form@
+    rectlinearSlice :: (RectilinearLayout icForm rank oriented,icForm~InnerContigForm form )=>form -> Index rank -> Index rank -> icForm -- FIXME, need the range infos????? (icfFOrm, adddress,address)
 
 
-
+{- | 'DenseLayout' only has instances for Dense array formats.
+this class will need some sprucing up for the beta,
+but its ok for now. NB that 'DenseLayout' is really strictly meant to be used
+for optimization purposes, and not meant as a default api
+-}
 class Layout form rank =>  DenseLayout form  (rank :: Nat) | form -> rank  where
 
 
