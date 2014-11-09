@@ -240,26 +240,30 @@ newtype instance Format CompressedSparseRow Contiguous (S (S Z)) rep =
     FormatContiguousCompressedSparseRow {
       _getFormatContiguousCSR :: (ContiguousCompressedSparseMatrix rep) }
 
-deriving instance Show (ContiguousCompressedSparseMatrix rep)=> Show (Format CompressedSparseRow Contiguous (S (S Z)) rep)
+deriving instance Show (ContiguousCompressedSparseMatrix rep)
+    => Show (Format CompressedSparseRow Contiguous (S (S Z)) rep)
 
 newtype instance Format CompressedSparseColumn Contiguous (S (S Z)) rep =
     FormatContiguousCompressedSparseColumn {
       _getFormatContiguousCSC :: (ContiguousCompressedSparseMatrix rep) }
 
-deriving instance Show (ContiguousCompressedSparseMatrix rep)=> Show (Format CompressedSparseColumn Contiguous (S (S Z)) rep)
+deriving instance Show (ContiguousCompressedSparseMatrix rep)
+    => Show (Format CompressedSparseColumn Contiguous (S (S Z)) rep)
 
 newtype instance Format CompressedSparseRow InnerContiguous (S (S Z)) rep =
     FormatInnerContiguousCompressedSparseRow {
       _getFormatInnerContiguousCSR :: (InnerContiguousCompressedSparseMatrix rep )
   }
-deriving instance  Show (InnerContiguousCompressedSparseMatrix rep )=>  Show (Format CompressedSparseRow InnerContiguous (S (S Z)) rep)
+deriving instance  Show (InnerContiguousCompressedSparseMatrix rep )
+    =>  Show (Format CompressedSparseRow InnerContiguous (S (S Z)) rep)
 
 newtype instance Format CompressedSparseColumn InnerContiguous (S (S Z)) rep =
     FormatInnerContiguousCompressedSparseColumn {
       _getFormatInnerContiguousCSC :: (InnerContiguousCompressedSparseMatrix rep )
   }
 
-deriving instance Show (InnerContiguousCompressedSparseMatrix rep )=>  Show (Format CompressedSparseColumn InnerContiguous (S (S Z)) rep)
+deriving instance Show (InnerContiguousCompressedSparseMatrix rep )
+  =>  Show (Format CompressedSparseColumn InnerContiguous (S (S Z)) rep)
 
       --deriving (Show,Eq,Data)
 
