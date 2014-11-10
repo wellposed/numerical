@@ -31,9 +31,17 @@ install:
 
 # Here starts the actual work to be performed for the package under test; any command which exits with a non-zero exit code causes the build to fail.
 script:
-  - cabal configure  -flib-Werror --enable-tests --enable-benchmarks -v2 # --ghc-options="-Werror"  # -v2 provides useful information for debugging
+  - function smart_configure { # currently Async cant build with ghc head :'(
+    if ["$GHCVER" -ne  "head"]; then
+    cabal configure  -flib-Werror --enable-tests --enable-benchmarks -v2 # --ghc-options="-Werror"  # -v2 provides useful information for debugging
+    else
+    cabal configure  -flib-Werror
+   }
   - cabal build   # this builds all libraries and executables (including tests/benchmarks)
-  - cabal test   --show-details=always
+  - function smart_configure { # currently Async cant build with ghc head :'(
+    if ["$GHCVER" -ne  "head"]; then
+    cabal test   --show-details=always
+   }
   # - cabal check
   - cabal sdist   # tests that a source-distribution can be generated
 
