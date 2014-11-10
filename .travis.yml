@@ -3,17 +3,12 @@ language: haskell
 
 # The following enables several GHC versions to be tested; often it's enough to test only against the last release in a major GHC version. Feel free to omit lines listings versions you don't need/want testing for.
 env:
- # - GHCVER=7.4.2
- # - GHCVER=7.6.3
- - GHCVER=7.8.3
- - GHCVER=head
+ - GHCVER=7.8.3 CABALVER=1.20
+ - GHCVER=head  CABALVER=head
 
 matrix:
   allow_failures:
    - env: GHCVER=head
-   - env: GHCVER=7.6.3
-
-
 
 
 # Note: the distinction between `before_install` and `install` is not important.
