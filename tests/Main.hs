@@ -1,21 +1,25 @@
 module Main where
 
- 
-import   NumericalUnit.Layout 
-import   NumericalUnit.Shape 
 
-import Test.Tasty
---import Test.Tasty.SmallCheck as SC
---import Test.Tasty.QuickCheck as QC
-import Test.Tasty.HUnit
+import   NumericalUnit.Layout
+import   NumericalUnit.Shape
+
+
 
 import Data.List
 import Data.Ord
 
-main = defaultMain tests
+import Test.Hspec
+import Control.Exception (evaluate)
 
-tests :: TestTree
-tests = testGroup "Unit Tests" [unitTestShape] -- , unitTestLayout ]
+main :: IO ()
+main = hspec  $ do
+  describe "Shape Unit Tests" $  unitTestShape
+
+--main = defaultMain tests
+
+--tests :: Spec
+--tests = testGroup "Unit Tests" [unitTestShape] -- , unitTestLayout ]
 
 
 --unitTests = testGroup "Unit tests"

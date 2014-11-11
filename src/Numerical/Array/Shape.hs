@@ -41,7 +41,8 @@ module Numerical.Array.Shape(
     ,UnBoxedShapeMorphism(..)
     ,unShapeVector
     ,reShapeVector
-    ,T.Traversable(..)
+    ,T.traverse
+    --,T.Traversable(..)
 
     )
     where
@@ -323,11 +324,19 @@ instance (Monoid.Monoid a, A.Applicative (Shape n))=> Monoid.Monoid (Shape n a) 
 {- when you lift a toral order onto vectors, you get
 interesting partial order -}
 
-weaklyDominates, strictlyDominates :: (Ord a, A.Applicative  (Shape n), F.Foldable (Shape n) )=>
+-- | 'weaklyDominates' is the '<=' operator lifted onto  a sized vector to
+-- induce a partial order relation
+weaklyDominates :: (Ord a, A.Applicative  (Shape n), F.Foldable (Shape n) )=>
                         Shape n a -> Shape n a -> Bool
 weaklyDominates = \major minor -> foldl (&&) True $! map2 (>=)  major minor
-strictlyDominates  = \major minor -> foldl (&&) True $! map2 (>)  major minor
 {-# INLINE weaklyDominates #-}
+
+-- | 'strictlyDominates' is the '<' operator lifted onto  a sized vector to
+-- induce a partial order relation
+strictlyDominates :: (Ord a, A.Applicative  (Shape n), F.Foldable (Shape n) )=>
+                        Shape n a -> Shape n a -> Bool
+
+strictlyDominates  = \major minor -> foldl (&&) True $! map2 (>)  major minor
 {-# INLINE strictlyDominates #-}
 
 {-# INLINE reverseShape #-}
