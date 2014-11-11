@@ -27,7 +27,8 @@ install:
   - sudo /opt/ghc/$GHCVER/bin/ghc-pkg recache
   - /opt/ghc/$GHCVER/bin/ghc-pkg recache --user
   - cabal update
-  - cabal install async --allow-newer
+  - if [ "$GHCVER" = "head" ]; then  cabal install stm --allow-newer fi
+  - if [ "$GHCVER" = "head" ]; then  cabal install async --allow-newer fi
   - cabal install --only-dependencies --enable-tests --enable-benchmarks
 
 # Here starts the actual work to be performed for the package under test; any command which exits with a non-zero exit code causes the build to fail.
