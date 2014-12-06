@@ -844,7 +844,7 @@ overhead, but in general branch prediction should work out ok.
 --              -- because contiguous, don't need the index space shift though!
 --                       SparseAddress ix_y   <$>
 --                          lookupExactRange columnIndex ix_x
-                              -- ((rowstartIndex V.! ix_y) - addrShift)
+--                              -- ((rowstartIndex V.! ix_y) - addrShift)
 --                            (if  ix_y < (y_range-1)
 --                              -- addr shift is for correcting from a major axis slice
 --                              then  (rowstartIndex V.! (ix_y+1) ) - addrShift
