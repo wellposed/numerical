@@ -4,3 +4,5 @@ report.html
 *.dyn_hi
 *.dyn_o
 .hpc
+/dist/
+.*.swp
