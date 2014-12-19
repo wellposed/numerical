@@ -33,7 +33,12 @@ forcing typeable everywhre
 -}
 
 
+{-
+FIX MEEEEE REMINDERS
 
+make the allocators for   Storable Buffers  do AVX sized alignment
+
+-}
 
 class VG.Vector (BufferPure mode) a => Buffer mode a
 class VGM.MVector (BufferMut mode) a=> MBuffer mode a

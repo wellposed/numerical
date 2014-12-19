@@ -11,7 +11,8 @@ import Data.Data
 not quite the right module for this notion of range, but lets
 fix that later
 -}
--- | whenever you are  tempted to
+-- | whenever you are  tempted to do a (lo,hi) tuple, use this instead
+--  This should perhaps be made lazy, but strict for now.
 data Range a =Range {_RangeMin :: !a
                       ,_RangeMax :: !a}
         deriving (Eq,Show,Data,Typeable,Functor)

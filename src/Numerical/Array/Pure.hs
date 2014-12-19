@@ -20,7 +20,9 @@ module Numerical.Array.Pure      where
 
 --import Numerical.Array.Address
 import Numerical.Array.Layout
---import Numerical.Array.Shape
+import Numerical.Array.Shape
+
+import Numerical.Array.Storage
 
 
 
@@ -42,6 +44,21 @@ That is, A valid address will always stay valid, even if after some mutation it 
     correspond to a *different* index than it did before.
 -}
 
+{-
+Fix ME, these names are lame
+
+ImmArray == immutable array
+
+-}
+data family ImmArray world rep lay (view::Locality) (rank :: Nat ) st  el
+
+data instance  ImmArray Native rep lay locality rank st el =
+  ImMutableNativeArray {
+          nativeBuffer  :: ! (S.BufferPure rep st el  )
+          ,nativeFormat :: ! (Format lay locality rank rep)
+    }
+
+
 class  PureArray arr   (rank:: Nat)   a |  arr -> rank   where
     type PureArrayAddress (arr :: *  -> * ) ::  *
 
@@ -57,19 +74,10 @@ class  PureArray arr   (rank:: Nat)   a |  arr -> rank   where
     -- |
     basicAddressToIndex :: (address ~PureArrayAddress  arr,Monad m) => arr a -> address -> m  (Index rank  )
 
-    -- |  return the smallest valid logical address
-    basicSmallestAddress :: (address ~PureArrayAddress  arr)=>  arr a ->  address
+    -- |  return the Range of valid logical addresses
+    basicAddressRange :: (address ~PureArrayAddress  arr)=>  arr a -> Maybe (Range address)
 
-    --  | return the largest valid logical ad
-    basicGreatestAddress ::(address ~PureArrayAddress  arr)=>   arr a ->  address
 
-    -- |  return the smallest valid array index
-    --  should be weakly dominated by every other valid index
-    basicSmallestIndex :: Monad m => arr a -> m (Index rank)
-
-    -- | return the greatest valid array index
-    -- should weakly dominate every
-    basicGreatestIndex :: Monad m =>  arr a -> m (Index rank)
 
     -- | gives the next valid logical address
     -- undefined on invalid addresses and the greatest valid address.
@@ -81,7 +89,9 @@ class  PureArray arr   (rank:: Nat)   a |  arr -> rank   where
 
     -- | gives the next valid array index
     -- undefined on invalid indices and the greatest valid index
-    basicNextIndex :: arr a -> Index rank  -> (Index rank)
+    basicNextIndex :: (address ~PureArrayAddress  arr)=>
+      arr a ->  Index rank -> Maybe address  -> Maybe ( Index rank, address)
+
 
     -- | for a given valid address, @'basicAddressRegion' addr @ will return an AddressInterval
     -- that contains @addr@. This will be a singleton when the "maximal uniform stride interval"
@@ -91,17 +101,26 @@ class  PureArray arr   (rank:: Nat)   a |  arr -> rank   where
 
     --basicAddressRegion :: (address ~PureArrayAddress  arr)=>  arr   a -> address ->  UniformAddressInterval address
 
-
-
     ---- | Yield the element at the given position. This method should not be
     ---- called directly, use 'unsafeRead' instead.
-    basicUnsafeAddressRead  :: (address ~PureArrayAddress  arr)=>  arr   a -> address-> a
+    basicUnsafeAddressRead  :: (Monad m , address ~PureArrayAddress  arr)=>  arr   a -> address-> m  a
 
 
 
     -- | Yield the element at the given position. This method should not be
     -- called directly, use 'unsafeSparseRead' instead.
     basicUnsafeSparseRead  ::  arr   a -> Index rank  -> Maybe a
+
+-- the catch all layout instance
+
+instance (Buffer rep el , Layout (Format  lay locality  rank rep) rank)
+  =>PureArray (ImmArray Native rep lay locality rank st el) where
+
+      basicShape =
+      basicSparseIndexToAddress=
+      basicAddressToIndex =
+      basicAddressRange =
+
 
 class PureArray arr rank a => PureDenseArray arr rank a where
 
