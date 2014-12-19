@@ -26,7 +26,7 @@ module Numerical.Array.Layout.Dense(
   ,Row
   ,Column
   ,Direct
-  ,module Numerical.Array.Layout.Base 
+  ,module Numerical.Array.Layout.Base
    ) where
 
 
@@ -246,6 +246,8 @@ instance Layout (Format Direct Contiguous (S Z) rep)  (S Z)  where
       -- in the style of the Sparse instances
 
 
+    basicAddressAsInt = \ _ (Address a) -> a
+
 type instance LayoutAddress (Format Direct Strided (S Z) rep) = Address
 instance  Layout (Format Direct Strided (S Z) rep)  (S Z)  where
 
@@ -273,6 +275,8 @@ instance  Layout (Format Direct Strided (S Z) rep)  (S Z)  where
           basicAddressPopCount  newForm
             (Range (basicToDenseAddress newForm $ basicToDenseIndex form loA)
                  (basicToDenseAddress newForm $ basicToDenseIndex form hiA) )
+
+    basicAddressAsInt = \ _ (Address a) -> a
 
 -----
 -----
@@ -306,6 +310,7 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
 
     basicNextIndex=  basicNextIndexDenseGeneric
 
+    basicAddressAsInt = \ _ (Address a) -> a
 -----
 -----
 
@@ -342,7 +347,7 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
             (Range (basicToDenseAddress newForm $ basicToDenseIndex form loA)
                  (basicToDenseAddress newForm $ basicToDenseIndex form hiA) )
 
-
+    basicAddressAsInt = \ _ (Address a) -> a
 ---
 ---
 
@@ -378,6 +383,7 @@ instance  (Applicative (Shape rank),Traversable (Shape rank))
             (Range (basicToDenseAddress newForm $ basicToDenseIndex form loA)
                  (basicToDenseAddress newForm $ basicToDenseIndex form hiA) )
 
+    basicAddressAsInt = \ _ (Address a) -> a
 -----
 -----
 -----
@@ -407,6 +413,7 @@ instance  (Applicative (Shape rank), Traversable (Shape rank))
 
     basicNextIndex=  basicNextIndexDenseGeneric
 
+    basicAddressAsInt = \ _ (Address a) -> a
  -- strideRow :: Shape rank Int,
 instance  (Applicative (Shape rank), Traversable (Shape rank))
   => Layout (Format Column  InnerContiguous rank rep) rank  where
@@ -438,6 +445,7 @@ instance  (Applicative (Shape rank), Traversable (Shape rank))
             (Range (basicToDenseAddress newForm $ basicToDenseIndex form loA)
                  (basicToDenseAddress newForm $ basicToDenseIndex form hiA) )
 
+    basicAddressAsInt = \ _ (Address a) -> a
  -- strideRow :: Shape rank Int,
 
 
@@ -469,6 +477,8 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
           basicAddressPopCount  newForm
             (Range (basicToDenseAddress newForm $ basicToDenseIndex form loA)
                  (basicToDenseAddress newForm $ basicToDenseIndex form hiA) )
+
+    basicAddressAsInt = \ _ (Address a) -> a
 
 ----------------------
 ----------------------

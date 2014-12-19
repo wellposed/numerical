@@ -211,7 +211,9 @@ class Layout form  (rank :: Nat) | form -> rank  where
     -- is not needed
     basicCompareIndex :: p form-> Shape rank Int ->Shape rank Int -> Ordering
 
-    -- | the (possibly empty) min and max of the valid addresses for a given format
+    -- | the (possibly empty) min and max of the valid addresses for a given format.
+    -- @minAddress = fmap _RangeMin . rangedFormatAddress@
+    -- and @maxAddress = fmap _RangeMax . rangedFormatAddress@
     rangedFormatAddress ::  (address ~ LayoutAddress form)=> form -> Maybe (Range address)
     -- FIX ME! this name is crap, i dont like it
 
@@ -230,6 +232,17 @@ class Layout form  (rank :: Nat) | form -> rank  where
 
     basicAddressPopCount :: (address ~ LayoutAddress form)=>
         form -> Range address -> Int
+
+    -- | This operation is REALLY unsafe
+    -- This should ONLY be used on Formats that are directly
+    -- paired with a Buffer or Mutable Buffer (ie a Vector)
+    --  This operation being in this class is also kinda a hack
+    -- but lets leave it here for now
+    basicAddressAsInt :: (address ~ LayoutAddress form)=>
+        form ->  address -> Int
+    basicAddressAsInt =
+       \ _ _ ->
+        error "called basicAddressAsInt on a Layout thats not meant for this world"
 
     {-# MINIMAL basicToAddress, basicToIndex, basicNextAddress,basicNextIndex
           ,rangedFormatAddress,basicFormLogicalShape,basicCompareIndex
