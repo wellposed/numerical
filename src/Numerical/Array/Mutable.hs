@@ -102,120 +102,10 @@ data instance  MArray Native rep lay locality rank st el =
     }
 
 
-
-
---data instance  MArray Native Boxed layout locality rank st el =
---  DenseMutableNativeBoxedArray {
---              nativeBoxedBuffer:: {-# UNPACK #-} !(BM.MVector st el)
---              ,nativeBoxedFormat ::  !(Format layout locality rank Boxed)  }
-
---data instance  MArray Native Storable layout locality rank st el =
---  DenseMutableNativeStoredArray {
---        nativeStoredBuffer:: {-# UNPACK #-} !(SM.MVector st el)
---        ,nativeStoredFormat ::  !(Format layout locality rank Stored)  }
-
---data instance  MArray Native Unboxed layout locality rank st el =
---  DenseMutableNativeUnboxedArray {
---        nativeUnboxedBuffer:: {- UNPACK cant for unboxed :( -} !(UM.MVector st el)
---        ,nativeUnboxedFormat ::  !(Format layout locality rank Unboxed)  }
-        -- I have this slight worry that Unboxed arrays will have
-        -- an extra indirection vs the storable class
-        -- but I think it wont matter in practice
-        -- alternatively, could add a PrimUnboxed storage choice
-
---- would love to get the format to act unboxed
-
-
---data fam MArray world rep lay (view:: Locality) rank st elm =
---     MArray
---         {_marrBuffer :: !(MBuffer  world rep st elm)
---         ,_marrForm ::  !(L.Form lay view rank)
---         --,_marrShift :: {-# UNPACK #-} !Address
---         }
-
-
-
---data family  MBuffer world rep st el
-
---newtype instance MBuffer Native Boxed st el= MBufferNativeBoxed (BM.MVector st el)
---newtype instance MBuffer Native Unboxed st el= MBufferNativeUnboxed (UM.MVector st el)
---newtype instance MBuffer Native Stored st el= MBufferNativeStored (SM.MVector st el)
---data instance MArray Native rep lay loc rank st al =
-
---data NativeWorld
-
-
-#if defined(__GLASGOW_HASKELL__) && ( __GLASGOW_HASKELL__ >= 707)
-
---type family MArrayToContiguous (marr ::  * -> * -> *  ) ::  * -> * -> *  where
-
---type family MArrayToInnerContiguous (marr ::  * -> * -> *  ) ::  * -> * -> *  where
-
---type family MArrayToStrided (marr ::  * -> * -> *  ) ::  * -> * -> *  where
-
-type family  MArrayLocality marr :: Locality where
-    MArrayLocality (MArray world rep lay (view::Locality) rank st  el) = view
-
-type family  MArrayLayout marr where
-    MArrayLayout (MArray world rep lay (view::Locality) rank st  el)  = lay
-
-type family MArrayRep marr where
-    MArrayRep (MArray world rep lay (view::Locality) rank st  el) = rep
-
-type family MArrayMaxLocality (lmarr::  * -> * -> * )
-                              (rmarr::  * -> * -> * ) :: ( * -> * -> *) where
-  MArrayMaxLocality (MArray wld rep lay a rnk)
-            (MArray wld rep lay  b rnk) = MArray wld rep lay (LocalityMax a b) rnk
-
-
-
-
-type family MArrayMinLocality (lmarr:: * -> * -> * )
-                              (rmarr:: * -> * -> * ) :: ( * -> * -> *) where
-  MArrayMinLocality (MArray wld rep lay a rnk)
-                    (MArray wld rep lay b rnk) = MArray wld rep lay (LocalityMin a b ) rnk
-
-
-
-#else
-
-
-type family MArrayMaxLocality (lmarr::  * -> * -> * )
-                              (rmarr::  * -> * -> * ) :: ( * -> * -> *)
-type instance MArrayMaxLocality (MArray wld rep lay a rnk)
-            (MArray wld rep lay b rnk) = MArray wld rep lay (LocalityMax a b) rnk
-
-type family MArrayMinLocality (lmarr ::  * -> * -> * )
-                                (rmarr::  * -> * -> *) :: ( * -> * -> *)
-type instance MArrayMinLocality (MArray wld rep lay a rnk)
-                        (MArray wld rep lay b rnk) = MArray wld rep lay  (LocalityMin a b ) rnk
-
-
-type family  MArrayLocality marr :: Locality
-type instance     MArrayLocality (MArray world rep lay (view::Locality) rank st  el) = view
-
-type family  MArrayLayout marr
-type instance     MArrayLayout (MArray world rep lay (view::Locality) rank st  el)  = lay
-
-type family MArrayRep marr
-type instance    MArrayRep (MArray world rep lay (view::Locality) rank st  el) = rep
-
-#endif
-
-
-
-
-
-
-#if defined(__GLASGOW_HASKELL__) && ( __GLASGOW_HASKELL__ >= 707)
 -- | Every 'MutableArray'  instance has a contiguous version
 -- of itself, This contiguous version will ALWAYS have a Builder instance.
-type family MutableArrayContiguous (marr :: * -> * -> *) :: * ->  * -> * where
-  MutableArrayContiguous (MArray world rep layout locality rank)= MArray world rep layout Contiguous rank
-#else
 type family MutableArrayContiguous (marr :: * -> * -> *) :: * ->  * -> *
 type instance  MutableArrayContiguous (MArray world rep layout locality rank)= MArray world rep layout Contiguous rank
-#endif
 
 -- | Sadly `ArrMutable` will have to have instances written by hand for now
 -- May later migrate the freeze / thaw machinery to Array.Phased, but lets
@@ -224,7 +114,6 @@ type  family  ArrMutable ( arr :: * -> * )  :: * -> * -> *
 class A.PureArray (ArrPure marr)  rank a => Array marr (rank:: Nat)  a | marr -> rank  where
 
     type   ArrPure (marr :: * -> * -> * ) :: * -> *
-
 
     -- the type of the underlying storage buffer
     type MutableArrayBuffer marr :: * -> * -> *
