@@ -148,27 +148,28 @@ Test-suite testsuite
         ,ghc-prim
         ,numerical
    --having an explicit list of other modules breaks hpc
-   ghc-options: -threaded -fhpc
+   ghc-options: -threaded
+   -- -fhpc
    other-modules:
-        Numerical.Array.Layout
-        Numerical.Array.Layout.Base
-        Numerical.Array.Layout.Dense
-        Numerical.Array
-        --Control.Monad.State.ReallyStrict
-        --Numerical.Array.Operations
-        Numerical.Array.Shape
-        Numerical.InternalUtils
-        Numerical.Array.Storage
-        Numerical.Nat
-        Numerical.World
-        Numerical.Array.Mutable
-        Numerical.Array.Pure
-        Numerical.Array.Locality
-        Numerical.Array.Address
-        Control.NumericalMonad.State.Strict
-        Control.NumericalApplicative.Backwards
-        Numerical.Data.Vector.Pair
-        Numerical.Data.Vector.HPair
+    --    Numerical.Array.Layout
+    --    Numerical.Array.Layout.Base
+    --    Numerical.Array.Layout.Dense
+    --    Numerical.Array
+    --    --Control.Monad.State.ReallyStrict
+    --    --Numerical.Array.Operations
+    --    Numerical.Array.Shape
+    --    Numerical.InternalUtils
+    --    Numerical.Array.Storage
+    --    Numerical.Nat
+    --    Numerical.World
+    --    Numerical.Array.Mutable
+    --    Numerical.Array.Pure
+    --    Numerical.Array.Locality
+    --    Numerical.Array.Address
+    --    Control.NumericalMonad.State.Strict
+    --    Control.NumericalApplicative.Backwards
+    --    Numerical.Data.Vector.Pair
+    --    Numerical.Data.Vector.HPair
         ------
         ------
         NumericalUnit.Shape
@@ -196,27 +197,27 @@ Test-suite testsuite-O2
    ghc-options: -O2  -threaded
     -- -fhpc
    other-modules:
-        Numerical.Array.Layout
-        Numerical.Array.Layout.Base
-        Numerical.Array.Layout.Dense
-        Numerical.Array
-        --Control.Monad.State.ReallyStrict
-        --Numerical.Array.Operations
-        Numerical.InternalUtils
-        Numerical.Array.Shape
-        Numerical.Array.Storage
-        Numerical.Nat
-        Numerical.World
-        Numerical.Array.Mutable
-        Numerical.Array.Pure
-        Numerical.Array.Locality
-        Numerical.Array.Address
-        Control.NumericalMonad.State.Strict
-        Control.NumericalApplicative.Backwards
-        Numerical.Data.Vector.Pair
-        Numerical.Data.Vector.HPair
-        ------
-        ------
+     --   Numerical.Array.Layout
+     --   Numerical.Array.Layout.Base
+     --   Numerical.Array.Layout.Dense
+     --   Numerical.Array
+     --   --Control.Monad.State.ReallyStrict
+     --   --Numerical.Array.Operations
+     --   Numerical.InternalUtils
+     --   Numerical.Array.Shape
+     --   Numerical.Array.Storage
+     --   Numerical.Nat
+     --   Numerical.World
+     --   Numerical.Array.Mutable
+     --   Numerical.Array.Pure
+     --   Numerical.Array.Locality
+     --   Numerical.Array.Address
+     --   Control.NumericalMonad.State.Strict
+     --   Control.NumericalApplicative.Backwards
+     --   Numerical.Data.Vector.Pair
+     --   Numerical.Data.Vector.HPair
+     --   ------
+     --   ------
         NumericalUnit.Shape
         NumericalUnit.Layout
    hs-source-dirs: tests
@@ -242,25 +243,25 @@ Test-suite testsuite-O2llvm
    ghc-options: -O2  -threaded -fllvm
     -- -fhpc
    other-modules:
-        Numerical.Array.Layout
-        Numerical.Array.Layout.Base
-        Numerical.Array.Layout.Dense
-        Numerical.Array
-        --Control.Monad.State.ReallyStrict
-        --Numerical.Array.Operations
-        Numerical.Array.Shape
-        Numerical.Array.Storage
-        Numerical.InternalUtils
-        Numerical.Nat
-        Numerical.World
-        Numerical.Array.Mutable
-        Numerical.Array.Pure
-        Numerical.Array.Locality
-        Numerical.Array.Address
-        Numerical.Data.Vector.Pair
-        Numerical.Data.Vector.HPair
-        Control.NumericalMonad.State.Strict
-        Control.NumericalApplicative.Backwards
+      --  Numerical.Array.Layout
+      --  Numerical.Array.Layout.Base
+      --  Numerical.Array.Layout.Dense
+      --  Numerical.Array
+      --  --Control.Monad.State.ReallyStrict
+      --  --Numerical.Array.Operations
+      --  Numerical.Array.Shape
+      --  Numerical.Array.Storage
+      --  Numerical.InternalUtils
+      --  Numerical.Nat
+      --  Numerical.World
+      --  Numerical.Array.Mutable
+      --  Numerical.Array.Pure
+      --  Numerical.Array.Locality
+      --  Numerical.Array.Address
+      --  Numerical.Data.Vector.Pair
+      --  Numerical.Data.Vector.HPair
+      --  Control.NumericalMonad.State.Strict
+      --  Control.NumericalApplicative.Backwards
         ------
         ------
         NumericalUnit.Shape
