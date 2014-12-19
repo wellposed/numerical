@@ -189,7 +189,7 @@ class A.PureArray (ArrPure marr)  rank a => Array marr (rank:: Nat)  a | marr ->
     -- | gives the next valid array index, the least valid index that is
     -- or
     basicSparseNextIndex ::(address ~ MArrayAddress marr)=>
-         marr st  a -> Index rank  -> Maybe (Index rank, address)
+         marr st  a ->  Index rank -> Maybe address  -> Maybe ( Index rank, address)
 
 
 
