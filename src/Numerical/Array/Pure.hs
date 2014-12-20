@@ -19,12 +19,15 @@ module Numerical.Array.Pure      where
 
 
 --import Numerical.Array.Address
-import Numerical.Array.Layout
+import qualified Numerical.Array.Layout as L
+
+import Numerical.Array.Locality
 import Numerical.Array.Shape
+import Numerical.Array.Range
+import Numerical.Array.Storage as S
+import Numerical.World
 
-import Numerical.Array.Storage
-
-
+import qualified Data.Vector.Generic as VG
 
 
 {-
@@ -50,12 +53,12 @@ Fix ME, these names are lame
 ImmArray == immutable array
 
 -}
-data family ImmArray world rep lay (view::Locality) (rank :: Nat ) st  el
+data family ImmArray world rep lay (view::Locality) (rank :: Nat )   el
 
-data instance  ImmArray Native rep lay locality rank st el =
+data instance  ImmArray Native rep lay locality rank  el =
   ImMutableNativeArray {
-          nativeBuffer  :: ! (S.BufferPure rep st el  )
-          ,nativeFormat :: ! (Format lay locality rank rep)
+          nativeBufferPure  :: ! (S.BufferPure rep  el  )
+          ,nativeFormatPure :: ! (L.Format lay locality rank rep)
     }
 
 
@@ -69,10 +72,11 @@ class  PureArray arr   (rank:: Nat)   a |  arr -> rank   where
 
     --  | basicMutableSparseIndexToAddres checks if a index is present or not
     -- helpful primitive for authoring codes for (un)structured sparse array format
-    basicSparseIndexToAddress :: ( address ~PureArrayAddress  arr, Monad m) => arr a -> Index rank  -> m (Maybe address)
+    -- FIXME : THIS IS A TERRIBLE NAME
+    basicSparseIndexToAddress :: ( address ~PureArrayAddress  arr) => arr a -> Index rank  -> (Maybe address)
 
     -- |
-    basicAddressToIndex :: (address ~PureArrayAddress  arr,Monad m) => arr a -> address -> m  (Index rank  )
+    basicAddressToIndex :: (address ~PureArrayAddress  arr) => arr a -> address ->  (Index rank  )
 
     -- |  return the Range of valid logical addresses
     basicAddressRange :: (address ~PureArrayAddress  arr)=>  arr a -> Maybe (Range address)
@@ -83,7 +87,7 @@ class  PureArray arr   (rank:: Nat)   a |  arr -> rank   where
     -- undefined on invalid addresses and the greatest valid address.
     -- Note that for invalid addresses in between minAddress and maxAddress,
     -- will return the next valid address
-    basicNextAddress :: (address ~PureArrayAddress  arr)=>  arr a -> address -> address
+    basicNextAddress :: (address ~PureArrayAddress  arr)=>  arr a -> address -> Maybe address
 
     -- I think the case could be made for a basicPreviousAddress opeeration
 
@@ -109,23 +113,49 @@ class  PureArray arr   (rank:: Nat)   a |  arr -> rank   where
 
     -- | Yield the element at the given position. This method should not be
     -- called directly, use 'unsafeSparseRead' instead.
-    basicUnsafeSparseRead  ::  arr   a -> Index rank  -> Maybe a
+    basicUnsafeSparseRead  :: Monad m => arr   a -> Index rank  -> m (Maybe a)
 
 -- the catch all layout instance
 
-instance (Buffer rep el , Layout (Format  lay locality  rank rep) rank)
-  =>PureArray (ImmArray Native rep lay locality rank st el) where
+instance (Buffer rep el , L.Layout (L.Format  lay locality  rank rep) rank)
+  =>PureArray (ImmArray Native rep lay locality rank )   rank el   where
+      type PureArrayAddress (ImmArray Native rep lay locality rank )
+        =L.LayoutAddress (L.Format lay locality rank rep)
 
-      basicShape =
-      basicSparseIndexToAddress=
-      basicAddressToIndex =
-      basicAddressRange =
+      {-# INLINE basicShape #-}
+      basicShape = L.basicFormLogicalShape . nativeFormatPure
 
+      {-# INLINE basicSparseIndexToAddress #-}
+      basicSparseIndexToAddress= L.basicToAddress . nativeFormatPure
+
+      {-#  INLINE basicAddressToIndex #-}
+      basicAddressToIndex = L.basicToIndex . nativeFormatPure
+
+      {-# INLINE basicAddressRange #-}
+      basicAddressRange = L.rangedFormatAddress . nativeFormatPure
+
+      {-# INLINE basicNextAddress #-}
+      basicNextAddress= L.basicNextAddress . nativeFormatPure
+
+      {-# INLINE basicNextIndex #-}
+      basicNextIndex = L.basicNextIndex . nativeFormatPure
+
+      {-# INLINE basicUnsafeSparseRead #-}
+      basicUnsafeSparseRead =
+          \ arr ix -> case basicSparseIndexToAddress arr ix of
+                          Nothing -> return Nothing
+                          (Just addr) ->  basicUnsafeAddressRead arr addr >>= ( return . Just)
+
+      {-# INLINE basicUnsafeAddressRead #-}
+      basicUnsafeAddressRead =
+          \ arr  addr ->
+            VG.basicUnsafeIndexM (nativeBufferPure arr)
+                (L.basicAddressAsInt (nativeFormatPure arr) $ addr)
 
 class PureArray arr rank a => PureDenseArray arr rank a where
 
-    -- |
-    basicIndexInBounds :: marr st -> Index rank -> Bool
+    -- | 'basicIndexInBounds' is an O(1) bounds check.
+    basicIndexInBounds :: arr el -> Index rank -> Bool
 
     -- |
     basicUnsafeAddressDenseRead  :: (address ~PureArrayAddress  arr,Monad m) => arr  a -> address-> m a
