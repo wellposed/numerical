@@ -481,6 +481,8 @@ instance V.Vector (BufferPure rep) Int
   basicToIndex =
     \ (FormatDirectSparseContiguous _ shift lut) (Address addr) ->
         ((lut V.! addr ) - shift) :* Nil
+  {-# INLINE basicAddressAsInt #-}
+  basicAddressAsInt = \ _ (Address a) -> a
 
   {-# INLINE basicNextAddress #-}
   basicNextAddress =
@@ -681,6 +683,8 @@ instance  (V.Vector (BufferPure rep) Int )
        --          columnIndex _)) ->
        --       SparseAddress (y_range - 1) (V.length columnIndex - 1 )
 
+  {-#  INLINE basicAddressAsInt #-}
+  basicAddressAsInt = \ _ (SparseAddress _ addr)-> addr
 
   {-# INLINE basicToIndex #-}
   basicToIndex =
