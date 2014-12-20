@@ -752,14 +752,68 @@ overhead, but in general branch prediction should work out ok.
                           ((rowStartIndex V.! (ix_y+1) ) - shift)
 
               else   (Nothing :: Maybe SparseAddress )
+
+
   -- {-# INLINE basicNextIndex #-}
-  basicNextIndex =  error "you didnt fix me basicNextIndex CSR"
-    -- \form@(FormatContiguousCompressedSparseRow
-    --    (FormatContiguousCompressedSparseInternal
-    --       y_row_range x_col_range columnIndex rowStartIndex))
-    --(innerX :* outerY :*Nil) mebeSparseAddress -> -- __FixMe
-    --
-    --- _addBasicNextIndexContigCSR_FIXME
+  {-  because nextIndex acts like a range query
+      it doesn't make sense for inner loops
+  -}
+  basicNextIndex =
+     \_form@(FormatContiguousCompressedSparseRow
+              (FormatContiguousCompressedSparseInternal
+                y_row_range x_col_range _columnIndex _rowStartIndex))
+      _ix@(innerX :* outerY :*Nil) mebeSparseAddress ->
+        if  not $ (innerX >=0 && innerX  < x_col_range ) && (outerY >= 0 && outerY < y_row_range)
+          -- checking if index is inbounds for logical shape
+          -- return Nothing if its out of bounds
+          -- QUESTION: should it throw an error instead of returning nothing?
+        then Nothing
+        else
+          case mebeSparseAddress of
+            Nothing -> error "finish me "
+              where
+              {- Okay here we check if the proposed current index is manifest, or not
+                Is it the right Row To search for the next index,
+                Or if We need to search further along. This is the way that
+                enables Usage of operations That give a complexity that is O(1)
+                in the average/best case and O(log N )in the worst case
+
+                The logical we do is roughly first check If there is an element
+                strictly Greater than ix in next we are doing the successor
+                That is within that Row And if so we can directly
+                  do a binary search therein
+                -}
+                _resRow = error "finish me "
+
+            (Just (SparseAddress _innerix _outerix) )
+                -> error "really finish me"
+
+
+        --case mebeAddress of
+        --  Nothing ->
+        --    let
+        --    resAddr = Address $! bsearchUp  (\lix-> ix < ((lut V.! lix)-shift) )
+        --                0 (V.length lut )
+        --  in
+        --   resAddr `seq` (Just (basicToIndex form resAddr ,  resAddr))
+        --        -- Q: do i want the Index part of the tuple to be strict or not?
+        --        -- leaving it lazy for now
+        --        -- TODO / FIX / AUDIT ME / NOT SURE
+        --      -- this is the fall back binary search based lookup
+        --  Just (Address adr)->
+        --  -- make sure the address hint is in bounds and
+        --  -- is <= the current position
+        --      if adr >0 && adr < (V.length lut -1) && ix >=((lut V.! adr )-shift)
+        --      then
+        --        -- by construction we know theres at least one applicable index
+        --        -- thats
+        --        let !nextAddr = Address $!
+        --                        basicHybridSearchUp
+        --                          (\lix-> ix <  ((lut V.! lix)-shift ) )
+        --                          adr (V.length lut -1)
+        --          in  Just (basicToIndex form nextAddr ,  nextAddr)
+        --      else
+        --        resAddr `seq` (Just (basicToIndex form resAddr ,  resAddr))
 
 
 -------
