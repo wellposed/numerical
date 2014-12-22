@@ -137,7 +137,7 @@ Test-suite testsuite
    default-language: Haskell2010
    type: exitcode-stdio-1.0
    build-depends:    base >= 4.6 && < 4.9
-        ,hspec==2.0.*
+        ,hspec >=2.0 && <2.2
         ,hspec-expectations
         ,HUnit  >= 1.2.5 && < 1.3
         ,primitive >= 0.5 && < 0.6
@@ -147,125 +147,12 @@ Test-suite testsuite
         ,transformers-compat >= 0.3 && < 0.4
         ,ghc-prim
         ,numerical
-   --having an explicit list of other modules breaks hpc
    ghc-options: -threaded
-   -- -fhpc
+   hs-source-dirs: tests
+   main-is: Main.hs
    other-modules:
-    --    Numerical.Array.Layout
-    --    Numerical.Array.Layout.Base
-    --    Numerical.Array.Layout.Dense
-    --    Numerical.Array
-    --    --Control.Monad.State.ReallyStrict
-    --    --Numerical.Array.Operations
-    --    Numerical.Array.Shape
-    --    Numerical.InternalUtils
-    --    Numerical.Array.Storage
-    --    Numerical.Nat
-    --    Numerical.World
-    --    Numerical.Array.Mutable
-    --    Numerical.Array.Pure
-    --    Numerical.Array.Locality
-    --    Numerical.Array.Address
-    --    Control.NumericalMonad.State.Strict
-    --    Control.NumericalApplicative.Backwards
-    --    Numerical.Data.Vector.Pair
-    --    Numerical.Data.Vector.HPair
-        ------
-        ------
+        -- Only modules which are part of the test suite and not the library
+        -- should be listed here. These modules are excluded from the coverage
+        -- report because their coverage will be 100%.
         NumericalUnit.Shape
         NumericalUnit.Layout
-   hs-source-dirs: tests
-       src
-   main-is: Main.hs
-
-
-Test-suite testsuite-O2
-   default-language: Haskell2010
-   type: exitcode-stdio-1.0
-   build-depends:    base >= 4.6 && < 4.9
-        ,hspec==2.0.*
-        ,hspec-expectations
-        ,HUnit  >= 1.2.5 && < 1.3
-        ,primitive >= 0.5 && < 0.6
-        ,vector >= 0.10 && < 0.12
-        ,tagged >= 0.7 && < 0.8
-        ,transformers >= 0.3 && < 0.5
-        ,transformers-compat >= 0.3 && < 0.4
-        ,ghc-prim
-        ,numerical
-   --having an explicit list of other modules breaks hpc
-   ghc-options: -O2  -threaded
-    -- -fhpc
-   other-modules:
-     --   Numerical.Array.Layout
-     --   Numerical.Array.Layout.Base
-     --   Numerical.Array.Layout.Dense
-     --   Numerical.Array
-     --   --Control.Monad.State.ReallyStrict
-     --   --Numerical.Array.Operations
-     --   Numerical.InternalUtils
-     --   Numerical.Array.Shape
-     --   Numerical.Array.Storage
-     --   Numerical.Nat
-     --   Numerical.World
-     --   Numerical.Array.Mutable
-     --   Numerical.Array.Pure
-     --   Numerical.Array.Locality
-     --   Numerical.Array.Address
-     --   Control.NumericalMonad.State.Strict
-     --   Control.NumericalApplicative.Backwards
-     --   Numerical.Data.Vector.Pair
-     --   Numerical.Data.Vector.HPair
-     --   ------
-     --   ------
-        NumericalUnit.Shape
-        NumericalUnit.Layout
-   hs-source-dirs: tests
-       src
-   main-is: Main.hs
-
-
-Test-suite testsuite-O2llvm
-   default-language: Haskell2010
-   type: exitcode-stdio-1.0
-   build-depends:    base >= 4.6 && < 4.9
-        ,hspec==2.0.*
-        ,hspec-expectations
-        ,HUnit  >= 1.2.5 && < 1.3
-        ,primitive >= 0.5 && < 0.6
-        ,vector >= 0.10 && < 0.12
-        ,tagged >= 0.7 && < 0.8
-        ,transformers >= 0.3 && < 0.5
-        ,transformers-compat >= 0.3 && < 0.4
-        ,ghc-prim
-        ,numerical
-   --having an explicit list of other modules breaks hpc
-   ghc-options: -O2  -threaded -fllvm
-    -- -fhpc
-   other-modules:
-      --  Numerical.Array.Layout
-      --  Numerical.Array.Layout.Base
-      --  Numerical.Array.Layout.Dense
-      --  Numerical.Array
-      --  --Control.Monad.State.ReallyStrict
-      --  --Numerical.Array.Operations
-      --  Numerical.Array.Shape
-      --  Numerical.Array.Storage
-      --  Numerical.InternalUtils
-      --  Numerical.Nat
-      --  Numerical.World
-      --  Numerical.Array.Mutable
-      --  Numerical.Array.Pure
-      --  Numerical.Array.Locality
-      --  Numerical.Array.Address
-      --  Numerical.Data.Vector.Pair
-      --  Numerical.Data.Vector.HPair
-      --  Control.NumericalMonad.State.Strict
-      --  Control.NumericalApplicative.Backwards
-        ------
-        ------
-        NumericalUnit.Shape
-        NumericalUnit.Layout
-   hs-source-dirs: tests
-       src
-   main-is: Main.hs
