@@ -11,7 +11,7 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-#  LANGUAGE GADTs #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -20,7 +20,7 @@
 {-# LANGUAGE StandaloneDeriving #-}
 
 {-# LANGUAGE ScopedTypeVariables #-}
-{-#LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 #if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
  {-# LANGUAGE AutoDeriveTypeable #-}

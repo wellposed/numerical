@@ -40,7 +40,7 @@ import Numerical.World
 --import Numerical.Array.Storage(Boxed,Unboxed,Stored)
 --import Numerical.Array.Locality
 
-import qualified Numerical.Array.Pure as A
+import qualified Numerical.Array.Pure as P
 import qualified Numerical.Array.Storage as S
 
 --import qualified Data.Vector.Storable.Mutable as SM
@@ -111,12 +111,12 @@ type instance  MutableArrayContiguous (MArray world rep layout locality rank)= M
 -- May later migrate the freeze / thaw machinery to Array.Phased, but lets
 type  family  ArrMutable ( arr :: * -> * )  :: * -> * -> *
 
-class A.PureArray (ArrPure marr)  rank a => Array marr (rank:: Nat)  a | marr -> rank  where
+class P.PureArray (ArrPure marr)  rank a => Array marr (rank:: Nat)  a | marr -> rank  where
 
     type   ArrPure (marr :: * -> * -> * ) :: * -> *
 
     -- the type of the underlying storage buffer
-    type MutableArrayBuffer marr :: * -> * -> *
+    --type MutableArrayBuffer marr :: * -> * -> *
 
     -- really shouldnt appear in end user code, will only
     -- come up in writing new combinators
@@ -159,23 +159,6 @@ class A.PureArray (ArrPure marr)  rank a => Array marr (rank:: Nat)  a | marr ->
     basicAddressRange :: (address ~ MArrayAddress marr)=> marr st   a ->  Maybe (Range address)
 
 
-
-    ----  | return the largest valid logical adress
-    --basicMaxAddress :: (address ~ MArrayAddress marr)=> marr st   a ->  address
-
-    -- |  return the smallest valid array index
-    --  should be weakly dominated by every other valid index
-    -- basicMinIndex ::  marr st   a ->  Index rank
-    -- basicMinIndex = \ marr -> basicAddressToIndex marr $ basicMinAddress marr
-    -- {-# INLINE basicMinIndex #-}
-
-    ---- | return the greatest valid array index
-    ---- should weakly dominate every
-    --basicMaxIndex ::  marr st  a -> Index rank
-    --basicMaxIndex = \ marr -> basicAddressToIndex marr $ basicMaxAddress marr
-    --{-# INLINE basicMaxIndex #-}
-
-
     -- | gives the next valid logical address
     -- undefined on invalid addresses and the greatest valid address.
     -- Note that for invalid addresses in between minAddress and maxAddress,
@@ -192,9 +175,6 @@ class A.PureArray (ArrPure marr)  rank a => Array marr (rank:: Nat)  a | marr ->
          marr st  a ->  Index rank -> Maybe address  -> Maybe ( Index rank, address)
 
 
-
-
-
     -- | for a given valid address, @'basicAddressRegion' addr @ will return an AddressInterval
     -- that contains @addr@. This will be a singleton when the "maximal uniform stride interval"
     -- containing @addr@ has strictly less than 3 elements. Otherwise will return an Address range
@@ -202,19 +182,13 @@ class A.PureArray (ArrPure marr)  rank a => Array marr (rank:: Nat)  a | marr ->
     basicLocalAffineAddressRegion ::(address ~ MArrayAddress marr)
           => marr st a ->address ->  AffineRange address
 
-
     -- | this doesn't quite fit in this class, but thats ok, will deal with that later
     basicOverlaps :: marr st   a -> marr st   a -> Bool
-
-
-
-
 
     -- | Reset all elements of the vector to some undefined value, clearing all
     -- references to external objects. This is usually a noop for unboxed
     -- vectors. This method should not be called directly, use 'clear' instead.
     basicClear :: PrimMonad m => marr (PrimState m)   a -> m ()
-
 
     ---- | Yield the element at the given position. This method should not be
     ---- called directly, use 'unsafeRead' instead.
@@ -225,7 +199,6 @@ class A.PureArray (ArrPure marr)  rank a => Array marr (rank:: Nat)  a | marr ->
     ---- called directly, use 'unsafeAddressWrite' instead.
     basicUnsafeAddressWrite :: (PrimMonad m ,address ~ MArrayAddress marr) =>
          marr  (PrimState m)   a -> address  -> a -> m ()
-
 
 
     --note  the sparsewrite and sparse read are "fused" versions of basicManifestAddress
@@ -241,6 +214,10 @@ class A.PureArray (ArrPure marr)  rank a => Array marr (rank:: Nat)  a | marr ->
     basicUnsafeSparseWrite :: PrimMonad m => marr (PrimState m) a ->
       Index rank -> m( Maybe (a -> m ()))
 -- this might get axed
+
+
+
+
 
 
 {-
@@ -261,13 +238,12 @@ basicIndexedMapM_ ::  PrimMonad m => marr (PrimState m) rank a ->
 basicIndexedMap
 
 -}
---instance MutableArrayBuilder  (MArray NativeWorld ) where
---    func =
 
 
 
 
-class ( Array marr rank a, A.PureDenseArray (ArrPure marr) rank a  )=>
+
+class ( Array marr rank a, P.PureDenseArray (ArrPure marr) rank a  )=>
             DenseArray marr rank a | marr -> rank   where
     -- | for Dense arrays, it is always easy to check if a given index is valid.
     -- this operation better have  O(1) complexity or else!
@@ -372,3 +348,12 @@ class RectilinearArray marr rank a | marr -> rank   where
     -- where ix1 is the minimal corner and ix2
     basicMutableSlice :: PrimMonad m => marr (PrimState m)  a -> Index rank -> Index rank
         -> m (MutableInnerContigArray marr (PrimState m)  a )
+
+
+
+instance (MBuffer rep el, Layout (Format  lay locality  rank rep))
+  =>Array (MArray Native rep lay locality rank) rank el  where
+    type ArrPure (MArray Native rep lay locality rank)=
+    func =
+
+
