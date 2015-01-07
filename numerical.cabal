@@ -106,7 +106,7 @@ library
         TypeOperators
         FlexibleInstances
         FlexibleContexts
-
+        ScopedTypeVariables
 
 -- relax base constraint when i wanna support 7.6 again
     -- Other library packages from which modules are imported.

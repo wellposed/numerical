@@ -21,6 +21,7 @@ import qualified Data.Vector.Storable as SV
 import qualified Data.Vector.Unboxed as UV
 
 import Data.Typeable
+
 --import qualified Data.Vector.Mutable as BVM
 --import qualified Data.Vector.Storable.Mutable as SVM
 --import qualified Data.Vector.Unboxed.Mutable as UVM
@@ -39,11 +40,15 @@ FIX MEEEEE REMINDERS
 make the allocators for   Storable Buffers  do AVX sized alignment
 
 -}
+-- This si
+class (VG.Vector (BufferPure mode) a, VGM.MVector (BufferMut mode) a)=> Buffer mode a
 
-class VG.Vector (BufferPure mode) a => Buffer mode a
+-- not sure if MBuffer class should exist, fixme
 class VGM.MVector (BufferMut mode) a=> MBuffer mode a
 
-instance VG.Vector (BufferPure mode) a => Buffer mode a
+instance (VG.Vector (BufferPure mode) a, VGM.MVector (BufferMut mode) a)=> Buffer mode a
+
+-- not sure if MBuffer should exist, FIXME
 instance VGM.MVector (BufferMut mode) a=> MBuffer mode a
 
 data Boxed
@@ -77,10 +82,10 @@ newtype instance BufferMut Unboxed st elem = UnboxedBufferMut (UV.MVector st ele
 newtype instance BufferMut Storable st  elem = StorableBufferMut (SV.MVector st elem)
 
 
-unsafeBufferFreeze :: (Buffer rep a,MBuffer rep a,PrimMonad m) =>BufferMut rep (PrimState m )  a -> m (BufferPure rep a)
+unsafeBufferFreeze :: (Buffer rep a,PrimMonad m) =>BufferMut rep (PrimState m )  a -> m (BufferPure rep a)
 unsafeBufferFreeze =  VG.basicUnsafeFreeze
 
-unsafeBufferThaw :: (Buffer rep a,MBuffer rep a,PrimMonad m)
+unsafeBufferThaw :: (Buffer rep a,PrimMonad m)
         =>(BufferPure rep a) -> m (BufferMut rep (PrimState m )  a)
 unsafeBufferThaw = VG.basicUnsafeThaw
 
