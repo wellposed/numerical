@@ -93,7 +93,7 @@ deriving instance Show  (BufferPure rep Int )  => Show (Format DirectSparse  Con
 {-
 for some listings of the design space of Sparse matrices
 as found in other tools,
-see < https://software.intel.com/sites/products/documentation/hpc/mkl/mklman/index.htm >
+see < https://software.intel.com/en-us/mkl_11.2_ref >
 and then navigate to the section  "Sparse Matrix Storage Formats"  within
 "BLAS and Sparse BLAS Routines"
 
