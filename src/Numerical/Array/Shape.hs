@@ -111,11 +111,9 @@ type Index rank = Shape rank Int
 data Shape (rank :: Nat) a where
     Nil  :: Shape Z a
     (:*) ::  !(a) -> !(Shape r a ) -> Shape  (S r) a
-        --deriving  (Show)
 
 
 deriving instance Typeable Shape
-
 
 
 nilShapeConstrRep :: Constr
@@ -183,10 +181,6 @@ instance (Show a, Show (Shape s a))=> Show (Shape (S s) a) where
 --data Strided r a lay = Strided {   getStrides :: Shape r a   }
 
 -- may want to typeclassify this?
-
-
-
-
 
 
 shapeToList :: Shape n a -> [a]
