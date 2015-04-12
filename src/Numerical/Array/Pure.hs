@@ -132,7 +132,7 @@ instance (Buffer rep el , L.Layout (L.Format  lay locality  rank rep) rank)
       basicAddressToIndex = L.basicToIndex . nativeFormatPure
 
       {-# INLINE basicAddressRange #-}
-      basicAddressRange = L.rangedFormatAddress . nativeFormatPure
+      basicAddressRange = L.basicAddressRange . nativeFormatPure
 
       {-# INLINE basicNextAddress #-}
       basicNextAddress= L.basicNextAddress . nativeFormatPure

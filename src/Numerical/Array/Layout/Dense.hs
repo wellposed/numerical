@@ -161,11 +161,11 @@ a bunch of routines used to give various Layout operations for
 array Formats that have  DenseLayout instance
 not exported or for human use
 -}
-{-# INLINE rangedFormatAddressDenseGeneric #-}
-rangedFormatAddressDenseGeneric ::
+{-# INLINE basicAddressRangeGeneric #-}
+basicAddressRangeGeneric ::
   (Functor (Shape rank),Applicative (Shape rank),F.Foldable (Shape rank),
             DenseLayout form rank, Address~LayoutAddress form)=> form -> Maybe (Range Address)
-rangedFormatAddressDenseGeneric = \ form ->
+basicAddressRangeGeneric = \ form ->
   if  (fmap (flip (-) 1)$ basicFormLogicalShape form) `strictlyDominates`  pure 0
     then Just $!
        Range  (basicToDenseAddress form  $! pure 0)
@@ -193,7 +193,7 @@ basicNextAddressDenseGeneric ::
   (Functor (Shape rank),F.Foldable (Shape rank),
     DenseLayout form rank,Address~LayoutAddress form) =>  form -> Address-> Maybe Address
 basicNextAddressDenseGeneric= \ form addy ->
-  case  rangedFormatAddress form of
+  case  basicAddressRange form of
     Just  (Range lo hi ) ->  if addy >= lo && addy < hi
         then Just $! basicNextDenseAddress form addy
         else Nothing
@@ -229,7 +229,7 @@ instance Layout (Format Direct Contiguous (S Z) rep)  (S Z)  where
     {-# INLINE basicCompareIndex #-}
     basicCompareIndex = \ _  (l:* _) (r:* _) -> compare l r
 
-    rangedFormatAddress =  rangedFormatAddressDenseGeneric
+    basicAddressRange =  basicAddressRangeGeneric
 
     basicToAddress = basicToAddressDenseGeneric
 
@@ -259,7 +259,7 @@ instance  Layout (Format Direct Strided (S Z) rep)  (S Z)  where
     {-# INLINE basicCompareIndex #-}
     basicCompareIndex = \ _  (l:* _) (r:* _) -> compare l r
 
-    rangedFormatAddress = rangedFormatAddressDenseGeneric
+    basicAddressRange = basicAddressRangeGeneric
 
     basicToAddress = basicToAddressDenseGeneric
 
@@ -300,7 +300,7 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
     basicAddressPopCount = \ _   (Range (Address lo) (Address hi )) -> hi - lo
       -- FIX me, add the range error checking
       -- in the style of the Sparse instances
-    rangedFormatAddress = rangedFormatAddressDenseGeneric
+    basicAddressRange = basicAddressRangeGeneric
 
     basicToAddress = basicToAddressDenseGeneric
 
@@ -330,7 +330,7 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
     basicCompareIndex = \ _  ls rs ->
       foldl majorCompareLeftToRight EQ  $ S.map2 compare ls rs
 
-    rangedFormatAddress = rangedFormatAddressDenseGeneric
+    basicAddressRange = basicAddressRangeGeneric
 
     basicToAddress = basicToAddressDenseGeneric
 
@@ -366,7 +366,7 @@ instance  (Applicative (Shape rank),Traversable (Shape rank))
     basicCompareIndex = \ _  ls rs ->
         foldl majorCompareLeftToRight EQ  $ S.map2 compare ls rs
 
-    rangedFormatAddress = rangedFormatAddressDenseGeneric
+    basicAddressRange = basicAddressRangeGeneric
 
     basicToAddress = basicToAddressDenseGeneric
 
@@ -403,7 +403,7 @@ instance  (Applicative (Shape rank), Traversable (Shape rank))
     basicAddressPopCount = \ _   (Range (Address lo) (Address hi )) -> hi - lo
       -- FIX me, add the range error checking
       -- in the style of the Sparse instances
-    rangedFormatAddress = rangedFormatAddressDenseGeneric
+    basicAddressRange = basicAddressRangeGeneric
 
     basicToAddress = basicToAddressDenseGeneric
 
@@ -428,7 +428,7 @@ instance  (Applicative (Shape rank), Traversable (Shape rank))
     {-# INLINE basicCompareIndex #-}
     basicCompareIndex = \ _  ls rs -> foldr majorCompareRightToLeft EQ  $ S.map2 compare ls rs
 
-    rangedFormatAddress = rangedFormatAddressDenseGeneric
+    basicAddressRange = basicAddressRangeGeneric
 
     basicToAddress = basicToAddressDenseGeneric
 
@@ -461,7 +461,7 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
     {-# INLINE basicCompareIndex #-}
     basicCompareIndex = \ _  ls rs -> foldr majorCompareRightToLeft EQ $ S.map2 compare ls rs
 
-    rangedFormatAddress = rangedFormatAddressDenseGeneric
+    basicAddressRange = basicAddressRangeGeneric
 
     basicToAddress = basicToAddressDenseGeneric
 

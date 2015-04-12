@@ -216,7 +216,7 @@ class Layout form  (rank :: Nat) | form -> rank  where
     -- @minAddress = fmap _RangeMin . rangedFormatAddress@
     -- and @maxAddress = fmap _RangeMax . rangedFormatAddress@
     -- FIXME : This also is a terrible name
-    rangedFormatAddress ::  (address ~ LayoutAddress form)=> form -> Maybe (Range address)
+    basicAddressRange ::  (address ~ LayoutAddress form)=> form -> Maybe (Range address)
     -- FIX ME! this name is crap, i dont like it
 
     basicToAddress :: (address ~ LayoutAddress form)=>
@@ -240,7 +240,6 @@ class Layout form  (rank :: Nat) | form -> rank  where
     -- paired with a Buffer or Mutable Buffer (ie a Vector)
     --  This operation being in this class is also kinda a hack
     -- but lets leave it here for now
-    -- ALSO: FIXME THIS IS A TERRIBLE NAME
     basicAddressAsInt :: (address ~ LayoutAddress form)=>
         form ->  address -> Int
     basicAddressAsInt =
@@ -248,7 +247,7 @@ class Layout form  (rank :: Nat) | form -> rank  where
         error "called basicAddressAsInt on a Layout thats not meant for this world"
 
     {-# MINIMAL basicToAddress, basicToIndex, basicNextAddress,basicNextIndex
-          ,rangedFormatAddress,basicFormLogicalShape,basicCompareIndex
+          ,basicAddressRange,basicFormLogicalShape,basicCompareIndex
           , transposedLayout, basicAddressPopCount #-}
 
 

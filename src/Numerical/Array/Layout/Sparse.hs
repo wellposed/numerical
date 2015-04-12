@@ -454,7 +454,7 @@ instance V.Vector (BufferPure rep) Int
   basicCompareIndex = \ _ (a:* Nil) (b :* Nil) ->compare a b
   -- {-# INLINE basicCompareIndex #-}
 
-  rangedFormatAddress = \form ->
+  basicAddressRange = \form ->
     case (minAddress form , maxAddress form ) of
       (Just least, Just greatest) -> Just (Range least greatest )
       _ -> Nothing
@@ -494,7 +494,7 @@ instance V.Vector (BufferPure rep) Int
     if not ( lo <= hi ) then
       error $! "basicAddressPopCount was passed a bad Address Range " ++ show loadr ++" " ++ show hiadr
       else
-        case  rangedFormatAddress form of
+        case  basicAddressRange form of
           Nothing -> 0
           Just (Range (Address loBound) (Address  hiBound)) ->
             if not $ (loBound<= lo ) && (hi <= hiBound)
@@ -576,7 +576,7 @@ instance  (V.Vector (BufferPure rep) Int )
     if not ( lo <= hi ) then
       error $! "basicAddressPopCount was passed a bad Address Range " ++ show lo ++" " ++ show hi
       else
-        case  rangedFormatAddress form of
+        case  basicAddressRange form of
           Nothing -> 0
           Just (Range (SparseAddress _ loBound) (SparseAddress _ hiBound)) ->
             if not $ (loBound<= lo ) && (hi <= hiBound)
@@ -587,7 +587,7 @@ instance  (V.Vector (BufferPure rep) Int )
               else hi - lo
 
    -- {-# INLINE rangedFormatAddress #-}
-  rangedFormatAddress = \ form ->
+  basicAddressRange = \ form ->
     case (minAddress form,maxAddress form) of
       (Just least, Just greatest)-> Just (Range least greatest)
       _ -> Nothing
