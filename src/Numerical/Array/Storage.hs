@@ -3,9 +3,10 @@
 {-# LANGUAGE UndecidableInstances,StandaloneDeriving,  DeriveDataTypeable #-}
 {-# LANGUAGE DeriveFunctor, DeriveFoldable, DeriveTraversable, DeriveGeneric #-}
 {-# LANGUAGE CPP #-}
-module Numerical.Array.Storage(Boxed
+module Numerical.Array.Storage(
+  Boxed
   ,Unboxed
-  ,Storable
+  ,Stored
   ,BufferPure(..)
   ,BufferMut(..)
   ,Buffer
@@ -68,7 +69,7 @@ data Unboxed
 
 -- | `Storable` is the type index for `Buffer`s that use the `Foreign.Storable`
 -- for values, in pinned byte array  buffers, provided by `Data.Vector.Storable`
-data Storable
+data Stored
   deriving Typeable
 
 
@@ -88,7 +89,7 @@ newtype instance BufferPure Unboxed elem = UnboxedBuffer (UV.Vector elem)
   deriving (Show,Data,Generic)
 --deriving instance Typeable a => Typeable (BufferPure Unboxed a)
 
-newtype instance BufferPure Storable elem = StorableBuffer (SV.Vector elem)
+newtype instance BufferPure Stored elem = StorableBuffer (SV.Vector elem)
   deriving (Show,Data,Generic)
 
 data family   BufferMut sort st elem
@@ -99,7 +100,7 @@ newtype instance BufferMut Boxed st   elem = BoxedBufferMut (BV.MVector st elem)
   --deriving (Show,Data,Generic)
 newtype instance BufferMut Unboxed st elem = UnboxedBufferMut (UV.MVector st elem)
   --deriving (Show,Data,Generic)
-newtype instance BufferMut Storable st  elem = StorableBufferMut (SV.MVector st elem)
+newtype instance BufferMut Stored st  elem = StorableBufferMut (SV.MVector st elem)
 
 -- | `unsafeBufferFreeze`
 unsafeBufferFreeze :: (Buffer rep a,PrimMonad m) => BufferMut rep (PrimState m )  a -> m (BufferPure rep a)
@@ -145,7 +146,7 @@ instance (VGM.MVector BV.MVector elem) => VGM.MVector (BufferMut Boxed)  elem wh
 --  {-# INLINE basicUnsafeGrow#-}
 --  {-# INLINE basicUnsafeReplicate#-}
 
-instance (VGM.MVector SV.MVector elem) => VGM.MVector (BufferMut Storable)  elem where
+instance (SV.Storable elem) => VGM.MVector (BufferMut Stored)  elem where
   basicLength = \(StorableBufferMut v) -> VGM.basicLength v
   basicUnsafeSlice =
     \ ix1 ix2 (StorableBufferMut bv) ->
@@ -212,7 +213,7 @@ instance VG.Vector BV.Vector  a  => VG.Vector (BufferPure Boxed) a   where
   {-# INLINE elemseq  #-}
 
 
-instance VG.Vector SV.Vector  a  => VG.Vector (BufferPure Storable) a   where
+instance (SV.Storable a)  => VG.Vector (BufferPure Stored) a   where
 
   basicUnsafeFreeze =
      \(StorableBufferMut mv) -> (\x ->return $StorableBuffer x) =<<  VG.basicUnsafeFreeze mv
