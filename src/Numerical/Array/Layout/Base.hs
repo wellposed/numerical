@@ -65,13 +65,14 @@ import Numerical.Array.Storage
 import Numerical.Array.Range
 
 --import Data.Typeable
-import Control.Applicative as A
+#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ < 709
+import  qualified Control.Applicative as A
+import Prelude hiding (foldr,foldr1,foldl1,foldl,map)
+import  qualified  Data.Foldable as F
+#elif __GLASGOW_HASKELL__ >= 709
 
+#endif
 
---import Control.NumericalMonad.State.Strict
-import qualified Data.Foldable as F
-
-import Prelude hiding (foldr,foldl,map,scanl,scanr,scanl1,scanr1)
 
 
 {-

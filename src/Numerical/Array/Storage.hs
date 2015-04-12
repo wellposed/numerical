@@ -1,6 +1,8 @@
 
 {-# LANGUAGE TypeFamilies,FlexibleInstances,MultiParamTypeClasses,FlexibleContexts #-}
 {-# LANGUAGE UndecidableInstances,StandaloneDeriving,  DeriveDataTypeable #-}
+{-# LANGUAGE DeriveFunctor, DeriveFoldable, DeriveTraversable, DeriveGeneric #-}
+{-# LANGUAGE CPP #-}
 module Numerical.Array.Storage(Boxed
   ,Unboxed
   ,Storable
@@ -20,40 +22,54 @@ import qualified Data.Vector as BV
 import qualified Data.Vector.Storable as SV
 import qualified Data.Vector.Unboxed as UV
 
-import Data.Typeable
+#if  defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ < 709
+import qualified Data.Functor as F  (Functor)
+import qualified Data.Foldable as F (Foldable)
+import qualified Data.Traversable  as T (Traversable)
+#endif
 
---import qualified Data.Vector.Mutable as BVM
---import qualified Data.Vector.Storable.Mutable as SVM
---import qualified Data.Vector.Unboxed.Mutable as UVM
+import Data.Typeable
+import Data.Data
+import GHC.Generics
+
 
 {-
 FIXME : should i require that the element type and
 mode are both instance of Typeable for Buffers?
 
-forcing typeable everywhre
 -}
 
 
 {-
 FIX MEEEEE REMINDERS
-
 make the allocators for   Storable Buffers  do AVX sized alignment
-
 -}
--- This si
+
+-- | The class instance @`Buffer` mode a@ is a shorthand for saying that a given buffer representation @mode@
+-- has a `VG.Vector` instance for both `BufferPure`  and  `BufferMut`.
 class (VG.Vector (BufferPure mode) a, VGM.MVector (BufferMut mode) a)=> Buffer mode a
 
--- not sure if MBuffer class should exist, fixme
-class VGM.MVector (BufferMut mode) a=> MBuffer mode a
-
 instance (VG.Vector (BufferPure mode) a, VGM.MVector (BufferMut mode) a)=> Buffer mode a
+
+-- not sure if MBuffer class should exist, fixme. if/when removed, this
+class VGM.MVector (BufferMut mode) a=> MBuffer mode a
 
 -- not sure if MBuffer should exist, FIXME
 instance VGM.MVector (BufferMut mode) a=> MBuffer mode a
 
+-- | `Boxed` is the type index for `Buffer`s that use the  boxed data structure `Data.Vector.Vector`
+-- as the underlying storage representation.
 data Boxed
+  deriving Typeable
+-- | `Unboxed` is the type index for `Buffer`s that use the unboxed data structure
+-- `Data.Vector.Unboxed.Vector` as the underlying storage representation.
 data Unboxed
+  deriving Typeable
+
+-- | `Storable` is the type index for `Buffer`s that use the `Foreign.Storable`
+-- for values, in pinned byte array  buffers, provided by `Data.Vector.Storable`
 data Storable
+  deriving Typeable
 
 
 type instance VG.Mutable (BufferPure sort) = BufferMut sort
@@ -64,29 +80,32 @@ data family   BufferPure sort  elem
 deriving instance Typeable BufferPure
 
 newtype instance BufferPure Boxed elem = BoxedBuffer (BV.Vector elem)
-  deriving Show
+  deriving (Show,Data,Generic,F.Functor,F.Foldable,T.Traversable)
+
+
 
 newtype instance BufferPure Unboxed elem = UnboxedBuffer (UV.Vector elem)
-  deriving Show
+  deriving (Show,Data,Generic)
+--deriving instance Typeable a => Typeable (BufferPure Unboxed a)
 
 newtype instance BufferPure Storable elem = StorableBuffer (SV.Vector elem)
-  deriving Show
+  deriving (Show,Data,Generic)
 
 data family   BufferMut sort st elem
-
 deriving instance Typeable BufferMut
 
 
 newtype instance BufferMut Boxed st   elem = BoxedBufferMut (BV.MVector st elem)
+  --deriving (Show,Data,Generic)
 newtype instance BufferMut Unboxed st elem = UnboxedBufferMut (UV.MVector st elem)
+  --deriving (Show,Data,Generic)
 newtype instance BufferMut Storable st  elem = StorableBufferMut (SV.MVector st elem)
 
-
-unsafeBufferFreeze :: (Buffer rep a,PrimMonad m) =>BufferMut rep (PrimState m )  a -> m (BufferPure rep a)
+-- | `unsafeBufferFreeze`
+unsafeBufferFreeze :: (Buffer rep a,PrimMonad m) => BufferMut rep (PrimState m )  a -> m (BufferPure rep a)
 unsafeBufferFreeze =  VG.basicUnsafeFreeze
 
-unsafeBufferThaw :: (Buffer rep a,PrimMonad m)
-        =>(BufferPure rep a) -> m (BufferMut rep (PrimState m )  a)
+unsafeBufferThaw :: (Buffer rep a,PrimMonad m) => (BufferPure rep a) -> m (BufferMut rep (PrimState m )  a)
 unsafeBufferThaw = VG.basicUnsafeThaw
 
 instance (VGM.MVector BV.MVector elem) => VGM.MVector (BufferMut Boxed)  elem where
