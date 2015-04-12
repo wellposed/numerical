@@ -248,6 +248,14 @@ instance Layout (Format Direct Contiguous (S Z) rep)  (S Z)  where
 
     basicAddressAsInt = \ _ (Address a) -> a
 
+
+    {-# INLINE basicAddressRange #-}
+    {-# INLINE basicToAddress #-}
+    {-# INLINE basicToIndex #-}
+    {-# INLINE basicNextAddress #-}
+    {-# INLINE basicNextIndex #-}
+    {-# INLINE basicAddressPopCount #-}
+
 type instance LayoutAddress (Format Direct Strided (S Z) rep) = Address
 instance  Layout (Format Direct Strided (S Z) rep)  (S Z)  where
 
@@ -278,6 +286,12 @@ instance  Layout (Format Direct Strided (S Z) rep)  (S Z)  where
 
     basicAddressAsInt = \ _ (Address a) -> a
 
+    {-# INLINE basicAddressRange #-}
+    {-# INLINE basicToAddress #-}
+    {-# INLINE basicToIndex #-}
+    {-# INLINE basicNextAddress #-}
+    {-# INLINE basicNextIndex #-}
+    {-# INLINE basicAddressPopCount #-}
 -----
 -----
 -----
@@ -311,6 +325,13 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
     basicNextIndex=  basicNextIndexDenseGeneric
 
     basicAddressAsInt = \ _ (Address a) -> a
+
+    {-# INLINE basicAddressRange #-}
+    {-# INLINE basicToAddress #-}
+    {-# INLINE basicToIndex #-}
+    {-# INLINE basicNextAddress #-}
+    {-# INLINE basicNextIndex #-}
+    {-# INLINE basicAddressPopCount #-}
 -----
 -----
 
@@ -348,6 +369,13 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
                  (basicToDenseAddress newForm $ basicToDenseIndex form hiA) )
 
     basicAddressAsInt = \ _ (Address a) -> a
+
+    {-# INLINE basicAddressRange #-}
+    {-# INLINE basicToAddress #-}
+    {-# INLINE basicToIndex #-}
+    {-# INLINE basicNextAddress #-}
+    {-# INLINE basicNextIndex #-}
+    {-# INLINE basicAddressPopCount #-}
 ---
 ---
 
@@ -384,6 +412,13 @@ instance  (Applicative (Shape rank),Traversable (Shape rank))
                  (basicToDenseAddress newForm $ basicToDenseIndex form hiA) )
 
     basicAddressAsInt = \ _ (Address a) -> a
+
+    {-# INLINE basicAddressRange #-}
+    {-# INLINE basicToAddress #-}
+    {-# INLINE basicToIndex #-}
+    {-# INLINE basicNextAddress #-}
+    {-# INLINE basicNextIndex #-}
+    {-# INLINE basicAddressPopCount #-}
 -----
 -----
 -----
@@ -414,6 +449,13 @@ instance  (Applicative (Shape rank), Traversable (Shape rank))
     basicNextIndex=  basicNextIndexDenseGeneric
 
     basicAddressAsInt = \ _ (Address a) -> a
+
+    {-# INLINE basicAddressRange #-}
+    {-# INLINE basicToAddress #-}
+    {-# INLINE basicToIndex #-}
+    {-# INLINE basicNextAddress #-}
+    {-# INLINE basicNextIndex #-}
+    {-# INLINE basicAddressPopCount #-}
  -- strideRow :: Shape rank Int,
 instance  (Applicative (Shape rank), Traversable (Shape rank))
   => Layout (Format Column  InnerContiguous rank rep) rank  where
@@ -448,6 +490,12 @@ instance  (Applicative (Shape rank), Traversable (Shape rank))
     basicAddressAsInt = \ _ (Address a) -> a
  -- strideRow :: Shape rank Int,
 
+    {-# INLINE basicAddressRange #-}
+    {-# INLINE basicToAddress #-}
+    {-# INLINE basicToIndex #-}
+    {-# INLINE basicNextAddress #-}
+    {-# INLINE basicNextIndex #-}
+    {-# INLINE basicAddressPopCount #-}
 
 instance   (Applicative (Shape rank), Traversable (Shape rank))
   => Layout (Format Column  Strided rank rep) rank where
@@ -479,6 +527,13 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
                  (basicToDenseAddress newForm $ basicToDenseIndex form hiA) )
 
     basicAddressAsInt = \ _ (Address a) -> a
+
+    {-# INLINE basicAddressRange #-}
+    {-# INLINE basicToAddress #-}
+    {-# INLINE basicToIndex #-}
+    {-# INLINE basicNextAddress #-}
+    {-# INLINE basicNextIndex #-}
+    {-# INLINE basicAddressPopCount #-}
 
 ----------------------
 ----------------------
