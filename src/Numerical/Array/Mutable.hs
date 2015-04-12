@@ -209,10 +209,13 @@ class P.PureArray (ArrPure marr)  rank a => Array marr (rank:: Nat)  a | marr ->
     basicUnsafeSparseRead :: PrimMonad m => marr  (PrimState m)   a ->
        Index rank -> m (Maybe a)
 
-    -- | Replace the element at the given position. This method should not be
+    --  Replace the element at the given position. This method should not be
     -- called directly, use 'unsafeWrite' instead.
-    basicUnsafeSparseWrite :: PrimMonad m => marr (PrimState m) a ->
-      Index rank -> m( Maybe (a -> m ()))
+    -- the following is the type that normal Array indexing,
+    -- as folks are used to, lookslike
+    -- its wrong
+    --basicUnsafeSparseWrite :: PrimMonad m => marr (PrimState m) a ->
+    --  Index rank -> m( Maybe (a -> m ()))
 -- this might get axed
 
 
