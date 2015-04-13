@@ -23,7 +23,7 @@ module Numerical.Array.Mutable(
     ,DenseArray(..)
     ,Boxed
     ,Unboxed
-    ,Storable
+    ,Stored
     --,module Numerical.Array.Layout
     ,module Numerical.Array.Shape
     ) where
@@ -42,6 +42,7 @@ import Numerical.World
 
 import qualified Numerical.Array.Pure as P
 import qualified Numerical.Array.Storage as S
+import Numerical.Array.Storage (Buffer,Boxed,Unboxed,Stored)
 
 --import qualified Data.Vector.Storable.Mutable as SM
 --import qualified Data.Vector.Unboxed.Mutable as UM
