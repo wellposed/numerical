@@ -196,12 +196,22 @@ type family  Transposed (form :: *) :: *
 
 type family  LayoutAddress (form :: *) :: *
 
+-- | every format has a "logical" sibling, that represents the address translation
+-- when the underlying buffer layer is contiguous and packed. So it could be claimed
+-- that  any type that obeys 'a~LayoutLogicalFormat a' is one that an be a legal
+-- instance of LayoutBuilder?
+type family LayoutLogicalFormat (form :: *) :: *
 
 -- | the `Layout` type class
 class Layout form  (rank :: Nat) | form -> rank  where
 
     -- | 'basicLogicalShape' gives the extent of the format
     basicLogicalShape :: form -> Shape rank Int
+
+    -- | 'basicLogicalForm' converts a given format into its "contiguous" analogue
+    -- this is useful for supporting various address translation manipulation tricks
+    -- efficiently. Note that any valid format should strive to ensure this is an O(1) operation.
+    basicLogicalForm :: (logicalForm ~ LayoutLogicalFormat form ) => form -> logicalForm
 
 
     -- | 'transposedLayout' transposes the format data type
@@ -246,9 +256,17 @@ class Layout form  (rank :: Nat) | form -> rank  where
        \ _ _ ->
         error "called basicAddressAsInt on a Layout thats not meant for this world"
 
+    -- | The semantics of @`basicAffineAddressShift` form addr step@ is that
+    -- when  step > 0, its equivalent to iteratively computing `basicNextAddress` @step@ times.
+    -- Thus,
+    basicAffineAddressShift :: (addres ~ LayoutAddress form) =>
+        form -> address -> Int -> Maybe address
+{-
+should i provide a default?
+-}
     {-# MINIMAL basicToAddress, basicToIndex, basicNextAddress,basicNextIndex
-          ,basicAddressRange,basicFormLogicalShape,basicCompareIndex
-          , transposedLayout, basicAddressPopCount #-}
+          ,basicAddressRange,basicLogicalShape,basicCompareIndex
+          , transposedLayout, basicAddressPopCount,basicLogicalForm, basicAffineAddressShift #-}
 
 
 {-

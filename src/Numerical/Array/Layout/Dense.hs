@@ -36,7 +36,8 @@ import Control.Applicative
 import Numerical.Array.Locality
 import Numerical.Array.Layout.Base
 import Numerical.Array.Shape as S
-import Data.Data
+import qualified  Numerical.Array.Range as R
+import Data.Data(Data,Typeable)
 
 
 --import Data.Traversable (Traversable)
@@ -210,6 +211,24 @@ basicNextIndexDenseGeneric= \form ix _  ->
       Just $! basicNextDenseIndex form ix
     else
       Nothing
+{-
+{- | note that basicAffineAddressShiftGeneric may be suboptimal,
+need to investigate what the core looks like -}
+{-# INLINE basicAffineAddressShiftDenseGeneric #-}
+basicAffineAddressShiftDenseGeneric :: (DenseLayout form rank, Address ~ LayoutAddress form)=>
+  form -> Address -> Int -> Maybe Address
+basicAffineAddressShiftDenseGeneric form addy shift = do
+    newForm <- return $ basicFormContiguification form
+    nativeIndex <- return $ basicToDenseIndex form addy
+    ----- NOOOOO, this actually needs the "contiguifiction"
+    ----- its broken if we internally do a transponse between row and column
+    --- because this
+    popBaseAddress <- return $   basicToDenseAddress newForm nativeIndex
+    rng <- basicAddressRange newForm
+    candidateAddress <- return $ addy + Address shift
+    if getConst $ rangeMin (const . Const) rng <= candidateAddress
+        && candidateAddress  <=
+-}
 
 
 
@@ -241,7 +260,10 @@ instance Layout (Format Direct Contiguous (S Z) rep)  (S Z)  where
     basicNextIndex= basicNextIndexDenseGeneric
 
 
-    basicAddressPopCount = \ _   (Range (Address lo) (Address hi )) -> hi - lo
+    basicAddressPopCount = \ _   (Range (Address lo) (Address hi )) ->
+      if  hi >= lo then hi - lo
+        else error $ "for basicAddressPopCount requires address obey hi >= lo, given: "
+          ++ show hi ++ " "  ++ show lo
       -- FIX me, add the range error checking
       -- in the style of the Sparse instances
 
@@ -292,9 +314,6 @@ instance  Layout (Format Direct Strided (S Z) rep)  (S Z)  where
     {-# INLINE basicNextAddress #-}
     {-# INLINE basicNextIndex #-}
     {-# INLINE basicAddressPopCount #-}
------
------
------
 
 
 -- one type family instance for all the rows
@@ -332,11 +351,8 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
     {-# INLINE basicNextAddress #-}
     {-# INLINE basicNextIndex #-}
     {-# INLINE basicAddressPopCount #-}
------
------
 
 
--- strideRow :: Shape rank Int,
 
 instance   (Applicative (Shape rank), Traversable (Shape rank))
   =>  Layout (Format Row  InnerContiguous rank rep)  rank  where
@@ -376,10 +392,8 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
     {-# INLINE basicNextAddress #-}
     {-# INLINE basicNextIndex #-}
     {-# INLINE basicAddressPopCount #-}
----
----
 
--- strideRow :: Shape rank Int,
+
 
 instance  (Applicative (Shape rank),Traversable (Shape rank))
   =>  Layout (Format Row  Strided rank rep) rank  where
@@ -419,9 +433,7 @@ instance  (Applicative (Shape rank),Traversable (Shape rank))
     {-# INLINE basicNextAddress #-}
     {-# INLINE basicNextIndex #-}
     {-# INLINE basicAddressPopCount #-}
------
------
------
+
 
 type instance LayoutAddress (Format Column locality    rank rep) = Address
 instance  (Applicative (Shape rank), Traversable (Shape rank))
@@ -435,7 +447,10 @@ instance  (Applicative (Shape rank), Traversable (Shape rank))
     {-# INLINE basicCompareIndex #-}
     basicCompareIndex = \ _  ls rs -> foldr majorCompareRightToLeft EQ  $ S.map2 compare ls rs
 
-    basicAddressPopCount = \ _   (Range (Address lo) (Address hi )) -> hi - lo
+    basicAddressPopCount = \ _   (Range (Address lo) (Address hi )) ->
+        if hi >= lo then hi - lo
+            else  error  $ "for basicAddressPopCount, require address hi >= lo, given: "
+              ++ show hi ++ " " ++ show lo
       -- FIX me, add the range error checking
       -- in the style of the Sparse instances
     basicAddressRange = basicAddressRangeGeneric
@@ -456,7 +471,8 @@ instance  (Applicative (Shape rank), Traversable (Shape rank))
     {-# INLINE basicNextAddress #-}
     {-# INLINE basicNextIndex #-}
     {-# INLINE basicAddressPopCount #-}
- -- strideRow :: Shape rank Int,
+
+
 instance  (Applicative (Shape rank), Traversable (Shape rank))
   => Layout (Format Column  InnerContiguous rank rep) rank  where
 

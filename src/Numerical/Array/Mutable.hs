@@ -31,7 +31,8 @@ module Numerical.Array.Mutable(
 import Control.Monad.Primitive ( PrimMonad, PrimState )
 --import qualified Numerical.Array.DenseLayout as L
 import Numerical.Array.Address
-import Numerical.Array.Layout
+import qualified Numerical.Array.Layout as L
+import Numerical.Array.Layout (Layout,Locality(..),LayoutAddress,Format(..),Range(..),AffineRange(..))
 import Numerical.Array.Shape
 --import Numerical.Nat
 --import GHC.Prim(Constraint)
@@ -43,7 +44,10 @@ import Numerical.World
 import qualified Numerical.Array.Pure as P
 import qualified Numerical.Array.Storage as S
 import Numerical.Array.Storage (Buffer,Boxed,Unboxed,Stored)
+import  qualified Data.Vector.Generic as VG
+import qualified  Data.Vector.Generic.Mutable as VGM
 
+import Control.Monad (liftM)
 --import qualified Data.Vector.Storable.Mutable as SM
 --import qualified Data.Vector.Unboxed.Mutable as UM
 --import qualified Data.Vector.Mutable as BM
@@ -126,6 +130,7 @@ class P.PureArray (ArrPure marr)  rank a => Array marr (rank:: Nat)  a | marr ->
 
     -- | 'basicUnsafeAffineAddressShift' is needed to handle abstracting acce
     basicUnsafeAffineAddressShift :: (address ~ MArrayAddress marr) => marr st a -> Int -> address -> address
+  -- question, should the type be  -> address or  -> Maybe address
 
     -- | Unsafely convert a mutable Array to its immutable version without copying.
     -- The mutable Array may not be used after this operation. Assumed O(1) complexity
@@ -144,6 +149,7 @@ class P.PureArray (ArrPure marr)  rank a => Array marr (rank:: Nat)  a | marr ->
     -- in the array in a given address sub range.
     -- This is useful for determining when to switch from a recursive algorithm
     -- to a direct algorithm.
+    -- Should this be renamed to something like basicPopCount/
     basicCardinality ::(address ~ MArrayAddress marr) => marr st a -> Range address  -> Int
 
     --basicUnsafeRead  :: PrimMonad m => marr  (PrimState m)   a -> Shape rank Int -> m (Maybe a)
@@ -220,28 +226,77 @@ class P.PureArray (ArrPure marr)  rank a => Array marr (rank:: Nat)  a | marr ->
 -- this might get axed
 
 
+instance (Buffer rep el, Layout (Format  lay locality  rank rep) rank )
+  =>Array (MArray Native rep lay locality rank) rank el  where
+
+    type ArrPure (MArray Native rep lay locality rank)= P.ImmArray Native rep lay locality rank
+
+    type MArrayAddress (MArray Native rep lay locality rank)= LayoutAddress (Format  lay locality  rank rep)
+
+    {-# INLINE basicShape #-}
+    basicShape =  L.basicLogicalShape . nativeFormat
+
+    {-# NOINLINE basicUnsafeFreeze #-}
+    basicUnsafeFreeze = \marr -> do
+        pureBuffer <- VG.unsafeFreeze $ nativeBuffer marr
+        return $ P.ImMutableNativeArray pureBuffer $ nativeFormat marr
+
+    {-#  NOINLINE basicUnsafeThaw #-}
+    basicUnsafeThaw = \parr -> do
+        mutBuffer <- VG.unsafeThaw $ P.nativeBufferPure parr
+        return $ MutableNativeArray mutBuffer $ P.nativeFormatPure parr
+
+    {-# INLINE basicSparseIndexToAddress #-}
+    basicSparseIndexToAddress = \ marr  -> L.basicToAddress (nativeFormat marr)
+
+    {-# INLINE basicAddressToIndex #-}
+    basicAddressToIndex = \ marr  -> L.basicToIndex (nativeFormat marr)
+
+    {-# INLINE basicSparseNextAddress #-}
+    basicSparseNextAddress = \marr -> L.basicNextAddress (nativeFormat marr)
+
+    {-# INLINE basicSparseNextIndex #-}
+    basicSparseNextIndex = \marr -> L.basicNextIndex (nativeFormat marr)
+
+    basicOverlaps = \marr1 marr2 -> VGM.overlaps (nativeBuffer marr1) (nativeBuffer marr2)
+
+    basicClear = \marr -> VGM.clear (nativeBuffer marr)
+
+    {-# INLINE basicUnsafeAddressRead #-}
+    basicUnsafeAddressRead = \marr addr ->
+      VGM.unsafeRead (nativeBuffer marr) (L.basicAddressAsInt (nativeFormat marr) addr)
+
+    {-# INLINE basicUnsafeAddressWrite #-}
+    basicUnsafeAddressWrite = \marr addr v->
+      VGM.unsafeWrite (nativeBuffer marr) (L.basicAddressAsInt (nativeFormat marr) addr) v
+
+    {-# INLINE basicUnsafeSparseRead #-}
+    basicUnsafeSparseRead = \marr ix  ->  do
+      maddr <- return $ basicSparseIndexToAddress marr ix
+      maybe (return Nothing) (\addr -> liftM Just $  basicUnsafeAddressRead marr addr ) maddr
+
+    {-# INLINE basicAddressRange #-}
+    basicAddressRange = \marr -> L.basicAddressRange (nativeFormat marr)
+
+    basicCardinality = \marr -> L.basicAddressPopCount (nativeFormat marr)
 
 
-
-
+    basicUnsafeAffineAddressShift = error "carter needs to add this"
+    basicLocalAffineAddressRegion = error "crter needs to add this"
 {-
-i think these *could* be derived
--}
-{-
-basicIndexedUpdateFoldM :: PrimMonad m => marr (PrimState m) rank a -> c ->
-     (a->(Shape rank Int)-> c-> m (a,c) )-> m c
 
 
-basicIndexedFoldM  :: PrimMonad m => marr (PrimState m) rank a -> c ->
-     (a->(Shape rank Int)-> c-> m c )-> m c
+type ArrPure marr :: * -> *
 
-basicIndexedMapM ::  PrimMonad m => marr (PrimState m) rank a ->
-     (a->(Shape rank Int)-> m a )-> m ()
-basicIndexedMapM_ ::  PrimMonad m => marr (PrimState m) rank a ->
-     (a->(Shape rank Int)-> m () )-> m ()
-basicIndexedMap
+type MArrayAddress marr :: *
+
+basicUnsafeAffineAddressShift :: (address ~ MArrayAddress marr) => marr st a -> Int -> address -> address
+
+basicLocalAffineAddressRegion :: (address ~ MArrayAddress marr) => marr st a -> address -> AffineRange address
 
 -}
+
+
 
 
 
