@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE  TypeFamilies  #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 module Numerical.Array.Address(Address(..),SparseAddress(..)) where
@@ -12,15 +13,17 @@ import qualified Foreign.Storable  as Store
 import qualified Data.Vector.Unboxed as UV
 import qualified Data.Vector.Generic as GV
 import qualified Data.Vector.Generic.Mutable as GMV
+import GHC.Generics
 
 -- | 'Address' is the type used for addressing into the underlying memory buffers
 -- of numerical arrays, Used for Dense Rank n arrays, and 1dim sparse arrays.
 newtype Address = Address  Int
-  deriving (Eq,Ord,Show,Read,Typeable,Data,Store.Storable)
+  deriving (Eq,Ord,Show,Read,Typeable,Generic,Data,Store.Storable)
 
 -- | 'LogicalAddress' is
+-- possibly dead code
 newtype LogicalAddress = LogicalAddress Int
-  deriving (Eq,Ord,Show,Read,Typeable,Data,Store.Storable)
+  deriving (Eq,Ord,Show,Read,Typeable,Generic,Data,Store.Storable)
 -- todo, add unboxed for
 
 
@@ -30,7 +33,7 @@ newtype LogicalAddress = LogicalAddress Int
 data SparseAddress = SparseAddress {
         outerIndex  :: {-# UNPACK #-} !Int
         ,innerIndex :: {-# UNPACK #-} !Int }
-      deriving (Eq,Show,Data,Typeable)
+      deriving (Eq,Show,Data,Generic,Typeable)
 
 {-
 At some point decouple logical and physical address
