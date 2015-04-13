@@ -448,8 +448,8 @@ instance V.Vector (BufferPure rep) Int
   transposedLayout  = id
   -- {-# INLINE transposedLayout #-}
 
-  basicFormLogicalShape = \ form -> _logicalShapeDirectSparse form  :* Nil
-  -- {-# INLINE basicFormLogicalShape #-}
+  basicLogicalShape = \ form -> _logicalShapeDirectSparse form  :* Nil
+  -- {-# INLINE basicLogicalShape #-}
 
   basicCompareIndex = \ _ (a:* Nil) (b :* Nil) ->compare a b
   -- {-# INLINE basicCompareIndex #-}
@@ -561,10 +561,10 @@ instance  (V.Vector (BufferPure rep) Int )
   {-# INLINE transposedLayout #-}
 
 
-  basicFormLogicalShape = \ form ->  (_innerDimContiguousSparseFormat $ _getFormatContiguousCSR  form ) :*
+  basicLogicalShape = \ form ->  (_innerDimContiguousSparseFormat $ _getFormatContiguousCSR  form ) :*
          ( _outerDimContiguousSparseFormat $ _getFormatContiguousCSR form ):* Nil
           --   x_ix :* y_ix
-  {-# INLINE basicFormLogicalShape #-}
+  {-# INLINE basicLogicalShape #-}
 
 
   basicCompareIndex = \ _ as  bs ->shapeCompareRightToLeft as bs

@@ -192,17 +192,17 @@ type family FormatStorageRep ( a:: * ) :: *
 
 type instance FormatStorageRep (Format lay ctg rnk rep)= rep
 
-type family  Transposed form
+type family  Transposed (form :: *) :: *
 
-type family  LayoutAddress (form :: *)
+type family  LayoutAddress (form :: *) :: *
 
 
--- |
+-- | the `Layout` type class
 class Layout form  (rank :: Nat) | form -> rank  where
 
-    -- not happy with this name, will change later FIXME TODO
-    -- | 'basicFormLogicalShape' gives the extent of the format
-    basicFormLogicalShape :: form -> Shape rank Int
+    -- | 'basicLogicalShape' gives the extent of the format
+    basicLogicalShape :: form -> Shape rank Int
+
 
     -- | 'transposedLayout' transposes the format data type
     transposedLayout :: (form ~ Transposed transform,transform~Transposed form)=> form  -> transform
@@ -290,11 +290,11 @@ class Layout form rank =>
     formRectOrientation :: p form -> SMajorOrientation oriented
 
     -- | For  @'rectlinearShape' form==shp@, we always have that
-    -- @'basicFormLogicalShape' form  `weaklyDominates` shp@.
+    -- @'basicLogicalShape' form  `weaklyDominates` shp@.
     -- when 'strictlyDominates' holds, that implies that the underlying array format
     -- is a rectilinear layout whose "elements" are tiles of a fixed size array format.
     -- For this initial release and initial set of applicable rectilinear array formats,
-    -- the following is always true @'basicFormLogicalShape' form  == basicFormLogicalShape' form @
+    -- the following is always true @'basicLogicalShape' form  == basicLogicalShape' form @
     -- Should be @O(1)@ always. Or more precisely @O(rank)@
     rectlinearShape :: form -> Index rank
 

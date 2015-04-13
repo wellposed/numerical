@@ -355,9 +355,4 @@ class RectilinearArray marr rank a | marr -> rank   where
 
 
 
-instance (MBuffer rep el, Layout (Format  lay locality  rank rep))
-  =>Array (MArray Native rep lay locality rank) rank el  where
-    type ArrPure (MArray Native rep lay locality rank)=
-    func =
-
 

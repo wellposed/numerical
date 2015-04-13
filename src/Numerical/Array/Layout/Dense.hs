@@ -166,18 +166,18 @@ basicAddressRangeGeneric ::
   (Functor (Shape rank),Applicative (Shape rank),F.Foldable (Shape rank),
             DenseLayout form rank, Address~LayoutAddress form)=> form -> Maybe (Range Address)
 basicAddressRangeGeneric = \ form ->
-  if  (fmap (flip (-) 1)$ basicFormLogicalShape form) `strictlyDominates`  pure 0
+  if  (fmap (flip (-) 1)$ basicLogicalShape form) `strictlyDominates`  pure 0
     then Just $!
        Range  (basicToDenseAddress form  $! pure 0)
               (basicToDenseAddress form $!
-                  fmap (flip (-) 1) $! basicFormLogicalShape form)
+                  fmap (flip (-) 1) $! basicLogicalShape form)
     else Nothing
 
 {-# INLINE basicToAddressDenseGeneric #-}
 basicToAddressDenseGeneric :: (Functor (Shape rank),Applicative (Shape rank),F.Foldable (Shape rank),
     DenseLayout form rank,Address~LayoutAddress form) => form -> Shape rank Int -> Maybe Address
 basicToAddressDenseGeneric = \ form ix ->
-  if (fmap (flip (-) 1)$ basicFormLogicalShape form) `weaklyDominates`  ix
+  if (fmap (flip (-) 1)$ basicLogicalShape form) `weaklyDominates`  ix
     && ix `weaklyDominates` pure 0
     then Just $ basicToDenseAddress form ix
     else Nothing
@@ -204,7 +204,7 @@ basicNextIndexDenseGeneric :: (Functor (Shape rank),F.Foldable (Shape rank),Appl
     DenseLayout form rank,Address~LayoutAddress form)  =>
     form -> Shape rank Int -> Maybe Address ->Maybe (Shape rank Int,Address)
 basicNextIndexDenseGeneric= \form ix _  ->
-  if (fmap (flip (-) 1)$ basicFormLogicalShape form) `strictlyDominates`  ix
+  if (fmap (flip (-) 1)$ basicLogicalShape form) `strictlyDominates`  ix
       && ix `weaklyDominates` pure 0
     then
       Just $! basicNextDenseIndex form ix
@@ -221,8 +221,8 @@ basicNextIndexDenseGeneric= \form ix _  ->
 type instance LayoutAddress (Format Direct Contiguous (S Z) rep) = Address
 instance Layout (Format Direct Contiguous (S Z) rep)  (S Z)  where
 
-    {-# INLINE basicFormLogicalShape #-}
-    basicFormLogicalShape = \ x -> (logicalShapeDirectContiguous x) :* Nil
+    {-# INLINE basicLogicalShape #-}
+    basicLogicalShape = \ x -> (logicalShapeDirectContiguous x) :* Nil
 
     transposedLayout = id
 
@@ -259,8 +259,8 @@ instance Layout (Format Direct Contiguous (S Z) rep)  (S Z)  where
 type instance LayoutAddress (Format Direct Strided (S Z) rep) = Address
 instance  Layout (Format Direct Strided (S Z) rep)  (S Z)  where
 
-    {-# INLINE basicFormLogicalShape #-}
-    basicFormLogicalShape = \x -> (logicalShapeDirectStrided x) :* Nil
+    {-# INLINE basicLogicalShape #-}
+    basicLogicalShape = \x -> (logicalShapeDirectStrided x) :* Nil
 
     transposedLayout = id
 
@@ -305,8 +305,8 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
 
     transposedLayout = \(FormatRowContiguous shp) -> FormatColumnContiguous $ reverseShape shp
 
-    {-# INLINE basicFormLogicalShape #-}
-    basicFormLogicalShape =  boundsFormRow
+    {-# INLINE basicLogicalShape #-}
+    basicLogicalShape =  boundsFormRow
 
     {-# INLINE basicCompareIndex #-}
     basicCompareIndex = \ _  ls rs -> foldl majorCompareLeftToRight EQ  $ S.map2 compare ls rs
@@ -341,8 +341,8 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
 instance   (Applicative (Shape rank), Traversable (Shape rank))
   =>  Layout (Format Row  InnerContiguous rank rep)  rank  where
 
-    {-# INLINE basicFormLogicalShape  #-}
-    basicFormLogicalShape = boundsFormRowInnerContig
+    {-# INLINE basicLogicalShape  #-}
+    basicLogicalShape = boundsFormRowInnerContig
 
     transposedLayout = \(FormatRowInnerContiguous shp stride) ->
         FormatColumnInnerContiguous  (reverseShape shp)  (reverseShape stride)
@@ -384,8 +384,8 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
 instance  (Applicative (Shape rank),Traversable (Shape rank))
   =>  Layout (Format Row  Strided rank rep) rank  where
 
-    {-# INLINE basicFormLogicalShape  #-}
-    basicFormLogicalShape =  boundsFormRowStrided
+    {-# INLINE basicLogicalShape  #-}
+    basicLogicalShape =  boundsFormRowStrided
 
     transposedLayout = \(FormatRowStrided shp stride) ->
         FormatColumnStrided  (reverseShape shp)  (reverseShape stride)
@@ -427,8 +427,8 @@ type instance LayoutAddress (Format Column locality    rank rep) = Address
 instance  (Applicative (Shape rank), Traversable (Shape rank))
   =>  Layout (Format Column  Contiguous rank rep)  rank where
 
-    {-# INLINE basicFormLogicalShape  #-}
-    basicFormLogicalShape =  boundsColumnContig
+    {-# INLINE basicLogicalShape  #-}
+    basicLogicalShape =  boundsColumnContig
 
     transposedLayout = \(FormatColumnContiguous shp)-> FormatRowContiguous $ reverseShape shp
 
@@ -461,8 +461,8 @@ instance  (Applicative (Shape rank), Traversable (Shape rank))
   => Layout (Format Column  InnerContiguous rank rep) rank  where
 
 
-    {-# INLINE basicFormLogicalShape  #-}
-    basicFormLogicalShape =  boundsColumnInnerContig
+    {-# INLINE basicLogicalShape  #-}
+    basicLogicalShape =  boundsColumnInnerContig
 
     transposedLayout = \(FormatColumnInnerContiguous shp stride)->
          FormatRowInnerContiguous (reverseShape shp) (reverseShape stride)
@@ -500,8 +500,8 @@ instance  (Applicative (Shape rank), Traversable (Shape rank))
 instance   (Applicative (Shape rank), Traversable (Shape rank))
   => Layout (Format Column  Strided rank rep) rank where
 
-    {-# INLINE basicFormLogicalShape  #-}
-    basicFormLogicalShape = boundsColumnStrided
+    {-# INLINE basicLogicalShape  #-}
+    basicLogicalShape = boundsColumnStrided
 
     transposedLayout = \(FormatColumnStrided shp stride)->
          FormatRowStrided (reverseShape shp) (reverseShape stride)
