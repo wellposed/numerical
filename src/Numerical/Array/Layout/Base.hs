@@ -70,7 +70,8 @@ import  qualified Control.Applicative as A
 import Prelude hiding (foldr,foldr1,foldl1,foldl,map)
 import  qualified  Data.Foldable as F
 #elif __GLASGOW_HASKELL__ >= 709
-
+import  qualified Control.Applicative as A
+import  qualified  Data.Foldable as F
 #endif
 
 
@@ -198,11 +199,11 @@ type family  LayoutAddress (form :: *) :: *
 
 -- | every format has a "logical" sibling, that represents the address translation
 -- when the underlying buffer layer is contiguous and packed. So it could be claimed
--- that  any type that obeys 'a~LayoutLogicalFormat a' is one that an be a legal
+-- that  any type that obeys @a~'LayoutLogicalFormat' a@ is one that an be a legal
 -- instance of LayoutBuilder?
 type family LayoutLogicalFormat (form :: *) :: *
 
--- | the `Layout` type class
+-- | the 'Layout' type class
 class Layout form  (rank :: Nat) | form -> rank  where
 
     -- | 'basicLogicalShape' gives the extent of the format

@@ -277,7 +277,7 @@ and https://gist.github.com/cartazio/6907168 for Richard Eisenberg's formulation
 
 
 
----- | `Shaped lay sh` is a Shape meant for representing the Array rank and dimensions sh,
+---- | 'Shaped' lay sh is a Shape meant for representing the Array rank and dimensions sh,
 ---- with layout lay.
 --newtype Shaped lay sh = Shaped sh
 

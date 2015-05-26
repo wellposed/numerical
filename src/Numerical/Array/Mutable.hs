@@ -77,12 +77,12 @@ but then you'll hit problems supporting
 -- though likely in regards to some sparse format of some sort.
 --Omitting it for now, but may need to revisit later!
 --
---For now any ``Address'' shift will need to be via the buffer
+--For now any 'Address' shift will need to be via the buffer
 --
 -- One ssue in the formats is ``logical'' vs ``manifest'' Address.
 --
 --
---we eedto have ``RepConstraint'' be decoupled from the type class instances
+--we eedto have 'RepConstraint' be decoupled from the type class instances
 -- because we to sometimes have things that are world parametric
 --
 -- indexing should be oblivious to locality,
@@ -112,7 +112,7 @@ data instance  MArray Native rep lay locality rank st el =
 type family MutableArrayContiguous (marr :: * -> * -> *) :: * ->  * -> *
 type instance  MutableArrayContiguous (MArray world rep layout locality rank)= MArray world rep layout Contiguous rank
 
--- | Sadly `ArrMutable` will have to have instances written by hand for now
+-- | Sadly 'ArrMutable'  will have to have instances written by hand for now
 -- May later migrate the freeze / thaw machinery to Array.Phased, but lets
 type  family  ArrMutable ( arr :: * -> * )  :: * -> * -> *
 

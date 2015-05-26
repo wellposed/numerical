@@ -36,7 +36,6 @@ import Control.Applicative
 import Numerical.Array.Locality
 import Numerical.Array.Layout.Base
 import Numerical.Array.Shape as S
-import qualified  Numerical.Array.Range as R
 import Data.Data(Data,Typeable)
 
 
@@ -84,7 +83,7 @@ and banded matrices
 data instance Format  Direct Contiguous (S Z) rep  =
     FormatDirectContiguous {
         logicalShapeDirectContiguous :: {-#UNPACK#-} !Int }
-    --deriving (Show,Eq,Data)
+    deriving (Show,Eq,Data)
 
 -- | @'Format' 'Direct' 'Strided'  ('S' 'Z')@ is a 1dim array 'Layout' with a regular stride >= 1
 data instance Format  Direct Strided (S Z) rep  =

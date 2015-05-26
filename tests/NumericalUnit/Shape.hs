@@ -1,4 +1,3 @@
--- {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE DataKinds, GADTs, TypeFamilies #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
 {-# LANGUAGE FlexibleInstances #-}

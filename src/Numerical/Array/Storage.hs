@@ -23,10 +23,13 @@ import qualified Data.Vector as BV
 import qualified Data.Vector.Storable as SV
 import qualified Data.Vector.Unboxed as UV
 
+--import qualified Data.Functor as F hiding (Functor)
+--import qualified Data.Foldable as F hiding (Foldable)
+--import qualified Data.Traversable  as T hiding (Traversable)
 #if  defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ < 709
-import qualified Data.Functor as F  (Functor)
-import qualified Data.Foldable as F (Foldable)
-import qualified Data.Traversable  as T (Traversable)
+--import Data.Functor (Functor)
+import Data.Foldable (Foldable)
+import Data.Traversable (Traversable)
 #endif
 
 import Data.Typeable
@@ -46,8 +49,8 @@ FIX MEEEEE REMINDERS
 make the allocators for   Storable Buffers  do AVX sized alignment
 -}
 
--- | The class instance @`Buffer` mode a@ is a shorthand for saying that a given buffer representation @mode@
--- has a `VG.Vector` instance for both `BufferPure`  and  `BufferMut`.
+-- | The class instance @'Buffer' mode a@ is a shorthand for saying that a given buffer representation @mode@
+-- has a 'VG.Vector' instance for both 'BufferPure'  and  'BufferMut'.
 class (VG.Vector (BufferPure mode) a, VGM.MVector (BufferMut mode) a)=> Buffer mode a
 
 instance (VG.Vector (BufferPure mode) a, VGM.MVector (BufferMut mode) a)=> Buffer mode a
@@ -58,17 +61,17 @@ class VGM.MVector (BufferMut mode) a=> MBuffer mode a
 -- not sure if MBuffer should exist, FIXME
 instance VGM.MVector (BufferMut mode) a=> MBuffer mode a
 
--- | `Boxed` is the type index for `Buffer`s that use the  boxed data structure `Data.Vector.Vector`
+-- | 'Boxed' is the type index for `Buffer`s that use the  boxed data structure `Data.Vector.Vector`
 -- as the underlying storage representation.
 data Boxed
   deriving Typeable
--- | `Unboxed` is the type index for `Buffer`s that use the unboxed data structure
--- `Data.Vector.Unboxed.Vector` as the underlying storage representation.
+-- | 'Unboxed' is the type index for 'Buffer's that use the unboxed data structure
+-- 'Data.Vector.Unboxed.Vector' as the underlying storage representation.
 data Unboxed
   deriving Typeable
 
--- | `Storable` is the type index for `Buffer`s that use the `Foreign.Storable`
--- for values, in pinned byte array  buffers, provided by `Data.Vector.Storable`
+-- | 'Stored' is the type index for 'Buffer's that use the 'Foreign.Storable'
+-- for values, in pinned byte array  buffers, provided by 'Data.Vector.Storable'
 data Stored
   deriving Typeable
 
@@ -81,7 +84,7 @@ data family   BufferPure sort  elem
 deriving instance Typeable BufferPure
 
 newtype instance BufferPure Boxed elem = BoxedBuffer (BV.Vector elem)
-  deriving (Show,Data,Generic,F.Functor,F.Foldable,T.Traversable)
+  deriving (Show,Data,Generic,Functor,Foldable,Traversable)
 
 
 
@@ -102,7 +105,7 @@ newtype instance BufferMut Unboxed st elem = UnboxedBufferMut (UV.MVector st ele
   --deriving (Show,Data,Generic)
 newtype instance BufferMut Stored st  elem = StorableBufferMut (SV.MVector st elem)
 
--- | `unsafeBufferFreeze`
+-- | 'unsafeBufferFreeze'
 unsafeBufferFreeze :: (Buffer rep a,PrimMonad m) => BufferMut rep (PrimState m )  a -> m (BufferPure rep a)
 unsafeBufferFreeze =  VG.basicUnsafeFreeze
 
