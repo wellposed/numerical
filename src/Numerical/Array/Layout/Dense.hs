@@ -239,6 +239,8 @@ basicAffineAddressShiftDenseGeneric form addy shift = do
 type instance LayoutAddress (Format Direct Contiguous (S Z) rep) = Address
 instance Layout (Format Direct Contiguous (S Z) rep)  (S Z)  where
 
+
+
     {-# INLINE basicLogicalShape #-}
     basicLogicalShape = \ x -> (logicalShapeDirectContiguous x) :* Nil
 

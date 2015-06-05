@@ -197,6 +197,9 @@ type family  Transposed (form :: *) :: *
 
 type family  LayoutAddress (form :: *) :: *
 
+-- TODO / FIXME remove the basic* prefix  from all the operations
+-- this was done originally because
+
 -- | every format has a "logical" sibling, that represents the address translation
 -- when the underlying buffer layer is contiguous and packed. So it could be claimed
 -- that  any type that obeys @a~'LayoutLogicalFormat' a@ is one that an be a legal
@@ -211,7 +214,8 @@ class Layout form  (rank :: Nat) | form -> rank  where
 
     -- | 'basicLogicalForm' converts a given format into its "contiguous" analogue
     -- this is useful for supporting various address translation manipulation tricks
-    -- efficiently. Note that any valid format should strive to ensure this is an O(1) operation.
+    -- efficiently. Note that any valid  simple format should strive to ensure this is an O(1) operation.
+    -- though certain composite 'Layout' instances may provide a slower implementation.
     basicLogicalForm :: (logicalForm ~ LayoutLogicalFormat form ) => form -> logicalForm
 
 
@@ -230,15 +234,25 @@ class Layout form  (rank :: Nat) | form -> rank  where
     basicAddressRange ::  (address ~ LayoutAddress form)=> form -> Maybe (Range address)
     -- FIX ME! this name is crap, i dont like it
 
+    -- | 'basicToAddress' takes an Index, and tries to translate it to an address if its in bounds
+    --
     basicToAddress :: (address ~ LayoutAddress form)=>
         form  -> Index rank  -> Maybe  address
 
+    -- | 'basicToIndex' takes an address, and always successfully translates it to
+    -- a valid index. Behavior of invalid addresses constructed by a library user
+    -- is unspecificed.
     basicToIndex ::(address ~ LayoutAddress form)=>
         form -> address -> Index rank
 
+    -- | 'basicNextAddress' takes an address, and tries to compute the next valid
+    -- address, or returns Nothing if there is no subsequent valid address.
     basicNextAddress :: (address ~ LayoutAddress form)=>
         form  -> address -> Maybe  address
 
+    -- |  @'basicNextIndex' form ix mbeAddress@  computes the next valid index after
+    -- @ix@ if it exists. It takes a @'Maybe' address@ as a hint for where to do the search for the successor.
+    -- If the index is in bounds and not the last index, it returns both the index and the associated address.
     basicNextIndex :: (address ~ LayoutAddress form)=>
           form  -> Index rank -> Maybe address  -> Maybe ( Index rank, address)
 
@@ -258,19 +272,18 @@ class Layout form  (rank :: Nat) | form -> rank  where
         error "called basicAddressAsInt on a Layout thats not meant for this world"
 
     -- | The semantics of @`basicAffineAddressShift` form addr step@ is that
-    -- when  step > 0, its equivalent to iteratively computing `basicNextAddress` @step@ times.
-    -- Thus,
+    -- when  step > 0, its equivalent to iteratively computing 'basicNextAddress' @step@ times.
+    -- However, the step size can be negative, which means it can
     basicAffineAddressShift :: (addres ~ LayoutAddress form) =>
         form -> address -> Int -> Maybe address
-{-
-should i provide a default?
--}
+
+
     {-# MINIMAL basicToAddress, basicToIndex, basicNextAddress,basicNextIndex
           ,basicAddressRange,basicLogicalShape,basicCompareIndex
           , transposedLayout, basicAddressPopCount,basicLogicalForm, basicAffineAddressShift #-}
 
 
-{-
+{- |
 these names aren't ideal, but lets punt on bikeshedding till theres >= 2 serious
 users
 -}
