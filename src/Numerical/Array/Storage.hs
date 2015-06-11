@@ -65,16 +65,22 @@ instance VGM.MVector (BufferMut mode) a=> MBuffer mode a
 -- as the underlying storage representation.
 data Boxed
   deriving Typeable
+
+deriving instance Data Boxed
+
 -- | 'Unboxed' is the type index for 'Buffer's that use the unboxed data structure
 -- 'Data.Vector.Unboxed.Vector' as the underlying storage representation.
 data Unboxed
   deriving Typeable
+
+deriving instance Data Unboxed
 
 -- | 'Stored' is the type index for 'Buffer's that use the 'Foreign.Storable'
 -- for values, in pinned byte array  buffers, provided by 'Data.Vector.Storable'
 data Stored
   deriving Typeable
 
+deriving instance Data Stored
 
 type instance VG.Mutable (BufferPure sort) = BufferMut sort
 

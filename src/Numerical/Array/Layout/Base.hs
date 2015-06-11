@@ -74,7 +74,9 @@ import  qualified Control.Applicative as A
 import  qualified  Data.Foldable as F
 #endif
 
-
+#if MIN_VERSION_base(4,8,0)
+import Prelude hiding (foldl)
+#endif
 
 {-
 NB: may need to add some specialization for low rank indexing,
