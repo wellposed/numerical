@@ -35,13 +35,13 @@ need to test that the
 
 
 type family U (n:: TL.Nat) :: Nat  where
-  U 0 = Z
-  U n = S (U (((TL.-)) n  1))
+  U 0 = 'Z
+  U n = 'S (U (((TL.-)) n  1))
 
 
 type family n1 + n2 where
-  Z + n2 = n2
-  (S n1') + n2 = S (n1' + n2)
+  'Z + n2 = n2
+  ('S n1') + n2 = 'S (n1' + n2)
 
 
 --  ghc 7.6 instances
@@ -67,41 +67,41 @@ type family n1 + n2 where
 
 
 data SNat :: Nat -> * where
-  SZero :: SNat Z
-  SSucc :: SNat n -> SNat (S n)
+  SZero :: SNat 'Z
+  SSucc :: SNat n -> SNat ('S n)
 
 
 
 -- inductive proof of right-identity of +
-plus_id_r :: SNat n -> ((n + Z) :~: n)
+plus_id_r :: SNat n -> ((n + 'Z) :~: n)
 plus_id_r SZero = Refl
 plus_id_r (SSucc n) = gcastWith (plus_id_r n) Refl
 
 -- inductive proof of simplification on the rhs of +
-plus_succ_r :: SNat n1 -> Proxy n2 -> ((n1 + (S n2)) :~: (S (n1 + n2)))
+plus_succ_r :: SNat n1 -> Proxy n2 -> ((n1 + ('S n2)) :~: ('S (n1 + n2)))
 plus_succ_r SZero _ = Refl
 plus_succ_r (SSucc n1) proxy_n2 = gcastWith (plus_succ_r n1 proxy_n2) Refl
 
 
 
-type N0 = Z
+type N0 = 'Z
 
-type N1= S N0
+type N1 = 'S N0
 
-type N2 = S N1
+type N2 = 'S N1
 
-type N3 = S N2
+type N3 = 'S N2
 
-type N4 = S N3
+type N4 = 'S N3
 
-type N5 = S N4
+type N5 = 'S N4
 
-type N6 = S N5
+type N6 = 'S N5
 
-type N7 = S N6
+type N7 = 'S N6
 
-type N8 = S N7
+type N8 = 'S N7
 
-type N9 = S N8
+type N9 = 'S N8
 
-type N10 = S N9
+type N10 = 'S N9

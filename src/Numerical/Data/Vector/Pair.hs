@@ -56,10 +56,10 @@ data Prod = Pair Prod Prod | Unit
 
 data family   VProd  (vect :: * -> * ) (prd:: Prod ) val  -- where
 data instance VProd v Unit a where
-    VLeaf ::  !(v a) -> VProd v   Unit a
+    VLeaf ::  !(v a) -> VProd v   'Unit a
 
 data instance VProd v (Pair pra prb )  (a,b) where
-    VPair  :: !(VProd v pra a) -> !(VProd v prb b ) ->VProd v (Pair  pra prb) (a,b)
+    VPair  :: !(VProd v pra a) -> !(VProd v prb b ) ->VProd v ('Pair  pra prb) (a,b)
 
 data family   MVProd  (vect :: * -> * -> * )  (prd:: Prod ) (st :: * ) val  -- where
 data instance   MVProd mv Unit  st a where
@@ -68,11 +68,11 @@ data instance   MVProd mv (Pair pra prb)  st (a,b) where
     MVPair  :: !(MVProd mv pra st a) -> !(MVProd mv  prb   st b ) -> MVProd mv  (Pair pra prb) st (a,b)
 
 
-vPair :: (v a,v b)->VProd v (Pair Unit Unit) (a,b)
+vPair :: (v a,v b)->VProd v ('Pair 'Unit 'Unit) (a,b)
 vPair  = \ (va,vb) ->  VPair (VLeaf va) (VLeaf vb)
 {-# INLINE vPair #-}
 
-vUnPair  :: VProd v (Pair Unit Unit) (a,b) -> (v a, v b)
+vUnPair  :: VProd v ('Pair 'Unit 'Unit) (a,b) -> (v a, v b)
 vUnPair = \ (VPair (VLeaf va) (VLeaf vb))-> (va,vb)
 {-# INLINE vUnPair #-}
 
@@ -87,8 +87,8 @@ type instance  V.Mutable (VProd vec prod)= MVProd (V.Mutable vec) prod
 --mvUnPair = \ (TheMVPair mva mvb)-> (mva,mvb)
 --{-# INLINE mvUnPair #-}
 
-instance  (MV.MVector (MVProd (V.Mutable v) (Pair pa pb )  ) (a,b) ,V.Vector (VProd v pa) a,V.Vector (VProd v pb) b)
-  => V.Vector (VProd v (Pair pa pb )) (a,b)  where
+instance  (MV.MVector (MVProd (V.Mutable v) ('Pair pa pb )  ) (a,b) ,V.Vector (VProd v pa) a,V.Vector (VProd v pb) b)
+  => V.Vector (VProd v ('Pair pa pb )) (a,b)  where
     {-# INLINE  basicUnsafeFreeze #-}
     basicUnsafeFreeze = \(MVPair mva mvb) ->
       VPair <$$$> V.basicUnsafeFreeze mva <***> V.basicUnsafeFreeze mvb
@@ -111,7 +111,7 @@ instance  (MV.MVector (MVProd (V.Mutable v) (Pair pa pb )  ) (a,b) ,V.Vector (VP
           b <- V.basicUnsafeIndexM vb ix
           return (a,b)
 
-instance  (MV.MVector (MVProd (V.Mutable v) Unit  ) a ,V.Vector v a)
+instance  (MV.MVector (MVProd (V.Mutable v) 'Unit  ) a ,V.Vector v a)
   => V.Vector (VProd v Unit) a  where
 
     {-# INLINE  basicUnsafeFreeze #-}
@@ -130,7 +130,7 @@ instance  (MV.MVector (MVProd (V.Mutable v) Unit  ) a ,V.Vector v a)
     basicUnsafeIndexM = \(VLeaf va) ix ->  V.basicUnsafeIndexM va ix
 
 
-instance (MV.MVector mv a) => MV.MVector (MVProd mv Unit) a where
+instance (MV.MVector mv a) => MV.MVector (MVProd mv 'Unit) a where
   basicLength = \ (MVLeaf mva) -> MV.basicLength mva
   {-# INLINE basicLength #-}
 
@@ -167,7 +167,7 @@ instance (MV.MVector mv a) => MV.MVector (MVProd mv Unit) a where
 
 
 
-instance (MV.MVector (MVProd mv pra) a,MV.MVector (MVProd mv prb) b) => MV.MVector (MVProd mv (Pair pra prb)) (a,b) where
+instance (MV.MVector (MVProd mv pra) a,MV.MVector (MVProd mv prb) b) => MV.MVector (MVProd mv ('Pair pra prb)) (a,b) where
   basicLength = \ (MVPair mva _) -> MV.basicLength mva
   {-# INLINE basicLength #-}
 

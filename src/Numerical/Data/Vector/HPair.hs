@@ -62,19 +62,19 @@ data HProd a  where
     HUnit :: a -> HProd a
 
 data  VHProd  (prd:: HProd ( * -> * )) val where
-    VHLeaf ::  !(v a) -> VHProd   (HUnit v) a
-    VHNode  :: !(VHProd  pra a) -> !(VHProd  prb b ) ->VHProd  (HPair  pra prb) (a,b)
+    VHLeaf ::  !(v a) -> VHProd   ('HUnit v) a
+    VHNode  :: !(VHProd  pra a) -> !(VHProd  prb b ) ->VHProd  ('HPair  pra prb) (a,b)
 
 data  MVHProd   (prd:: HProd (* -> * -> *) ) (st :: * ) val where
-    MVHLeaf :: !(mv  st a) -> MVHProd   (HUnit mv) st  a
-    MVHNode  :: !(MVHProd pra st a) -> !(MVHProd   prb   st b ) -> MVHProd  (HPair pra prb) st (a,b)
+    MVHLeaf :: !(mv  st a) -> MVHProd   ('HUnit mv) st  a
+    MVHNode  :: !(MVHProd pra st a) -> !(MVHProd   prb   st b ) -> MVHProd  ('HPair pra prb) st (a,b)
 
 
-vHPair :: (va a,vb b)->VHProd (HPair (HUnit va) (HUnit vb)) (a,b)
+vHPair :: (va a,vb b)->VHProd ('HPair ('HUnit va) ('HUnit vb)) (a,b)
 vHPair  = \ (va,vb) ->  VHNode (VHLeaf va) (VHLeaf vb)
 {-# INLINE vHPair #-}
 
-vUnHPair  :: VHProd  (HPair (HUnit va) (HUnit vb)) (a,b) -> (va a, vb b)
+vUnHPair  :: VHProd  ('HPair ('HUnit va) ('HUnit vb)) (a,b) -> (va a, vb b)
 vUnHPair = \ (VHNode (VHLeaf va) (VHLeaf vb))-> (va,vb)
 {-# INLINE vUnHPair #-}
 
@@ -99,7 +99,7 @@ type family TransformHProdTree (f :: k-> m) (a :: HProd k) :: HProd m where
 --mvUnPair = \ (TheMVPair mva mvb)-> (mva,mvb)
 --{-# INLINE mvUnPair #-}
 
-instance  (MV.MVector (MVHProd  (MutableHProdTree (HPair pa pb )) ) (a,b) ,
+instance  (MV.MVector (MVHProd  (MutableHProdTree ('HPair pa pb )) ) (a,b) ,
   V.Vector (VHProd  pa) a, V.Vector (VHProd  pb) b)
   => V.Vector (VHProd  (HPair pa pb )) (a,b)  where
     {-# INLINE  basicUnsafeFreeze #-}
@@ -130,7 +130,7 @@ instance  (MV.MVector (MVHProd  (MutableHProdTree (HPair pa pb )) ) (a,b) ,
           b <- V.basicUnsafeIndexM vb ix
           return (a,b)
 
-instance  (MV.MVector (MVHProd  (HUnit (V.Mutable v))  ) a ,V.Vector v a)
+instance  (MV.MVector (MVHProd  ('HUnit (V.Mutable v))  ) a ,V.Vector v a)
   => V.Vector (VHProd  (HUnit v)) a  where
 
     {-# INLINE  basicUnsafeFreeze #-}
@@ -149,7 +149,7 @@ instance  (MV.MVector (MVHProd  (HUnit (V.Mutable v))  ) a ,V.Vector v a)
     basicUnsafeIndexM = \(VHLeaf va) ix ->  V.basicUnsafeIndexM va ix
 
 
-instance (MV.MVector mv a) => MV.MVector (MVHProd  (HUnit mv )) a where
+instance (MV.MVector mv a) => MV.MVector (MVHProd  ('HUnit mv )) a where
   basicLength = \ (MVHLeaf mva) -> MV.basicLength mva
   {-# INLINE basicLength #-}
 
