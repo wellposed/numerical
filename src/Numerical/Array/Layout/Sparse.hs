@@ -236,34 +236,34 @@ data  InnerContiguousCompressedSparseMatrix rep =
 deriving instance (Show (BufferPure rep Int))=> Show (InnerContiguousCompressedSparseMatrix rep)
 
 
-newtype instance Format CompressedSparseRow Contiguous (S (S Z)) rep =
+newtype instance Format CompressedSparseRow Contiguous ('S ('S 'Z)) rep =
     FormatContiguousCompressedSparseRow {
       _getFormatContiguousCSR :: (ContiguousCompressedSparseMatrix rep) }
 
 deriving instance Show (ContiguousCompressedSparseMatrix rep)
-    => Show (Format CompressedSparseRow Contiguous (S (S Z)) rep)
+    => Show (Format CompressedSparseRow Contiguous ('S ('S 'Z)) rep)
 
-newtype instance Format CompressedSparseColumn Contiguous (S (S Z)) rep =
+newtype instance Format CompressedSparseColumn Contiguous ('S ('S 'Z)) rep =
     FormatContiguousCompressedSparseColumn {
       _getFormatContiguousCSC :: (ContiguousCompressedSparseMatrix rep) }
 
 deriving instance Show (ContiguousCompressedSparseMatrix rep)
-    => Show (Format CompressedSparseColumn Contiguous (S (S Z)) rep)
+    => Show (Format CompressedSparseColumn Contiguous ('S ('S 'Z)) rep)
 
-newtype instance Format CompressedSparseRow InnerContiguous (S (S Z)) rep =
+newtype instance Format CompressedSparseRow InnerContiguous ('S ('S 'Z)) rep =
     FormatInnerContiguousCompressedSparseRow {
       _getFormatInnerContiguousCSR :: (InnerContiguousCompressedSparseMatrix rep )
   }
 deriving instance  Show (InnerContiguousCompressedSparseMatrix rep )
-    =>  Show (Format CompressedSparseRow InnerContiguous (S (S Z)) rep)
+    =>  Show (Format CompressedSparseRow InnerContiguous ('S ('S 'Z)) rep)
 
-newtype instance Format CompressedSparseColumn InnerContiguous (S (S Z)) rep =
+newtype instance Format CompressedSparseColumn InnerContiguous ('S ('S 'Z)) rep =
     FormatInnerContiguousCompressedSparseColumn {
       _getFormatInnerContiguousCSC :: (InnerContiguousCompressedSparseMatrix rep )
   }
 
 deriving instance Show (InnerContiguousCompressedSparseMatrix rep )
-  =>  Show (Format CompressedSparseColumn InnerContiguous (S (S Z)) rep)
+  =>  Show (Format CompressedSparseColumn InnerContiguous ('S ('S 'Z)) rep)
 
       --deriving (Show,Eq,Data)
 
@@ -433,17 +433,17 @@ lookupExactRange  ks key lo hi
 --  | otherwise = Nothing
 --{-# INLINE lookupLUB  #-}
 
-type instance  Transposed (Format DirectSparse Contiguous (S Z) rep )=
-   (Format DirectSparse Contiguous (S Z) rep )
+type instance  Transposed (Format DirectSparse Contiguous ('S 'Z) rep )=
+   (Format DirectSparse Contiguous ('S 'Z) rep )
 
 
 
 
-type instance LayoutAddress (Format DirectSparse Contiguous (S Z) rep) =  Address
+type instance LayoutAddress (Format DirectSparse Contiguous ('S 'Z) rep) =  Address
 
 
 instance V.Vector (BufferPure rep) Int
-  => Layout  (Format DirectSparse Contiguous (S Z) rep ) (S Z) where
+  => Layout  (Format DirectSparse Contiguous ('S 'Z) rep ) ('S 'Z) where
 
   transposedLayout  = id
   -- {-# INLINE transposedLayout #-}
@@ -547,14 +547,14 @@ instance V.Vector (BufferPure rep) Int
 ------------
 ------------
 
-type instance Transposed (Format CompressedSparseRow Contiguous (S (S Z)) rep )=
-    (Format CompressedSparseColumn Contiguous (S (S Z)) rep )
+type instance Transposed (Format CompressedSparseRow Contiguous ('S ('S 'Z)) rep )=
+    (Format CompressedSparseColumn Contiguous ('S ('S 'Z)) rep )
 
 
-type instance LayoutAddress (Format CompressedSparseRow Contiguous (S (S Z)) rep ) = SparseAddress
+type instance LayoutAddress (Format CompressedSparseRow Contiguous ('S ('S 'Z)) rep ) = SparseAddress
 
 instance  (V.Vector (BufferPure rep) Int )
-  => Layout  (Format CompressedSparseRow Contiguous (S (S Z)) rep ) (S (S Z)) where
+  => Layout  (Format CompressedSparseRow Contiguous ('S ('S 'Z)) rep ) ('S ('S 'Z)) where
 
   transposedLayout  = \(FormatContiguousCompressedSparseRow repFormat) ->
                           (FormatContiguousCompressedSparseColumn  repFormat)

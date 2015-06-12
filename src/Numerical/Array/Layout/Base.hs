@@ -32,6 +32,7 @@ module Numerical.Array.Layout.Base(
   ,DenseLayout(..)
   ,RectilinearLayout(..)
   ,LayoutAddress
+  ,LayoutLogicalFormat
   ,Transposed
   ,FormatStorageRep
   ,RectOrientationForm
@@ -142,10 +143,10 @@ instance forall form  rank . (Eq (Shape rank Int),Layout form rank)
 -- this COULD be used as a description format for traversing
 -- over various rectilinear subsets of points though?
 data GDSlice (from :: Nat) (to :: Nat) :: *  where
-  GDNil :: GDSlice Z Z
-  GDPick :: Int -> GDSlice from to -> GDSlice (S from) to
-  GDRange :: (Int,Int,Int)-> GDSlice from to -> GDSlice (S from) (S to)
-  GDAll :: GDSlice from to -> GDSlice (S from) (S to)
+  GDNil :: GDSlice 'Z 'Z
+  GDPick :: Int -> GDSlice from to -> GDSlice ('S from) to
+  GDRange :: (Int,Int,Int)-> GDSlice from to -> GDSlice ('S from) ('S to)
+  GDAll :: GDSlice from to -> GDSlice ('S from) ('S to)
 
 {-
 TODO: for things that
@@ -153,15 +154,15 @@ TODO: for things that
 -}
 
 
-instance Show (GDSlice Z Z) where
+instance Show (GDSlice 'Z 'Z) where
   show _ = "GDNil"
 
-instance (Show (GDSlice (f) (S t)),Show (GDSlice f t))=> Show (GDSlice (S f) (S t)) where
+instance (Show (GDSlice (f) ('S t)),Show (GDSlice f t))=> Show (GDSlice ('S f) ('S t)) where
   show (tup `GDRange` rest) = show tup ++ " `GDRange` (" ++ show rest ++ ")"
   show (GDAll rest) =  "GDAll " ++ show rest
   show (ix `GDPick` rest) = show ix ++" `GDPick` " ++ show rest
 
-instance Show (GDSlice f Z)=> Show (GDSlice (S f) Z) where
+instance Show (GDSlice f 'Z)=> Show (GDSlice (S f) Z) where
   show (ix `GDPick` rest) = show ix ++" `GDPick` " ++ show rest
 --instance Show (GDSlice f t)  where
 --  func =
@@ -291,10 +292,10 @@ data MajorOrientation = Rowed | Columned | BlockedColumn | BlockedRow
   deriving(Data,Typeable)
 
 data SMajorOrientation (o :: MajorOrientation) where
-    SRowed :: SMajorOrientation Rowed
-    SColumned :: SMajorOrientation Columned
-    SBlockedRow :: SMajorOrientation BlockedRow
-    SBlockedColumn :: SMajorOrientation BlockedColumn
+    SRowed :: SMajorOrientation 'Rowed
+    SColumned :: SMajorOrientation 'Columned
+    SBlockedRow :: SMajorOrientation 'BlockedRow
+    SBlockedColumn :: SMajorOrientation 'BlockedColumn
 
 
 -- |  Every instance of 'RectilinearLayout' needs to have a corresponding
@@ -330,8 +331,8 @@ class Layout form rank =>
     -- Should be @O(1)@ always. Or more precisely @O(rank)@
     rectlinearShape :: form -> Index rank
 
-    unconsOuter:: (S down ~ rank)=> p form -> Shape rank a -> (a, Shape down a)
-    consOuter ::  (S down ~ rank)=> p form -> a -> Shape down a -> Shape rank a
+    unconsOuter:: ('S down ~ rank)=> p form -> Shape rank a -> (a, Shape down a)
+    consOuter ::  ('S down ~ rank)=> p form -> a -> Shape down a -> Shape rank a
 
     -- | @'majorAxisSlice' fm (x,y)@ requires that y-x>=1, ie that more than
     -- one sub range wrt the major axis be selected, so that the logical

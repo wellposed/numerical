@@ -162,16 +162,16 @@ too much work to do data instance with pre 7.8 typeable
 
 
 
-instance  Eq (Shape Z a) where
+instance  Eq (Shape 'Z a) where
     (==) _ _ = True
     {-#INLINE (==)#-}
-instance (Eq a,Eq (Shape s a))=> Eq (Shape (S s) a )  where
+instance (Eq a,Eq (Shape s a))=> Eq (Shape ('S s) a )  where
     (==)  (a:* as) (b:* bs) =  (a == b) && (as == bs )
     {-#INLINE (==)#-}
-instance  Show (Shape Z a) where
+instance  Show (Shape 'Z a) where
     show _ = "Nil"
 
-instance (Show a, Show (Shape s a))=> Show (Shape (S s) a) where
+instance (Show a, Show (Shape s a))=> Show (Shape ('S s) a) where
     show (a:* as) = show a  ++ " :* " ++ show as
 
 -- at some point also try data model that
@@ -194,7 +194,7 @@ cases to interact nicely with the instances defined for
 foldable
 -}
 
-instance T.Traversable (Shape Z) where
+instance T.Traversable (Shape 'Z) where
   traverse = \ _ Nil -> A.pure Nil
   {-# INLINE traverse #-}
   sequenceA = T.traverse id
@@ -205,7 +205,7 @@ instance T.Traversable (Shape Z) where
   {-#INLINE sequence #-}
 
 
-instance  T.Traversable (Shape (S Z)) where
+instance  T.Traversable (Shape ('S 'Z)) where
   traverse = \ f (a:* as) ->  (:*) A.<$> f a A.<*> T.traverse f as
   {-# INLINE traverse #-}
   sequenceA = T.traverse id
@@ -215,7 +215,7 @@ instance  T.Traversable (Shape (S Z)) where
   {-#INLINE mapM #-}
   {-#INLINE sequence #-}
 
-instance T.Traversable (Shape (S n)) => T.Traversable (Shape (S (S n))) where
+instance T.Traversable (Shape ('S n)) => T.Traversable (Shape ('S ('S n))) where
   traverse = \ f (a:* as) ->  (:*) A.<$> f a A.<*> T.traverse f as
   {-#INLINE traverse #-}
   sequenceA = T.traverse id
@@ -239,19 +239,19 @@ backwards= \ traver f container ->
 --    fmap = mapShape
 --    {-#INLINE fmap #-}
 
-instance Fun.Functor (Shape Z) where
+instance Fun.Functor (Shape 'Z) where
     fmap  = \ _ Nil -> Nil
     {-# INLINE  fmap #-}
 
-instance  (Fun.Functor (Shape r)) => Fun.Functor (Shape (S r)) where
+instance  (Fun.Functor (Shape r)) => Fun.Functor (Shape ('S r)) where
     fmap  = \ f (a :* rest) -> f a :* ( Fun.fmap f rest )
     {-# INLINE  fmap  #-}
-instance  A.Applicative (Shape Z) where
+instance  A.Applicative (Shape 'Z) where
     pure = \ _ -> Nil
     {-# INLINE  pure  #-}
     (<*>) = \ _  _ -> Nil
     {-# INLINE  (<*>) #-}
-instance  A.Applicative (Shape r)=> A.Applicative (Shape (S r)) where
+instance  A.Applicative (Shape r)=> A.Applicative (Shape ('S r)) where
     pure = \ a -> a :* (A.pure a)
     {-# INLINE pure #-}
     (<*>) = \ (f:* fs) (a :* as) ->  f a :* ((A.<*>)) fs as
@@ -266,7 +266,7 @@ lets try having rank 0 anyways, i'll be happier if i can support it
 
 -}
 
-instance    F.Foldable (Shape  Z) where
+instance    F.Foldable (Shape  'Z) where
     foldl' = \ _  !init _->  init
     foldr'  = \ _ !init _ ->  init
     foldl  = \ _ init _->  init
@@ -280,7 +280,7 @@ instance    F.Foldable (Shape  Z) where
     foldl1 =  \_ _  ->  error "you can't call foldl1 on a rank Z(ero) Shape"
 
 
-instance    F.Foldable (Shape  (S Z)) where
+instance    F.Foldable (Shape  ('S 'Z)) where
     foldl' = \ f !init (a:*Nil)->  f init a
     foldr'  = \ f !init (a:*Nil)->  f a init
     foldl  = \ f init (a:*Nil)->  f init a
@@ -294,7 +294,7 @@ instance    F.Foldable (Shape  (S Z)) where
     foldl1 =  \ _ (a:* Nil) -> a
     {-#  INLINE foldl1 #-}
     {-#  INLINE foldr1 #-}
-instance ( F.Foldable (Shape (S r)) )=> F.Foldable (Shape (S (S r))) where
+instance ( F.Foldable (Shape ('S r)) )=> F.Foldable (Shape ('S ('S r))) where
     foldl' = \ f  init (a:* as) -> F.foldl' f (f init a) as
     foldr' = \f !init (a :* as ) -> f a $!  F.foldr' f init as
     foldl  = \ f  init (a:* as) -> F.foldl' f (f init a) as
@@ -386,21 +386,21 @@ foldl' :: forall a b r . (F.Foldable (Shape r))=> (b-> a -> b) -> b -> Shape r a
 foldl' = \ f init shp -> F.foldl' f init shp
 
 {-# INLINE  foldr1 #-}
-foldr1 :: forall b r . (F.Foldable (Shape (S r)))=>  (b->b-> b)  -> Shape (S r) b -> b
+foldr1 :: forall b r . (F.Foldable (Shape ('S r)))=>  (b->b-> b)  -> Shape ('S r) b -> b
 foldr1  = \ f  shp -> F.foldr1  f  shp
 
 
 
 
 {-# INLINE  foldl1 #-}
-foldl1 :: forall  b r. (F.Foldable (Shape (S r)))=> (b-> b -> b)  -> Shape (S r) b -> b
+foldl1 :: forall  b r. (F.Foldable (Shape ('S r)))=> (b-> b -> b)  -> Shape ('S r) b -> b
 foldl1  = \ f  shp -> F.foldl1 f  shp
 
 
 
 
 
-instance Store.Storable a =>Store.Storable (Shape (S Z) a) where
+instance Store.Storable a =>Store.Storable (Shape ('S 'Z) a) where
     {-#INLINE sizeOf#-}
     sizeOf = \ _ ->  (Store.sizeOf (undefined :: a))
     -- might want to boost the alignment, but ignore for now
@@ -421,9 +421,9 @@ instance Store.Storable a =>Store.Storable (Shape (S Z) a) where
     {-# INLINE pokeByteOff #-}
 
 
-instance (Store.Storable a,Store.Storable (Shape (S n) a)) =>Store.Storable (Shape (S (S n)) a) where
+instance (Store.Storable a,Store.Storable (Shape ('S n) a)) =>Store.Storable (Shape ('S ('S n)) a) where
     {-#INLINE sizeOf#-}
-    sizeOf = \ _ ->  Store.sizeOf (undefined :: a)  + Store.sizeOf (undefined :: (Shape (S n) a ))
+    sizeOf = \ _ ->  Store.sizeOf (undefined :: a)  + Store.sizeOf (undefined :: (Shape ('S n) a ))
     -- might want to boost the alignment, but ignore for now
     {-# INLINE alignment #-}
     alignment = \ _ -> Store.alignment (undefined :: a )
@@ -438,7 +438,7 @@ instance (Store.Storable a,Store.Storable (Shape (S n) a)) =>Store.Storable (Sha
                         Store.poke (ptr `Ptr.plusPtr` Store.sizeOf (undefined :: a )) as
     {-# INLINE pokeElemOff #-}
     {-# INLINE peekElemOff #-}
-    peekElemOff = \ ptr off -> Store.peekByteOff ptr (off * Store.sizeOf (undefined :: (Shape (S (S n)) a) ))
+    peekElemOff = \ ptr off -> Store.peekByteOff ptr (off * Store.sizeOf (undefined :: (Shape ('S ('S n)) a) ))
     pokeElemOff ptr off val = Store.pokeByteOff ptr (off * Store.sizeOf val) val
 
     peekByteOff ptr off = Store.peek (ptr `Ptr.plusPtr` off)
@@ -448,7 +448,7 @@ instance (Store.Storable a,Store.Storable (Shape (S n) a)) =>Store.Storable (Sha
 
 -- this instance is a bit weird and should never be used
 -- but probably legal
-instance Store.Storable a =>Store.Storable (Shape Z a) where
+instance Store.Storable a =>Store.Storable (Shape 'Z a) where
     {-#INLINE sizeOf#-}
     sizeOf = \ _ ->  0
     -- might want to boost the alignment, but ignore for now
@@ -495,7 +495,7 @@ class (UV.Unbox (Shape n a)) => UnBoxedShapeMorphism n a  where
    unShapeMVector :: UVM.MVector s (Shape n a) -> (Int, Shape n (UV.MVector s a))
    reShapeMVector :: (Int, Shape n (UVM.MVector s  a)) -> UVM.MVector s (Shape n a)
 
-instance (UV.Unbox a)=>  UnBoxedShapeMorphism Z a where
+instance (UV.Unbox a)=>  UnBoxedShapeMorphism 'Z a where
   --unShapeVector (V_ShapeZ l)= (l,Nil)
   unShapeMVector (MV_ShapeZ l) = (l,Nil )
 
@@ -503,7 +503,7 @@ instance (UV.Unbox a)=>  UnBoxedShapeMorphism Z a where
   reShapeMVector (l,Nil ) = (MV_ShapeZ l)
 
 
-instance (UV.Unbox a)=>  UnBoxedShapeMorphism (S Z) a  where
+instance (UV.Unbox a)=>  UnBoxedShapeMorphism ('S 'Z) a  where
   --unShapeVector (V_ShapeSZ v)= (UV.length v, v :* Nil)
 
   unShapeMVector (MV_ShapeSZ v) = (UVM.length v,v:* Nil )
@@ -513,30 +513,30 @@ instance (UV.Unbox a)=>  UnBoxedShapeMorphism (S Z) a  where
 
 --UV.V_2
 --UVM.MV_2
-instance ((UV.Unbox a),UnBoxedShapeMorphism (S n) a )=> UnBoxedShapeMorphism (S (S n)) a where
+instance ((UV.Unbox a),UnBoxedShapeMorphism ('S n) a )=> UnBoxedShapeMorphism ('S ('S n)) a where
   --unShapeVector (V_ShapeSSN (UV.V_2 l vhead vtail))= (l, vhead :* snd (unShapeVector vtail)  )
   unShapeMVector (MV_ShapeSSN (UVM.MV_2 l vhead vtail)) = (l,vhead:*  snd (unShapeMVector vtail ))
 
   --reShapeVector (l,vh :* vt)  = (V_ShapeSSN (UV.V_2 l vh (reShapeVector (l,vt) )))
   reShapeMVector (l,vh :* vt ) = (MV_ShapeSSN (UVM.MV_2 l vh (reShapeMVector (l,vt) )))
 
-newtype instance UV.MVector s (Shape Z a)  = MV_ShapeZ  Int
-newtype instance UV.Vector    (Shape Z a) = V_ShapeZ  Int
+newtype instance UV.MVector s (Shape 'Z a)  = MV_ShapeZ  Int
+newtype instance UV.Vector    (Shape 'Z a) = V_ShapeZ  Int
 
-newtype instance UV.MVector s (Shape (S Z) a)  = MV_ShapeSZ (UV.MVector s a)
-newtype instance UV.Vector    (Shape (S Z) a) = V_ShapeSZ  (UV.Vector    a)
+newtype instance UV.MVector s (Shape ('S 'Z) a)  = MV_ShapeSZ (UV.MVector s a)
+newtype instance UV.Vector    (Shape ('S 'Z) a) = V_ShapeSZ  (UV.Vector    a)
 
-newtype instance UV.MVector s (Shape (S (S n)) a)  = MV_ShapeSSN (UV.MVector s (a, Shape (S n) a) )
-newtype instance UV.Vector    (Shape (S (S n)) a) = V_ShapeSSN  (UV.Vector   (a, Shape (S n) a) )
-
-
-instance UV.Unbox a => UV.Unbox (Shape Z a)
-instance UV.Unbox a =>  UV.Unbox (Shape (S Z) a)
-instance (UV.Unbox a,UV.Unbox (Shape (S n) a) )=> UV.Unbox (Shape (S (S n)) a)
+newtype instance UV.MVector s (Shape ('S ('S n)) a)  = MV_ShapeSSN (UV.MVector s (a, Shape ('S n) a) )
+newtype instance UV.Vector    (Shape ('S ('S n)) a) = V_ShapeSSN  (UV.Vector   (a, Shape ('S n) a) )
 
 
+instance UV.Unbox a => UV.Unbox (Shape 'Z a)
+instance UV.Unbox a =>  UV.Unbox (Shape ('S 'Z) a)
+instance (UV.Unbox a,UV.Unbox (Shape ('S n) a) )=> UV.Unbox (Shape ('S ('S n)) a)
 
-instance UV.Unbox a => GMV.MVector UV.MVector  (Shape Z a) where
+
+
+instance UV.Unbox a => GMV.MVector UV.MVector  (Shape 'Z a) where
   {-# INLINE basicLength #-}
   {-# INLINE basicUnsafeSlice #-}
   {-# INLINE basicOverlaps #-}
@@ -558,7 +558,7 @@ instance UV.Unbox a => GMV.MVector UV.MVector  (Shape Z a) where
   basicUnsafeCopy  = \ (MV_ShapeZ _) (MV_ShapeZ _) ->  return ()
   basicUnsafeGrow  = \ (MV_ShapeZ n) m -> return $ MV_ShapeZ (n+m)
 
-instance UV.Unbox a => GV.Vector UV.Vector  (Shape Z a) where
+instance UV.Unbox a => GV.Vector UV.Vector  (Shape 'Z a) where
   {-# INLINE basicUnsafeFreeze #-}
   basicUnsafeFreeze  = \ (MV_ShapeZ n) ->  return $ V_ShapeZ n
   {-# INLINE basicUnsafeThaw #-}
@@ -574,7 +574,7 @@ instance UV.Unbox a => GV.Vector UV.Vector  (Shape Z a) where
   {-# INLINE elemseq #-}
   elemseq  =  \ _ -> seq
 
-instance (UV.Unbox a) => GMV.MVector UV.MVector (Shape (S Z) a) where
+instance (UV.Unbox a) => GMV.MVector UV.MVector (Shape ('S 'Z) a) where
   {-# INLINE basicLength #-}
   {-# INLINE basicUnsafeSlice #-}
   {-# INLINE basicOverlaps #-}
@@ -599,7 +599,7 @@ instance (UV.Unbox a) => GMV.MVector UV.MVector (Shape (S Z) a) where
   basicUnsafeMove  = \ (MV_ShapeSZ v1) (MV_ShapeSZ v2) -> GMV.basicUnsafeMove v1 v2
   basicUnsafeGrow  = \ (MV_ShapeSZ v) n ->  MV_ShapeSZ `liftM` GMV.basicUnsafeGrow v n
 
-instance ( UV.Unbox a) => GV.Vector UV.Vector (Shape (S Z) a ) where
+instance ( UV.Unbox a) => GV.Vector UV.Vector (Shape ('S 'Z) a ) where
   {-# INLINE basicUnsafeFreeze #-}
   {-# INLINE basicUnsafeThaw #-}
   {-# INLINE basicLength #-}
@@ -615,7 +615,7 @@ instance ( UV.Unbox a) => GV.Vector UV.Vector (Shape (S Z) a ) where
   elemseq  = \ _ (a:*_) z ->    GV.elemseq (undefined :: UV.Vector a) a z
 
 
-instance (UV.Unbox a,UV.Unbox (Shape (S n) a)) => GMV.MVector UV.MVector (Shape (S (S n)) a) where
+instance (UV.Unbox a,UV.Unbox (Shape ('S n) a)) => GMV.MVector UV.MVector (Shape ('S ('S n)) a) where
   {-# INLINE basicLength #-}
   {-# INLINE basicUnsafeSlice #-}
   {-# INLINE basicOverlaps #-}
@@ -641,7 +641,7 @@ instance (UV.Unbox a,UV.Unbox (Shape (S n) a)) => GMV.MVector UV.MVector (Shape 
   basicUnsafeGrow = \ (MV_ShapeSSN v) n  -> MV_ShapeSSN `liftM` GMV.basicUnsafeGrow v n
 
 
-instance (UV.Unbox a,UV.Unbox (Shape (S n) a)) =>  GV.Vector UV.Vector (Shape (S (S n)) a) where
+instance (UV.Unbox a,UV.Unbox (Shape ('S n) a)) =>  GV.Vector UV.Vector (Shape ('S ('S n)) a) where
   {-# INLINE basicUnsafeFreeze #-}
   {-# INLINE basicUnsafeThaw #-}
   {-# INLINE basicLength #-}

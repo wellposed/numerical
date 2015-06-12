@@ -178,7 +178,7 @@ the dense instances ignore the builder structure, which does suggest that maybe
 there shoudl be a dense builder layout class and a sparse layout class separately
 -}
 
-instance LayoutBuilder (Format  Direct Contiguous (S Z) rep) (S Z) where
+instance LayoutBuilder (Format  Direct Contiguous ('S 'Z) rep) ('S 'Z) where
 
    buildFormatM (size:* _) _ defaultValue _ =
       do
