@@ -81,12 +81,12 @@ vUnHPair = \ (VHNode (VHLeaf va) (VHLeaf vb))-> (va,vb)
 type instance  V.Mutable (VHProd  prod)= MVHProd  (MutableHProdTree prod)
 
 type family MutableHProdTree (a :: HProd (* -> *)) :: HProd (* -> * -> * )  where
-  MutableHProdTree (HUnit v ) = HUnit (V.Mutable v)
-  MutableHProdTree (HPair left right) = HPair (MutableHProdTree left) (MutableHProdTree right )
+  MutableHProdTree ('HUnit v ) = 'HUnit (V.Mutable v)
+  MutableHProdTree ('HPair left right) = 'HPair (MutableHProdTree left) (MutableHProdTree right )
 
 type family TransformHProdTree (f :: k-> m) (a :: HProd k) :: HProd m where
-  TransformHProdTree f (HUnit v)= HUnit (f v)
-  TransformHProdTree f (HPair left right) = HPair (TransformHProdTree f left) (TransformHProdTree f right)
+  TransformHProdTree f ('HUnit v)= 'HUnit (f v)
+  TransformHProdTree f ('HPair left right) = 'HPair (TransformHProdTree f left) (TransformHProdTree f right)
 
 
 
@@ -101,7 +101,7 @@ type family TransformHProdTree (f :: k-> m) (a :: HProd k) :: HProd m where
 
 instance  (MV.MVector (MVHProd  (MutableHProdTree ('HPair pa pb )) ) (a,b) ,
   V.Vector (VHProd  pa) a, V.Vector (VHProd  pb) b)
-  => V.Vector (VHProd  (HPair pa pb )) (a,b)  where
+  => V.Vector (VHProd  ('HPair pa pb )) (a,b)  where
     {-# INLINE  basicUnsafeFreeze #-}
     {-# INLINE basicUnsafeThaw #-}
     {-# INLINE basicLength #-}
@@ -131,7 +131,7 @@ instance  (MV.MVector (MVHProd  (MutableHProdTree ('HPair pa pb )) ) (a,b) ,
           return (a,b)
 
 instance  (MV.MVector (MVHProd  ('HUnit (V.Mutable v))  ) a ,V.Vector v a)
-  => V.Vector (VHProd  (HUnit v)) a  where
+  => V.Vector (VHProd  ('HUnit v)) a  where
 
     {-# INLINE  basicUnsafeFreeze #-}
     {-# INLINE basicUnsafeThaw #-}
@@ -187,7 +187,7 @@ instance (MV.MVector mv a) => MV.MVector (MVHProd  ('HUnit mv )) a where
 
 
 instance (MV.MVector (MVHProd pra) a,MV.MVector (MVHProd  prb) b)
-  => MV.MVector (MVHProd  (HPair pra prb)) (a,b) where
+  => MV.MVector (MVHProd  ('HPair pra prb)) (a,b) where
 
   basicLength = \ (MVHNode mva _) -> MV.basicLength mva
   {-# INLINE basicLength #-}

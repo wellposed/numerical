@@ -80,80 +80,80 @@ and banded matrices
 
 
 -- | @'Format' 'Direct' 'Contiguous' ('S' 'Z')@ is a 1dim array 'Layout' with unit stride
-data instance Format  Direct Contiguous (S Z) rep  =
+data instance Format  Direct 'Contiguous ('S 'Z) rep  =
     FormatDirectContiguous {
         logicalShapeDirectContiguous :: {-#UNPACK#-} !Int }
     deriving (Show,Eq,Data)
 
 -- | @'Format' 'Direct' 'Strided'  ('S' 'Z')@ is a 1dim array 'Layout' with a regular stride >= 1
-data instance Format  Direct Strided (S Z) rep  =
+data instance Format  Direct 'Strided ('S 'Z) rep  =
     FormatDirectStrided {
         logicalShapeDirectStrided :: {-#UNPACK#-}!Int
         ,logicalStrideDirectStrided:: {-#UNPACK#-}!Int}
     --deriving (Show,Eq,Data)
 
 -- | @'Format'  'Row'  'Contiguous' n@ is a rank n Array
-data instance  Format  Row  Contiguous n rep   =
+data instance  Format  Row  'Contiguous n rep   =
     FormatRowContiguous {
         boundsFormRow :: !(Shape n Int)}
     --deriving (Show,Eq,Data)
 
-data instance  Format  Row  Strided n rep  =
+data instance  Format  Row  'Strided n rep  =
     FormatRowStrided
         {boundsFormRowStrided:: !(Shape n Int)
         ,strideFormRowStrided:: !(Shape n Int)}
     --deriving (Show,Eq,Data)
 
-data instance  Format  Row  InnerContiguous n rep  =
+data instance  Format  Row  'InnerContiguous n rep  =
     FormatRowInnerContiguous {
         boundsFormRowInnerContig :: !(Shape n Int)
         ,strideFormRowInnerContig:: !(Shape n Int)}
     --deriving (Show,Eq,Data)
 
-data instance  Format  Column Contiguous n  rep =
+data instance  Format  Column 'Contiguous n  rep =
     FormatColumnContiguous {
       boundsColumnContig :: !(Shape n Int)}
     --deriving (Show,Eq,Data)
 --deriving instance (Data (Shape n Int),Typeable n,Typeable rep) =>
 
-data instance  Format Column InnerContiguous n rep  =
+data instance  Format Column 'InnerContiguous n rep  =
     FormatColumnInnerContiguous {
         boundsColumnInnerContig :: !(Shape n Int)
         ,strideFormColumnInnerContig:: !(Shape n Int)
       }
 
-deriving instance Show (Shape n Int) => Show (Format Column InnerContiguous n rep)
-deriving instance (Data (Shape n Int),Typeable n,Typeable rep) =>Data (Format Column InnerContiguous n rep)
+deriving instance Show (Shape n Int) => Show (Format Column 'InnerContiguous n rep)
+deriving instance (Data (Shape n Int),Typeable n,Typeable rep) =>Data (Format Column 'InnerContiguous n rep)
     --deriving (Show,Eq,Data)
 
-data instance  Format Column Strided n rep  =
+data instance  Format Column 'Strided n rep  =
     FormatColumnStrided {
       boundsColumnStrided :: !(Shape n Int)
       ,strideFormColumnStrided:: !(Shape n Int)}
-deriving instance Show (Shape n Int) => Show (Format Column Strided n rep)
+deriving instance Show (Shape n Int) => Show (Format Column 'Strided n rep)
 --deriving instance (Eq (Shape n Int)) => Eq (Format Column Strided n rep)
-deriving instance (Data (Shape n Int),Typeable n,Typeable rep) => Data (Format Column Strided n rep)
+deriving instance (Data (Shape n Int),Typeable n,Typeable rep) => Data (Format Column 'Strided n rep)
     --deriving (Show,Eq,Data)
 
 
-type instance Transposed (Format Direct Contiguous (S Z) rep) =
-    Format Direct Contiguous (S Z) rep
-type instance Transposed (Format Direct Strided (S Z) rep ) =
-   Format Direct Strided (S Z) rep
+type instance Transposed (Format Direct 'Contiguous ('S 'Z) rep) =
+    Format Direct 'Contiguous ('S 'Z) rep
+type instance Transposed (Format Direct 'Strided ('S 'Z) rep ) =
+   Format Direct 'Strided ('S 'Z) rep
 
-type instance  Transposed (Format Row  Contiguous rank rep) =
-  Format Column Contiguous rank rep
-type instance Transposed (Format Row  InnerContiguous rank rep) =
-    Format Column  InnerContiguous rank rep
-type instance  Transposed (Format Row  Strided rank rep) =
-    Format Column  Strided rank rep
+type instance  Transposed (Format Row  'Contiguous rank rep) =
+  Format Column 'Contiguous rank rep
+type instance Transposed (Format Row  'InnerContiguous rank rep) =
+    Format Column  'InnerContiguous rank rep
+type instance  Transposed (Format Row  'Strided rank rep) =
+    Format Column  'Strided rank rep
 
-type instance Transposed (Format Column Contiguous rank rep)=
-    Format Row Contiguous rank rep
-type instance Transposed (Format Column InnerContiguous rank rep)=
-    Format Row  InnerContiguous rank rep
-type instance  Transposed (Format Column  Strided rank rep)=
-    Format Row  Strided rank rep
+type instance Transposed (Format Column 'Contiguous rank rep)=
+    Format Row 'Contiguous rank rep
+type instance Transposed (Format Column 'InnerContiguous rank rep)=
+    Format Row  'InnerContiguous rank rep
+type instance  Transposed (Format Column  'Strided rank rep)=
+    Format Row  'Strided rank rep
 
 
 {-
@@ -236,9 +236,9 @@ basicAffineAddressShiftDenseGeneric form addy shift = do
 -----
 
 
-type instance LayoutAddress (Format Direct Contiguous (S Z) rep) = Address
+type instance LayoutAddress (Format Direct 'Contiguous ('S 'Z) rep) = Address
 type instance LayoutLogicalFormat  (Format Direct 'Contiguous ('S 'Z) rep) = Format Direct 'Contiguous ('S 'Z) rep
-instance Layout (Format Direct Contiguous (S Z) rep)  (S Z)  where
+instance Layout (Format Direct 'Contiguous ('S 'Z) rep)  ('S 'Z)  where
 
 
 
@@ -282,8 +282,8 @@ instance Layout (Format Direct Contiguous (S Z) rep)  (S Z)  where
     {-# INLINE basicNextIndex #-}
     {-# INLINE basicAddressPopCount #-}
 
-type instance LayoutAddress (Format Direct Strided (S Z) rep) = Address
-instance  Layout (Format Direct Strided (S Z) rep)  (S Z)  where
+type instance LayoutAddress (Format Direct 'Strided ('S 'Z) rep) = Address
+instance  Layout (Format Direct 'Strided ('S 'Z) rep)  ('S 'Z)  where
 
     {-# INLINE basicLogicalShape #-}
     basicLogicalShape = \x -> (logicalShapeDirectStrided x) :* Nil
@@ -324,7 +324,7 @@ instance  Layout (Format Direct Strided (S Z) rep)  (S Z)  where
 type instance LayoutAddress (Format Row locality    rank rep) = Address
 
 instance   (Applicative (Shape rank), Traversable (Shape rank))
-    =>  Layout (Format Row  Contiguous rank rep) rank where
+    =>  Layout (Format Row  'Contiguous rank rep) rank where
 
     transposedLayout = \(FormatRowContiguous shp) -> FormatColumnContiguous $ reverseShape shp
 
@@ -359,7 +359,7 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
 
 
 instance   (Applicative (Shape rank), Traversable (Shape rank))
-  =>  Layout (Format Row  InnerContiguous rank rep)  rank  where
+  =>  Layout (Format Row  'InnerContiguous rank rep)  rank  where
 
     {-# INLINE basicLogicalShape  #-}
     basicLogicalShape = boundsFormRowInnerContig
@@ -400,7 +400,7 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
 
 
 instance  (Applicative (Shape rank),Traversable (Shape rank))
-  =>  Layout (Format Row  Strided rank rep) rank  where
+  =>  Layout (Format Row 'Strided rank rep) rank  where
 
     {-# INLINE basicLogicalShape  #-}
     basicLogicalShape =  boundsFormRowStrided
@@ -441,7 +441,7 @@ instance  (Applicative (Shape rank),Traversable (Shape rank))
 
 type instance LayoutAddress (Format Column locality    rank rep) = Address
 instance  (Applicative (Shape rank), Traversable (Shape rank))
-  =>  Layout (Format Column  Contiguous rank rep)  rank where
+  =>  Layout (Format Column 'Contiguous rank rep)  rank where
 
     {-# INLINE basicLogicalShape  #-}
     basicLogicalShape =  boundsColumnContig
@@ -478,7 +478,7 @@ instance  (Applicative (Shape rank), Traversable (Shape rank))
 
 
 instance  (Applicative (Shape rank), Traversable (Shape rank))
-  => Layout (Format Column  InnerContiguous rank rep) rank  where
+  => Layout (Format Column 'InnerContiguous rank rep) rank  where
 
 
     {-# INLINE basicLogicalShape  #-}
@@ -518,7 +518,7 @@ instance  (Applicative (Shape rank), Traversable (Shape rank))
     {-# INLINE basicAddressPopCount #-}
 
 instance   (Applicative (Shape rank), Traversable (Shape rank))
-  => Layout (Format Column  Strided rank rep) rank where
+  => Layout (Format Column 'Strided rank rep) rank where
 
     {-# INLINE basicLogicalShape  #-}
     basicLogicalShape = boundsColumnStrided
@@ -595,7 +595,7 @@ computeStrideShape = \trvse shp  ->
 -----
 -----
 
-instance DenseLayout (Format Direct Contiguous (S Z) rep)  (S Z)  where
+instance DenseLayout (Format Direct 'Contiguous ('S 'Z) rep)  ('S 'Z)  where
 
 
     --maxDenseAddress = \ (FormatDirectContiguous ix) -> Address (ix -1)
@@ -616,7 +616,7 @@ instance DenseLayout (Format Direct Contiguous (S Z) rep)  (S Z)  where
 
 
 
-instance DenseLayout (Format Direct Strided (S Z) rep)  (S Z)  where
+instance DenseLayout (Format Direct 'Strided ('S 'Z) rep)  ('S 'Z)  where
 
 
 
@@ -643,7 +643,7 @@ instance DenseLayout (Format Direct Strided (S Z) rep)  (S Z)  where
 
 -- strideRow :: Shape rank Int,
 instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape rank))  =>
-    DenseLayout (Format Row  Contiguous rank rep) rank where
+    DenseLayout (Format Row  'Contiguous rank rep) rank where
 
 {-
 TODO  AUDIT
@@ -680,7 +680,7 @@ TODO  AUDIT
 
 -- strideRow :: Shape rank Int,
 instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape rank))
-  => DenseLayout (Format Row  InnerContiguous rank rep) rank  where
+  => DenseLayout (Format Row  'InnerContiguous rank rep) rank  where
 
 
     {-# INLINE basicToDenseAddress #-}
@@ -717,7 +717,7 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape
 -- strideRow :: Shape rank Int,
 
 instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape rank))
-  => DenseLayout (Format Row  Strided rank rep) rank  where
+  => DenseLayout (Format Row 'Strided rank rep) rank  where
 
 
 
@@ -756,7 +756,7 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape 
 
  -- strideRow :: Shape rank Int,
 instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape rank))
-  => DenseLayout (Format Column  Contiguous rank rep)  rank where
+  => DenseLayout (Format Column  'Contiguous rank rep)  rank where
 
 
 
@@ -786,7 +786,7 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape 
 
  -- strideRow :: Shape rank Int,
 instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape rank))
-  => DenseLayout (Format Column  InnerContiguous rank rep) rank  where
+  => DenseLayout (Format Column  'InnerContiguous rank rep) rank  where
 
 
     {-# INLINE basicToDenseAddress #-}
@@ -818,7 +818,7 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape 
 
 
 instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape rank))
-  => DenseLayout (Format Column  Strided rank rep) rank where
+  => DenseLayout (Format Column  'Strided rank rep) rank where
 
     {-# INLINE basicToDenseAddress #-}
     basicToDenseAddress    =   \ form tup -> let !strider =   strideFormColumnStrided form

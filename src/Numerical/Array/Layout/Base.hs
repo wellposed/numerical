@@ -164,7 +164,7 @@ instance (Show (GDSlice (f) ('S t)),Show (GDSlice f t))=> Show (GDSlice ('S f) (
   show (GDAll rest) =  "GDAll " ++ show rest
   show (ix `GDPick` rest) = show ix ++" `GDPick` " ++ show rest
 
-instance Show (GDSlice f 'Z)=> Show (GDSlice (S f) Z) where
+instance Show (GDSlice f 'Z)=> Show (GDSlice ('S f) 'Z) where
   show (ix `GDPick` rest) = show ix ++" `GDPick` " ++ show rest
 --instance Show (GDSlice f t)  where
 --  func =
@@ -349,7 +349,7 @@ class Layout form rank =>
     -- dimension of the array format. This will
     -- @O(1)@ or @O(rank)@
     majorAxisProject :: (RectilinearLayout downForm subRank oriented,
-     rank ~ (S subRank) , downForm~ RectDownRankForm form) => form -> Int -> downForm
+     rank ~ ('S subRank) , downForm~ RectDownRankForm form) => form -> Int -> downForm
 
     -- | this is the nonstrided subset of general array slice notation.
     --  Invoke as @'rectilinearSlice'  form  leastCorner greatestCorner@,

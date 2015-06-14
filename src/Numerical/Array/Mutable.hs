@@ -110,7 +110,7 @@ data instance  MArray Native rep lay locality rank st el =
 -- | Every 'MutableArray'  instance has a contiguous version
 -- of itself, This contiguous version will ALWAYS have a Builder instance.
 type family MutableArrayContiguous (marr :: * -> * -> *) :: * ->  * -> *
-type instance  MutableArrayContiguous (MArray world rep layout locality rank)= MArray world rep layout Contiguous rank
+type instance  MutableArrayContiguous (MArray world rep layout locality rank)= MArray world rep layout 'Contiguous rank
 
 -- | Sadly 'ArrMutable'  will have to have instances written by hand for now
 -- May later migrate the freeze / thaw machinery to Array.Phased, but lets

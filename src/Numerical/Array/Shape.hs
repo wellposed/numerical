@@ -109,8 +109,8 @@ infixr 3 :*
 type Index rank = Shape rank Int
 
 data Shape (rank :: Nat) a where
-    Nil  :: Shape Z a
-    (:*) ::  !(a) -> !(Shape r a ) -> Shape  (S r) a
+    Nil  :: Shape 'Z a
+    (:*) ::  !(a) -> !(Shape r a ) -> Shape  ('S r) a
 
 
 deriving instance Typeable Shape
@@ -133,13 +133,13 @@ shapeDataTypeRep = mkDataType "Numerical.Array.Shape.Shape" [nilShapeConstrRep,c
 
 -- I would like to have (Data (Shape n a)) but that seems tricky
 
-instance (Data a,Typeable Z) =>  Data (Shape Z a) where
+instance (Data a,Typeable 'Z) =>  Data (Shape 'Z a) where
     gfoldl _ z Nil = z Nil
     gunfold _ z _  = z Nil -- not sure if _ z _ is the right one, but typechecks
     dataTypeOf _  = shapeDataTypeRep
     toConstr _ = nilShapeConstrRep
 
-instance (Data a, Data (Shape n a), Typeable (S n))=> Data (Shape (S n) a ) where
+instance (Data a, Data (Shape n a), Typeable ('S n))=> Data (Shape ('S n) a ) where
     gfoldl k z (a :* b) = (z (:*) `k` a) `k` b
     gunfold k z _ = k (k (z (:*)))
     dataTypeOf _ = shapeDataTypeRep
@@ -655,4 +655,4 @@ instance (UV.Unbox a,UV.Unbox (Shape ('S n) a)) =>  GV.Vector UV.Vector (Shape (
   basicUnsafeIndexM  = \ (V_ShapeSSN v)  i -> uncurry (:*) `liftM` GV.basicUnsafeIndexM v i
   basicUnsafeCopy    =  \ (MV_ShapeSSN mv) (V_ShapeSSN v) -> GV.basicUnsafeCopy mv v
   elemseq = \  _ (a :* as) z ->  GV.elemseq (undefined :: UV.Vector a) a
-                       $ GV.elemseq (undefined :: UV.Vector (Shape (S n) a)) as z
+                       $ GV.elemseq (undefined :: UV.Vector (Shape ('S n) a)) as z

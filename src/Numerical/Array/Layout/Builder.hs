@@ -178,7 +178,7 @@ the dense instances ignore the builder structure, which does suggest that maybe
 there shoudl be a dense builder layout class and a sparse layout class separately
 -}
 
-instance LayoutBuilder (Format  Direct Contiguous ('S 'Z) rep) ('S 'Z) where
+instance LayoutBuilder (Format  Direct 'Contiguous ('S 'Z) rep) ('S 'Z) where
 
    buildFormatM (size:* _) _ defaultValue _ =
       do
@@ -189,7 +189,7 @@ instance LayoutBuilder (Format  Direct Contiguous ('S 'Z) rep) ('S 'Z) where
 -- really wish I didn't have to write the foldable and traversable constraints
 -- seems like a code smell?!
 instance (F.Foldable (Shape r),T.Traversable (Shape r) ,A.Applicative (Shape r))
-  => LayoutBuilder (Format  Row Contiguous r rep) r  where
+  => LayoutBuilder (Format  Row 'Contiguous r rep) r  where
 
    buildFormatM ix  _ defaultValue _ =
       do
@@ -197,7 +197,7 @@ instance (F.Foldable (Shape r),T.Traversable (Shape r) ,A.Applicative (Shape r))
         return (FormatRowContiguous   ix,buf)
 
 instance (F.Foldable (Shape r),T.Traversable (Shape r) ,A.Applicative (Shape r))
-  =>  LayoutBuilder (Format  Column Contiguous r rep) r  where
+  =>  LayoutBuilder (Format  Column 'Contiguous r rep) r  where
 
    buildFormatM ix  _ defaultValue _ =
       do
@@ -216,7 +216,7 @@ isStrictlyMonotonicV cmp v = go  0 (VG.length v)
                   _ -> False
 
 
-instance (Buffer rep Int)=>LayoutBuilder (Format DirectSparse Contiguous (S Z) rep ) (S Z) where
+instance (Buffer rep Int)=>LayoutBuilder (Format DirectSparse 'Contiguous ('S 'Z) rep ) ('S 'Z) where
 
 
   buildFormatM (size:* _) _ _ Nothing  = do
@@ -243,7 +243,7 @@ instance (Buffer rep Int)=>LayoutBuilder (Format DirectSparse Contiguous (S Z) r
       Just ixWrong ->  error $ "DirectSparse Index duplication at index "++ show (vIx VG.! ixWrong)
 
 
-instance (Buffer rep Int) => LayoutBuilder (Format CompressedSparseRow Contiguous (S (S Z)) rep ) (S (S Z)) where
+instance (Buffer rep Int) => LayoutBuilder (Format CompressedSparseRow 'Contiguous ('S ('S 'Z)) rep ) ('S ('S 'Z)) where
 
   buildFormatM (x:* y :* _) _   _ Nothing= do
     mvi <-  VGM.new 0
