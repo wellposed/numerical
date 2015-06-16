@@ -6,6 +6,7 @@ language: haskell
 env:
   - GHCVER=7.8.4 CABALVER=1.20
   - GHCVER=7.10.1 CABALVER=1.22
+  - GHCVER=7.10.2 CABALVER=1.22
   - GHCVER=head  CABALVER=head
 matrix:
   allow_failures:
@@ -24,7 +25,7 @@ before_install:
 
 install:
   - sudo /opt/ghc/$GHCVER/bin/ghc-pkg recache
-  - /opt/ghc/$GHCVER/bin/ghc-pkg recache --user
+  - /opt/ghc/$GHCVER/bin/ghc-pkg recache --user # i dont remember why i do this, need to aduti
   - cabal update
   # - function stm-head { if [ '$GHCVER' = 'head' ]; then  cabal install stm --allow-newer ; else echo 'stm not head' fi }
   # - stm-head
@@ -37,7 +38,6 @@ script:
   # currently Async cant build with ghc head : '(
   - cabal configure  -flib-Werror --enable-tests --enable-benchmarks -v2
   - cabal build   # this builds all libraries and executables (including tests/benchmarks)
-  # currently Async cant build with ghc head :'(
   -  cabal test   --show-details=always ;
   # - cabal check
   - cabal sdist   # tests that a source-distribution can be generated
