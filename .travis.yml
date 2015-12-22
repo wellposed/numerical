@@ -87,4 +87,14 @@ script:
  - SRC_TGZ=$(cabal info . | awk '{print $2;exit}').tar.gz &&
    (cd dist && cabal install --force-reinstalls "$SRC_TGZ")
 
+
+notifications:
+  email: false
+  irc:
+    channels:
+      - "irc.freenode.org#numerical-haskell" # this is the public channel, go here :)
+    skip_join: true
+    template:
+      - "\x0313 alpha numerical coming soon  \x03/\x0306%{branch}\x03 \x0314%{commit}\x03 %{build_url} %{message}"
+
 # EOF
