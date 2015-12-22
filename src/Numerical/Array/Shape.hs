@@ -450,7 +450,7 @@ instance (Store.Storable a,Store.Storable (Shape ('S n) a)) =>Store.Storable (Sh
 -- but probably legal
 instance Store.Storable a =>Store.Storable (Shape 'Z a) where
     {-#INLINE sizeOf#-}
-    sizeOf = \ _ ->  0
+    sizeOf = \ _ ->  Store.sizeOf (undefined :: a )
     -- might want to boost the alignment, but ignore for now
     {-# INLINE alignment #-}
     alignment = \ _ -> Store.alignment (undefined :: a )
