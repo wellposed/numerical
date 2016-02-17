@@ -199,6 +199,7 @@ length of the array
 
 data ContiguousCompressedSparseMatrix rep =
     FormatContiguousCompressedSparseInternal {
+     -- does this need the index space shift for outer range slices???
       _outerDimContiguousSparseFormat ::  {-# UNPACK #-} !Int
       ,_innerDimContiguousSparseFormat ::  {-# UNPACK #-} !Int
       ,_innerDimIndexContiguousSparseFormat :: !(BufferPure rep Int)

@@ -128,7 +128,7 @@ class P.PureArray (ArrPure marr)  rank a => Array marr (rank:: Nat)  a | marr ->
     -- the abstraction here is a reflection of the need for
     type MArrayAddress (marr :: * -> * -> * ) ::  *
 
-    -- | 'basicUnsafeAffineAddressShift' is needed to handle abstracting acce
+    -- | 'basicUnsafeAffineAddressShift' is needed to handle abstracting access in popcount space
     basicUnsafeAffineAddressShift :: (address ~ MArrayAddress marr) => marr st a -> Int -> address -> address
   -- question, should the type be  -> address or  -> Maybe address
 

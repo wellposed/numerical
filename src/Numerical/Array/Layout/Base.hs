@@ -147,7 +147,7 @@ instance forall form  rank . (Eq (Shape rank Int),Layout form rank)
 data GDSlice (from :: Nat) (to :: Nat) :: *  where
   GDNil :: GDSlice 'Z 'Z
   GDPick :: Int -> GDSlice from to -> GDSlice ('S from) to
-  GDRange :: (Int,Int,Int)-> GDSlice from to -> GDSlice ('S from) ('S to)
+  GDRange :: (Int,Int,Int) {- this is a nonempty interval or error -} -> GDSlice from to -> GDSlice ('S from) ('S to)
   GDAll :: GDSlice from to -> GDSlice ('S from) ('S to)
 
 {-
@@ -244,7 +244,7 @@ class Layout form  (rank :: Nat) | form -> rank  where
 
     -- | 'basicToIndex' takes an address, and always successfully translates it to
     -- a valid index. Behavior of invalid addresses constructed by a library user
-    -- is unspecificed.
+    -- is unspecified.
     basicToIndex ::(address ~ LayoutAddress form)=>
         form -> address -> Index rank
 
