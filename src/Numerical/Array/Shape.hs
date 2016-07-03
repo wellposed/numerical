@@ -271,6 +271,7 @@ instance    F.Foldable (Shape  'Z) where
     foldr'  = \ _ !init _ ->  init
     foldl  = \ _ init _->  init
     foldr  = \ _ init _->   init
+    foldMap = \ _f _col -> mempty
     {-# INLINE foldMap  #-}
     {-#  INLINE foldl #-}
     {-#  INLINE foldr  #-}
@@ -285,6 +286,7 @@ instance    F.Foldable (Shape  ('S 'Z)) where
     foldr'  = \ f !init (a:*Nil)->  f a init
     foldl  = \ f init (a:*Nil)->  f init a
     foldr  = \ f init (a:*Nil)->  f a init
+    foldMap = \ f (a :* Nil ) -> f a
     {-# INLINE foldMap  #-}
     {-#  INLINE foldl #-}
     {-#  INLINE foldr  #-}
@@ -300,6 +302,8 @@ instance ( F.Foldable (Shape ('S r)) )=> F.Foldable (Shape ('S ('S r))) where
     foldl  = \ f  init (a:* as) -> F.foldl' f (f init a) as
     foldr  = \ f  init (a:* as) ->   f a $!  F.foldr f init as
     foldl1 = \ f (a:* as) -> F.foldl' f a as
+    foldr1 = \ f (a :* as) -> F.foldr' f a as
+    foldMap = \ f (a :* as ) -> f a Monoid.<> F.foldMap f as
     {-# INLINE foldMap  #-}
     {-# INLINE foldl #-}
     {-# INLINE foldr  #-}

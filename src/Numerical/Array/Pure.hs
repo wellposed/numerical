@@ -155,7 +155,7 @@ instance (Buffer rep el , L.Layout (L.Format  lay locality  rank rep) rank)
 class PureArray arr rank a => PureDenseArray arr rank a where
 
     -- | 'basicIndexInBounds' is an O(1) bounds check.
-    basicIndexInBounds :: arr el -> Index rank -> Bool
+    basicIndexInBounds :: arr a -> Index rank -> Bool
 
     -- |
     basicUnsafeAddressDenseRead  :: (address ~PureArrayAddress  arr,Monad m) => arr  a -> address-> m a
