@@ -23,7 +23,7 @@ import Numerical.Array.Layout.Base
 import  Numerical.Array.Layout.Dense as Dense
 --import Numerical.Array.Layou.Sparse as Sparse
 --import Numerical.Data.Vector.Pair
-import Control.Monad.ST.Safe (runST)
+import Control.Monad.ST (runST)
 import Data.Typeable
 import qualified  Data.Foldable as F
 import   Data.Traversable as T
