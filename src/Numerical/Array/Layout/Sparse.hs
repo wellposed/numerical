@@ -1,5 +1,12 @@
 {-
-the following (currently 5) sparse formats will live here
+The following (currently 5) sparse formats will live here:
+  * Direct sparse
+  * Compressed sparse row, contiguous
+  * Compressed sparse row, inner contiguous
+  * Compressed sparse column, contiguous
+  * Compressed sparse column, inner contiguous
+
+See https://en.wikipedia.org/wiki/Sparse_matrix for an overview on these formats, or see the links posted in the later comments.
 
 
 DirectSparse 1dim
@@ -197,13 +204,23 @@ length of the array
 
 -}
 
+-- does this need the index space shift for outer range slices???
+
+-- | Basic CSR/CSC (compressed sparse row/column) format. To use this as CSR, make
+-- | rows the outer dim; to use as CSC, make columns the outer-dim.
+
+-- | IA and JA are the names of the matrices used in
+-- | https://en.wikipedia.org/wiki/Sparse_matrix#Compressed_sparse_row_.28CSR.2C_CRS_or_Yale_format.29.
+-- |
+-- | Note that, unlike the description on Wikipedia, A itself is not here! This
+-- | doesn't actually store the values of the array, it is just metadata about
+-- | how the matrix is stored.
 data ContiguousCompressedSparseMatrix rep =
-    FormatContiguousCompressedSparseInternal {
-     -- does this need the index space shift for outer range slices???
-      _outerDimContiguousSparseFormat ::  {-# UNPACK #-} !Int
-      ,_innerDimContiguousSparseFormat ::  {-# UNPACK #-} !Int
-      ,_innerDimIndexContiguousSparseFormat :: !(BufferPure rep Int)
-      ,_outerDim2InnerDimContiguousSparseFormat:: ! (BufferPure rep Int )
+  FormatContiguousCompressedSparseInternal
+  { _ccsmOuterDim :: {-# UNPACK #-} !Int -- ^| length of IA (i.e. if we are row-major, then this is the number of rows)
+  , _ccsmInnerDim :: {-# UNPACK #-} !Int -- ^| length of JA (this is the number of nonzero elements in the array)
+  , _ccsmInnerDimIndex     :: !(BufferPure rep Int) -- ^| JA
+  , _ccsmOuterDim2InnerDim :: !(BufferPure rep Int) -- ^| IA
   }
   deriving (Typeable)
 
@@ -223,16 +240,15 @@ the X dim (columns) are the inner dimension, and Y dim (rows) are the outer dim
 
 
 data  InnerContiguousCompressedSparseMatrix rep =
-   FormatInnerContiguousCompressedSparseInternal {
-      _outerDimInnerContiguousSparseFormat ::    {-# UNPACK #-} !Int
-      ,_innerDimInnerContiguousSparseFormat ::  {-# UNPACK #-} !Int
-      ,_innerDimIndexShiftInnerContiguousSparseFormat:: {-# UNPACK #-} !Int
-
-      ,_innerDimIndexInnerContiguousSparseFormat :: !(BufferPure rep Int)
-      ,_outerDim2InnerDimStartInnerContiguousSparseFormat:: ! (BufferPure rep Int )
-      ,_outerDim2InnerDimEndInnerContiguousSparseFormat:: ! (BufferPure rep Int )
-         }
-     deriving Typeable
+  FormatInnerContiguousCompressedSparseInternal
+  { _iccsmOuterDimInner           :: {-# UNPACK #-} !Int
+  , _iccsmInnerDimInner           :: {-# UNPACK #-} !Int
+  , _iccsmInnerDimIndexShiftInner :: {-# UNPACK #-} !Int
+  , _iccsmInnerDimIndexInner          :: !(BufferPure rep Int)
+  , _iccsmOuterDim2InnerDimStartInner :: !(BufferPure rep Int)
+  , _iccsmOuterDim2InnerDimEndInner   :: !(BufferPure rep Int)
+  }
+  deriving Typeable
 
 deriving instance (Show (BufferPure rep Int))=> Show (InnerContiguousCompressedSparseMatrix rep)
 
@@ -562,8 +578,8 @@ instance  (V.Vector (BufferPure rep) Int )
   {-# INLINE transposedLayout #-}
 
 
-  basicLogicalShape = \ form ->  (_innerDimContiguousSparseFormat $ _getFormatContiguousCSR  form ) :*
-         ( _outerDimContiguousSparseFormat $ _getFormatContiguousCSR form ):* Nil
+  basicLogicalShape = \ form ->  (_ccsmInnerDim $ _getFormatContiguousCSR  form ) :*
+         ( _ccsmOuterDim $ _getFormatContiguousCSR form ):* Nil
           --   x_ix :* y_ix
   {-# INLINE basicLogicalShape #-}
 
