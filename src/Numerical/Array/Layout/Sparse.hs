@@ -86,10 +86,12 @@ data DirectSparse
 
 
 
+-- | The "base case" of our sparse arrays. That is, this can only hold rank-1
+-- | arrays. This is kind-of in-between "List of lists (LIL)" and "Coordinate list (COO)".
 data instance Format DirectSparse 'Contiguous ('S 'Z) rep =
   FormatDirectSparseContiguous
-  { _dsLogicalShape          :: {-# UNPACK#-} !Int
-  , _dsLogicalBaseIndexShift :: {-# UNPACK#-} !Int
+  { _dsLogicalShape          :: {-# UNPACK#-} !Int -- ^| number of nonzero entries
+  , _dsLogicalBaseIndexShift :: {-# UNPACK#-} !Int -- TODO I don't understand why you would need an offset for this. Even if this is a subarray of some larger array, why not just make _dsIndexTable point to the right offset in the array?
   , _dsIndexTable            :: !(BufferPure rep Int)
   }
 
@@ -247,7 +249,7 @@ data  InnerContiguousCompressedSparseMatrix rep =
   , _iccsmInnerDimIndexShiftInner :: {-# UNPACK #-} !Int
   , _iccsmInnerDimIndexInner          :: !(BufferPure rep Int)
   , _iccsmOuterDim2InnerDimStartInner :: !(BufferPure rep Int)
-  , _iccsmOuterDim2InnerDimEndInner   :: !(BufferPure rep Int)
+  , _iccsmOuterDim2InnerDimEndInner   :: !(BufferPure rep Int) -- TODO Not sure what the point of this is. Can't we infer that outerDim2InnerDimEnd[k] = outerDim2InnerDimStart[k + 1] - 1?
   }
   deriving Typeable
 
@@ -430,6 +432,7 @@ searchOrd  p = go where
           m = l + unsafeShiftR hml 1 + unsafeShiftR hml 6
 {-# INLINE searchOrd #-}
 
+-- | Returns index of 'key' if 'key' is in 'ks'.
 lookupExact :: (Ord k, V.Vector vec k) => vec k -> k -> Maybe Int
 lookupExact ks key
   | j <- searchOrd (\i -> compare (ks V.! i)  key) 0 (V.length ks - 1)
@@ -472,11 +475,7 @@ instance V.Vector (BufferPure rep) Int
   basicCompareIndex = \ _ (a:* Nil) (b :* Nil) ->compare a b
   -- {-# INLINE basicCompareIndex #-}
 
-  basicAddressRange = \form ->
-    case (minAddress form , maxAddress form ) of
-      (Just least, Just greatest) -> Just (Range least greatest )
-      _ -> Nothing
-
+  basicAddressRange form = Range <$> minAddress form <*> maxAddress form
     where
         minAddress =
           \ (FormatDirectSparseContiguous _ _   lookupTable)->
