@@ -254,9 +254,9 @@ instance Layout (Format Direct 'Contiguous ('S 'Z) rep)  ('S 'Z)  where
 
     basicAddressRange =  basicAddressRangeGeneric
 
-    basicToAddress = basicToAddressDenseGeneric
+    indexToAddress = basicToAddressDenseGeneric
 
-    basicToIndex = basicToIndexDenseGeneric
+    addressToIndex = basicToIndexDenseGeneric
 
 
     basicNextAddress=basicNextAddressDenseGeneric
@@ -276,8 +276,8 @@ instance Layout (Format Direct 'Contiguous ('S 'Z) rep)  ('S 'Z)  where
 
 
     {-# INLINE basicAddressRange #-}
-    {-# INLINE basicToAddress #-}
-    {-# INLINE basicToIndex #-}
+    {-# INLINE indexToAddress #-}
+    {-# INLINE addressToIndex #-}
     {-# INLINE basicNextAddress #-}
     {-# INLINE basicNextIndex #-}
     {-# INLINE basicAddressPopCount #-}
@@ -295,9 +295,9 @@ instance  Layout (Format Direct 'Strided ('S 'Z) rep)  ('S 'Z)  where
 
     basicAddressRange = basicAddressRangeGeneric
 
-    basicToAddress = basicToAddressDenseGeneric
+    indexToAddress = basicToAddressDenseGeneric
 
-    basicToIndex = basicToIndexDenseGeneric
+    addressToIndex = basicToIndexDenseGeneric
 
     basicNextAddress=  basicNextAddressDenseGeneric
 
@@ -313,8 +313,8 @@ instance  Layout (Format Direct 'Strided ('S 'Z) rep)  ('S 'Z)  where
     basicAddressAsInt = \ _ (Address a) -> a
 
     {-# INLINE basicAddressRange #-}
-    {-# INLINE basicToAddress #-}
-    {-# INLINE basicToIndex #-}
+    {-# INLINE indexToAddress #-}
+    {-# INLINE addressToIndex #-}
     {-# INLINE basicNextAddress #-}
     {-# INLINE basicNextIndex #-}
     {-# INLINE basicAddressPopCount #-}
@@ -339,9 +339,9 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
       -- in the style of the Sparse instances
     basicAddressRange = basicAddressRangeGeneric
 
-    basicToAddress = basicToAddressDenseGeneric
+    indexToAddress = basicToAddressDenseGeneric
 
-    basicToIndex = basicToIndexDenseGeneric
+    addressToIndex = basicToIndexDenseGeneric
 
     basicNextAddress=  basicNextAddressDenseGeneric
 
@@ -350,8 +350,8 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
     basicAddressAsInt = \ _ (Address a) -> a
 
     {-# INLINE basicAddressRange #-}
-    {-# INLINE basicToAddress #-}
-    {-# INLINE basicToIndex #-}
+    {-# INLINE indexToAddress #-}
+    {-# INLINE addressToIndex #-}
     {-# INLINE basicNextAddress #-}
     {-# INLINE basicNextIndex #-}
     {-# INLINE basicAddressPopCount #-}
@@ -373,9 +373,9 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
 
     basicAddressRange = basicAddressRangeGeneric
 
-    basicToAddress = basicToAddressDenseGeneric
+    indexToAddress = basicToAddressDenseGeneric
 
-    basicToIndex = basicToIndexDenseGeneric
+    addressToIndex = basicToIndexDenseGeneric
 
     basicNextAddress=  basicNextAddressDenseGeneric
 
@@ -391,8 +391,8 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
     basicAddressAsInt = \ _ (Address a) -> a
 
     {-# INLINE basicAddressRange #-}
-    {-# INLINE basicToAddress #-}
-    {-# INLINE basicToIndex #-}
+    {-# INLINE indexToAddress #-}
+    {-# INLINE addressToIndex #-}
     {-# INLINE basicNextAddress #-}
     {-# INLINE basicNextIndex #-}
     {-# INLINE basicAddressPopCount #-}
@@ -414,9 +414,9 @@ instance  (Applicative (Shape rank),Traversable (Shape rank))
 
     basicAddressRange = basicAddressRangeGeneric
 
-    basicToAddress = basicToAddressDenseGeneric
+    indexToAddress = basicToAddressDenseGeneric
 
-    basicToIndex = basicToIndexDenseGeneric
+    addressToIndex = basicToIndexDenseGeneric
 
     basicNextAddress=  basicNextAddressDenseGeneric
 
@@ -432,8 +432,8 @@ instance  (Applicative (Shape rank),Traversable (Shape rank))
     basicAddressAsInt = \ _ (Address a) -> a
 
     {-# INLINE basicAddressRange #-}
-    {-# INLINE basicToAddress #-}
-    {-# INLINE basicToIndex #-}
+    {-# INLINE indexToAddress #-}
+    {-# INLINE addressToIndex #-}
     {-# INLINE basicNextAddress #-}
     {-# INLINE basicNextIndex #-}
     {-# INLINE basicAddressPopCount #-}
@@ -459,9 +459,9 @@ instance  (Applicative (Shape rank), Traversable (Shape rank))
       -- in the style of the Sparse instances
     basicAddressRange = basicAddressRangeGeneric
 
-    basicToAddress = basicToAddressDenseGeneric
+    indexToAddress = basicToAddressDenseGeneric
 
-    basicToIndex = basicToIndexDenseGeneric
+    addressToIndex = basicToIndexDenseGeneric
 
     basicNextAddress=  basicNextAddressDenseGeneric
 
@@ -470,8 +470,8 @@ instance  (Applicative (Shape rank), Traversable (Shape rank))
     basicAddressAsInt = \ _ (Address a) -> a
 
     {-# INLINE basicAddressRange #-}
-    {-# INLINE basicToAddress #-}
-    {-# INLINE basicToIndex #-}
+    {-# INLINE indexToAddress #-}
+    {-# INLINE addressToIndex #-}
     {-# INLINE basicNextAddress #-}
     {-# INLINE basicNextIndex #-}
     {-# INLINE basicAddressPopCount #-}
@@ -492,9 +492,9 @@ instance  (Applicative (Shape rank), Traversable (Shape rank))
 
     basicAddressRange = basicAddressRangeGeneric
 
-    basicToAddress = basicToAddressDenseGeneric
+    indexToAddress = basicToAddressDenseGeneric
 
-    basicToIndex = basicToIndexDenseGeneric
+    addressToIndex = basicToIndexDenseGeneric
 
     basicNextAddress=  basicNextAddressDenseGeneric
 
@@ -511,8 +511,8 @@ instance  (Applicative (Shape rank), Traversable (Shape rank))
  -- strideRow :: Shape rank Int,
 
     {-# INLINE basicAddressRange #-}
-    {-# INLINE basicToAddress #-}
-    {-# INLINE basicToIndex #-}
+    {-# INLINE indexToAddress #-}
+    {-# INLINE addressToIndex #-}
     {-# INLINE basicNextAddress #-}
     {-# INLINE basicNextIndex #-}
     {-# INLINE basicAddressPopCount #-}
@@ -531,9 +531,9 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
 
     basicAddressRange = basicAddressRangeGeneric
 
-    basicToAddress = basicToAddressDenseGeneric
+    indexToAddress = basicToAddressDenseGeneric
 
-    basicToIndex = basicToIndexDenseGeneric
+    addressToIndex = basicToIndexDenseGeneric
 
     basicNextAddress=  basicNextAddressDenseGeneric
 
@@ -549,8 +549,8 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
     basicAddressAsInt = \ _ (Address a) -> a
 
     {-# INLINE basicAddressRange #-}
-    {-# INLINE basicToAddress #-}
-    {-# INLINE basicToIndex #-}
+    {-# INLINE indexToAddress #-}
+    {-# INLINE addressToIndex #-}
     {-# INLINE basicNextAddress #-}
     {-# INLINE basicNextIndex #-}
     {-# INLINE basicAddressPopCount #-}
@@ -650,7 +650,7 @@ TODO  AUDIT
 
 -}
     {-# INLINE basicToDenseAddress #-}
-    --basicToAddress = \rs tup -> let !strider =takePrefix $! S.scanr (*) 1 (boundsFormRow rs)
+    --indexToAddress = \rs tup -> let !strider =takePrefix $! S.scanr (*) 1 (boundsFormRow rs)
     basicToDenseAddress = \rs tup ->
           let !strider =  computeStrideShape traverse (boundsFormRow rs)
                   in Address $! S.foldl'  (+) 0 $! map2 (*) strider tup
@@ -852,15 +852,15 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape
 
 
 {-
-*Numerical.Array.Layout> basicToAddress (FormColumn (2 :* 3 :* 7 :* Nil)) (0:* 2 :* 2 :* Nil)
+*Numerical.Array.Layout> indexToAddress (FormColumn (2 :* 3 :* 7 :* Nil)) (0:* 2 :* 2 :* Nil)
 Address 16
-*Numerical.Array.Layout> basicToAddress (FormColumn (2 :* 3 :* 7 :* Nil)) (1:* 0 :* 0 :* Nil)
+*Numerical.Array.Layout> indexToAddress (FormColumn (2 :* 3 :* 7 :* Nil)) (1:* 0 :* 0 :* Nil)
 Address 1
-*Numerical.Array.Layout> basicToAddress (FormColumn (2 :* 3 :* 7 :* Nil)) (0:* 0 :* 0 :* Nil)
+*Numerical.Array.Layout> indexToAddress (FormColumn (2 :* 3 :* 7 :* Nil)) (0:* 0 :* 0 :* Nil)
 Address 0
-*Numerical.Array.Layout> basicToAddress (FormColumn (2 :* 3 :* 7 :* Nil)) (0:* 1 :* 0 :* Nil)
+*Numerical.Array.Layout> indexToAddress (FormColumn (2 :* 3 :* 7 :* Nil)) (0:* 1 :* 0 :* Nil)
 Address 2
-*Numerical.Array.Layout> basicToAddress (FormColumn (2 :* 3 :* 7 :* Nil)) (0:* 0 :* 1 :* Nil)
+*Numerical.Array.Layout> indexToAddress (FormColumn (2 :* 3 :* 7 :* Nil)) (0:* 0 :* 1 :* Nil)
 -}
 
 

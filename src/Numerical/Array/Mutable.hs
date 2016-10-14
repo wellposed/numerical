@@ -247,10 +247,10 @@ instance (Buffer rep el, Layout (Format  lay locality  rank rep) rank )
         return $ MutableNativeArray mutBuffer $ P.nativeFormatPure parr
 
     {-# INLINE basicSparseIndexToAddress #-}
-    basicSparseIndexToAddress = \ marr  -> L.basicToAddress (nativeFormat marr)
+    basicSparseIndexToAddress = \ marr  -> L.indexToAddress (nativeFormat marr)
 
     {-# INLINE basicAddressToIndex #-}
-    basicAddressToIndex = \ marr  -> L.basicToIndex (nativeFormat marr)
+    basicAddressToIndex = \ marr  -> L.addressToIndex (nativeFormat marr)
 
     {-# INLINE basicSparseNextAddress #-}
     basicSparseNextAddress = \marr -> L.basicNextAddress (nativeFormat marr)

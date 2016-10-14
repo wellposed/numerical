@@ -209,10 +209,12 @@ type family  LayoutAddress (form :: *) :: *
 -- instance of LayoutBuilder?
 type family LayoutLogicalFormat (form :: *) :: *
 
--- | the 'Layout' type class
+-- | The 'Layout' type class
 class Layout form  (rank :: Nat) | form -> rank  where
 
-    -- | 'basicLogicalShape' gives the extent of the format
+    -- | 'basicLogicalShape' gives the extent of the format.
+    -- | For example, for a matrix (rank-2 array), returns
+    -- | 'numRows :* numColumns :* Nil'.
     basicLogicalShape :: form -> Shape rank Int
 
     -- | 'basicLogicalForm' converts a given format into its "contiguous" analogue
@@ -235,17 +237,16 @@ class Layout form  (rank :: Nat) | form -> rank  where
     -- and @maxAddress = fmap _RangeMax . rangedFormatAddress@
     -- FIXME : This also is a terrible name
     basicAddressRange ::  (address ~ LayoutAddress form)=> form -> Maybe (Range address)
-    -- FIX ME! this name is crap, i dont like it
 
-    -- | 'basicToAddress' takes an Index, and tries to translate it to an address if its in bounds
+    -- | 'indexToAddress' takes an Index, and tries to translate it to an address if its in bounds
     --
-    basicToAddress :: (address ~ LayoutAddress form)=>
+    indexToAddress :: (address ~ LayoutAddress form)=>
         form  -> Index rank  -> Maybe  address
 
     -- | 'basicToIndex' takes an address, and always successfully translates it to
     -- a valid index. Behavior of invalid addresses constructed by a library user
     -- is unspecified.
-    basicToIndex ::(address ~ LayoutAddress form)=>
+    addressToIndex ::(address ~ LayoutAddress form)=>
         form -> address -> Index rank
 
     -- | 'basicNextAddress' takes an address, and tries to compute the next valid
@@ -281,7 +282,7 @@ class Layout form  (rank :: Nat) | form -> rank  where
         form -> address -> Int -> Maybe address
 
 
-    {-# MINIMAL basicToAddress, basicToIndex, basicNextAddress,basicNextIndex
+    {-# MINIMAL indexToAddress, indexToAddress, basicNextAddress,basicNextIndex
           ,basicAddressRange,basicLogicalShape,basicCompareIndex
           , transposedLayout, basicAddressPopCount,basicLogicalForm, basicAffineAddressShift #-}
 

@@ -87,10 +87,11 @@ data DirectSparse
 
 
 data instance Format DirectSparse 'Contiguous ('S 'Z) rep =
-    FormatDirectSparseContiguous {
-      _logicalShapeDirectSparse:: {-# UNPACK#-} !Int
-      ,_logicalBaseIndexShiftDirectSparse::{-# UNPACK#-} !Int
-      ,_indexTableDirectSparse :: ! (BufferPure rep Int )  }
+  FormatDirectSparseContiguous
+  { _dsLogicalShape          :: {-# UNPACK#-} !Int
+  , _dsLogicalBaseIndexShift :: {-# UNPACK#-} !Int
+  , _dsIndexTable            :: !(BufferPure rep Int)
+  }
 
 
 deriving instance Show  (BufferPure rep Int )  => Show (Format DirectSparse 'Contiguous ('S 'Z) rep)
@@ -465,7 +466,7 @@ instance V.Vector (BufferPure rep) Int
   transposedLayout  = id
   -- {-# INLINE transposedLayout #-}
 
-  basicLogicalShape = \ form -> _logicalShapeDirectSparse form  :* Nil
+  basicLogicalShape = \ form -> _dsLogicalShape form  :* Nil
   -- {-# INLINE basicLogicalShape #-}
 
   basicCompareIndex = \ _ (a:* Nil) (b :* Nil) ->compare a b
@@ -488,14 +489,14 @@ instance V.Vector (BufferPure rep) Int
                else Nothing
 
 -- TODO, double check that im doing shift correctly
-  {-# INLINE basicToAddress #-}
-  basicToAddress =
+  {-# INLINE indexToAddress #-}
+  indexToAddress =
       \ (FormatDirectSparseContiguous shape  indexshift lookupTable) (ix:*_)->
          if  not (ix < shape && ix > 0 ) then  Nothing
           else  fmap Address  $! lookupExact lookupTable (ix + indexshift)
 
-  {-# INLINE basicToIndex #-}
-  basicToIndex =
+  {-# INLINE addressToIndex #-}
+  addressToIndex =
     \ (FormatDirectSparseContiguous _ shift lut) (Address addr) ->
         ((lut V.! addr ) - shift) :* Nil
   {-# INLINE basicAddressAsInt #-}
@@ -539,7 +540,7 @@ instance V.Vector (BufferPure rep) Int
             resAddr = Address $! bsearchUp  (\lix-> ix < ((lut V.! lix)-shift) )
                         0 (V.length lut )
         in case mebeAddress of
-          Nothing ->  resAddr `seq` (Just (basicToIndex form resAddr ,  resAddr))
+          Nothing ->  resAddr `seq` (Just (addressToIndex form resAddr ,  resAddr))
                 -- Q: do i want the Index part of the tuple to be strict or not?
                 -- leaving it lazy for now
                 -- TODO / FIX / AUDIT ME / NOT SURE
@@ -556,9 +557,9 @@ instance V.Vector (BufferPure rep) Int
                                 basicHybridSearchUp
                                   (\lix-> ix <  ((lut V.! lix)-shift ) )
                                   adr (V.length lut -1)
-                  in  Just (basicToIndex form nextAddr ,  nextAddr)
+                  in  Just (addressToIndex form nextAddr ,  nextAddr)
               else
-                resAddr `seq` (Just (basicToIndex form resAddr ,  resAddr))
+                resAddr `seq` (Just (addressToIndex form resAddr ,  resAddr))
 
 
 ------------
@@ -703,8 +704,8 @@ instance  (V.Vector (BufferPure rep) Int )
   {-#  INLINE basicAddressAsInt #-}
   basicAddressAsInt = \ _ (SparseAddress _ addr)-> addr
 
-  {-# INLINE basicToIndex #-}
-  basicToIndex =
+  {-# INLINE addressToIndex #-}
+  addressToIndex =
         \ (FormatContiguousCompressedSparseRow
             (FormatContiguousCompressedSparseInternal  _ _ columnIndex _))
             (SparseAddress outer inner) ->
@@ -744,8 +745,8 @@ overhead, but in general branch prediction should work out ok.
                     else Just (SparseAddress (outer + 1) (inner + 1 ) )
 
 
-  -- {-# INLINE basicToAddress #-}
-  basicToAddress =
+  -- {-# INLINE indexToAddress #-}
+  indexToAddress =
         \ (FormatContiguousCompressedSparseRow
             (FormatContiguousCompressedSparseInternal  y_row_range x_col_range
               columnIndex rowStartIndex))
