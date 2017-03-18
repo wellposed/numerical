@@ -93,6 +93,8 @@ library
     -- Modules included in this library but not exported.
     -- other-modules:
 
+    if impl(ghc >= 8.0) && impl(ghc < 8.2)
+      ghc-options: -Wno-redundant-constraints
 
 
     -- LANGUAGE extensions used by modules in this package.
@@ -111,7 +113,7 @@ library
     -- Other library packages from which modules are imported.
     build-depends:       base >= 4.7  && < 5
                         ,primitive >= 0.5 && < 0.7
-                        ,vector >= 0.10 && < 0.12
+                        ,vector >= 0.10 && < 0.13
                         ,tagged >= 0.7 && < 0.9
                         ,transformers >= 0.4 && < 0.6
                         ,transformers-compat >= 0.4 && < 0.6
