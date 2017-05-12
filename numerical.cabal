@@ -138,9 +138,9 @@ Test-suite testsuite
    default-language: Haskell2010
    type: exitcode-stdio-1.0
    build-depends:    base
-        ,hspec >=2.2 && <2.3
+        ,hspec >=2.2 && <2.5
         ,hspec-expectations
-        ,HUnit  >= 1.2.5 && < 1.4
+        ,HUnit  >= 1.2.5 && < 1.7
         ,primitive
         ,vector
         ,tagged
