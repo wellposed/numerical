@@ -37,7 +37,7 @@ maintainer:          carter at wellposed dot com
 category:            Math
 
 build-type:          Simple
-tested-with:  GHC == 7.8.3, GHC == 7.10.2, GHC == 7.10.3
+tested-with:  GHC == 7.8.3, GHC == 7.10.3, GHC == 8.0.2 ,  GHC == 8.2.1 , GHC == 8.3.*
 
 
 
@@ -112,9 +112,11 @@ library
 -- relax base constraint when i wanna support 7.6 again
     -- Other library packages from which modules are imported.
     build-depends:       base >= 4.7  && < 5
+                        -- should shift to only supporting ghc 8.0.2 and newer
                         ,primitive >= 0.5 && < 0.7
-                        ,vector >= 0.10 && < 0.13
+                        ,vector >= 0.11 && < 0.13
                         ,tagged >= 0.7 && < 0.9
+                        ,monad-ste >= 0.1 && < 0.2
                         ,transformers >= 0.4 && < 0.6
                         ,transformers-compat >= 0.4 && < 0.6
                         ,ghc-prim >=0.2 && <0.6
@@ -142,7 +144,6 @@ Test-suite testsuite
         ,primitive
         ,vector
         ,tagged
-        ,transformers
         ,transformers
         ,ghc-prim
         ,numerical

@@ -27,28 +27,10 @@ module  Numerical.Data.Vector.Pair(
 import qualified Data.Vector.Generic as V
 import qualified Data.Vector.Generic.Mutable as MV
 
-import Control.Monad.Primitive (PrimMonad)
 
 --type instance V.Mutable (VPair v) = MVPair (V.Mutable v)
 
 
-{-
-currently primmonad doesn't get its free applicative/functor powers :*(
-
--}
-
-(<$$$>) :: PrimMonad m => (a->b) -> m a -> m b
-(<$$$>) f mv = do v <- mv ; return (f v )
-{-# INLINE (<$$$>) #-}
-
-(<***>) :: PrimMonad m => m (a->b) -> m a -> m b
-(<***>) mf mv =  do f <- mf ; v <- mv ; return (f v)
-{-# INLINE (<***>) #-}
-
-{-
-probably should just
-
--}
 
 
 data Prod = Pair Prod Prod | Unit
@@ -91,11 +73,11 @@ instance  (MV.MVector (MVProd (V.Mutable v) ('Pair pa pb )  ) (a,b) ,V.Vector (V
   => V.Vector (VProd v ('Pair pa pb )) (a,b)  where
     {-# INLINE  basicUnsafeFreeze #-}
     basicUnsafeFreeze = \(MVPair mva mvb) ->
-      VPair <$$$> V.basicUnsafeFreeze mva <***> V.basicUnsafeFreeze mvb
+      VPair <$> V.basicUnsafeFreeze mva <*> V.basicUnsafeFreeze mvb
 
     {-# INLINE basicUnsafeThaw #-}
     basicUnsafeThaw = \(VPair va vb) ->
-      MVPair <$$$> V.basicUnsafeThaw va <***> V.basicUnsafeThaw vb
+      MVPair <$> V.basicUnsafeThaw va <*> V.basicUnsafeThaw vb
 
     {-# INLINE basicLength #-}
     basicLength = \(VPair va _) -> V.basicLength va
@@ -121,9 +103,9 @@ instance  (MV.MVector (MVProd (V.Mutable v) 'Unit  ) a ,V.Vector v a)
     {-# INLINE basicUnsafeIndexM #-}
 
     basicUnsafeFreeze = \(MVLeaf mva) ->
-      VLeaf <$$$> V.basicUnsafeFreeze mva
+      VLeaf <$> V.basicUnsafeFreeze mva
     basicUnsafeThaw = \(VLeaf va ) ->
-      MVLeaf <$$$> V.basicUnsafeThaw va
+      MVLeaf <$> V.basicUnsafeThaw va
     basicLength = \(VLeaf va ) -> V.basicLength va
     basicUnsafeSlice = \start len (VLeaf va ) ->
       VLeaf(V.basicUnsafeSlice start len va)
@@ -134,6 +116,10 @@ instance (MV.MVector mv a) => MV.MVector (MVProd mv 'Unit) a where
   basicLength = \ (MVLeaf mva) -> MV.basicLength mva
   {-# INLINE basicLength #-}
 
+
+  basicInitialize = \ (MVLeaf mva) -> MV.basicInitialize mva
+  {-# INLINE basicInitialize #-}
+
   basicUnsafeSlice = \ start len (MVLeaf mva  )->
     MVLeaf (MV.basicUnsafeSlice start len mva)
   {-# INLINE basicUnsafeSlice #-}
@@ -143,12 +129,12 @@ instance (MV.MVector mv a) => MV.MVector (MVProd mv 'Unit) a where
 
   basicUnsafeNew =
       \ size ->
-          MVLeaf <$$$> MV.basicUnsafeNew size
+          MVLeaf <$> MV.basicUnsafeNew size
   {-# INLINE basicUnsafeNew #-}
 
   basicUnsafeReplicate =
       \ size a ->
-         MVLeaf <$$$>
+         MVLeaf <$>
             MV.basicUnsafeReplicate size a
   {-# INLINE basicUnsafeReplicate #-}
 
@@ -163,13 +149,19 @@ instance (MV.MVector mv a) => MV.MVector (MVProd mv 'Unit) a where
 
   {-#INLINE basicUnsafeGrow #-}
   basicUnsafeGrow = \ (MVLeaf mva ) growth ->
-      MVLeaf <$$$> MV.basicUnsafeGrow mva growth
+      MVLeaf <$> MV.basicUnsafeGrow mva growth
 
 
 
 instance (MV.MVector (MVProd mv pra) a,MV.MVector (MVProd mv prb) b) => MV.MVector (MVProd mv ('Pair pra prb)) (a,b) where
   basicLength = \ (MVPair mva _) -> MV.basicLength mva
   {-# INLINE basicLength #-}
+
+
+  basicInitialize = \ (MVPair mva mvb) ->
+                        do  MV.basicInitialize mva ;
+                            MV.basicInitialize mvb
+  {-# INLINE basicInitialize #-}
 
   basicUnsafeSlice = \ start len (MVPair mva mvb )->
     MVPair (MV.basicUnsafeSlice start len mva) (MV.basicUnsafeSlice start len mvb)
@@ -180,18 +172,18 @@ instance (MV.MVector (MVProd mv pra) a,MV.MVector (MVProd mv prb) b) => MV.MVect
 
   basicUnsafeNew =
       \ size ->
-          MVPair <$$$> MV.basicUnsafeNew size <***> MV.basicUnsafeNew size
+          MVPair <$> MV.basicUnsafeNew size <*> MV.basicUnsafeNew size
   {-# INLINE basicUnsafeNew #-}
 
   basicUnsafeReplicate =
       \ size (a,b) ->
-         MVPair <$$$>
-            MV.basicUnsafeReplicate size a <***>
+         MVPair <$>
+            MV.basicUnsafeReplicate size a <*>
             MV.basicUnsafeReplicate size b
   {-# INLINE basicUnsafeReplicate #-}
 
   basicUnsafeRead = \(MVPair mva mvb) ix ->
-    (,) <$$$>  MV.basicUnsafeRead mva ix <***> MV.basicUnsafeRead mvb ix
+    (,) <$>  MV.basicUnsafeRead mva ix <*> MV.basicUnsafeRead mvb ix
 
   {-# INLINE basicUnsafeRead #-}
 
@@ -204,7 +196,7 @@ instance (MV.MVector (MVProd mv pra) a,MV.MVector (MVProd mv prb) b) => MV.MVect
 
   {-#INLINE basicUnsafeGrow #-}
   basicUnsafeGrow = \ (MVPair mva mvb) growth ->
-      MVPair <$$$> MV.basicUnsafeGrow mva growth <***>
+      MVPair <$> MV.basicUnsafeGrow mva growth <*>
           MV.basicUnsafeGrow mvb growth
 
 

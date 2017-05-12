@@ -2,10 +2,12 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE  TypeFamilies  #-}
+{-# LANGUAGE TypeFamilies  #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-module Numerical.Array.Address(Address(..),SparseAddress(..)) where
-
+module Numerical.Array.Address(
+  Address(..)
+  ,SparseAddress(..)
+    ) where
 
 import Data.Data
 import Control.Monad (liftM)
@@ -29,7 +31,7 @@ newtype LogicalAddress = LogicalAddress Int
 
 -- | this m
 --newtype LogicalExtent
-
+-- sparse address seems to be dead atm
 data SparseAddress = SparseAddress {
         outerIndex  :: {-# UNPACK #-} !Int
         ,innerIndex :: {-# UNPACK #-} !Int }
@@ -83,6 +85,8 @@ instance  GMV.MVector UV.MVector Address where
   {-# INLINE basicSet #-}
   {-# INLINE basicUnsafeCopy #-}
   {-# INLINE basicUnsafeGrow #-}
+  {-# INLINE basicInitialize #-}
+  basicInitialize = \ (MV_Address mva) -> GMV.basicInitialize mva
   basicLength (MV_Address v) = GMV.basicLength v
   basicUnsafeSlice i n (MV_Address v) = MV_Address $ GMV.basicUnsafeSlice i n v
   basicOverlaps (MV_Address v1) (MV_Address v2) = GMV.basicOverlaps v1 v2

@@ -11,11 +11,9 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
--- {-# LANGUAGE OverlappingInstances #-}
 
 module Numerical.Array.Shape(
   -- * Shape
@@ -551,6 +549,8 @@ instance UV.Unbox a => GMV.MVector UV.MVector  (Shape 'Z a) where
   {-# INLINE basicSet #-}
   {-# INLINE basicUnsafeCopy #-}
   {-# INLINE basicUnsafeGrow #-}
+  {-# INLINE basicInitialize #-}
+  basicInitialize = \ (MV_ShapeZ _n) -> return ()
   basicLength  = \ (MV_ShapeZ n) ->  n
   basicUnsafeSlice  = \ _ m (MV_ShapeZ _) -> MV_ShapeZ m
   basicOverlaps = \ _ _  ->  False
@@ -590,6 +590,8 @@ instance (UV.Unbox a) => GMV.MVector UV.MVector (Shape ('S 'Z) a) where
   {-# INLINE basicSet #-}
   {-# INLINE basicUnsafeCopy #-}
   {-# INLINE basicUnsafeGrow #-}
+  {-# INLINE basicInitialize #-}
+  basicInitialize = \ (MV_ShapeSZ v) ->  GMV.basicInitialize v
   basicLength  = \(MV_ShapeSZ v)-> GMV.basicLength v
   basicUnsafeSlice  = \ i n (MV_ShapeSZ v) ->  MV_ShapeSZ $ GMV.basicUnsafeSlice i n v
   basicOverlaps = \ (MV_ShapeSZ v1) (MV_ShapeSZ v2)  ->  GMV.basicOverlaps v1 v2
@@ -631,6 +633,8 @@ instance (UV.Unbox a,UV.Unbox (Shape ('S n) a)) => GMV.MVector UV.MVector (Shape
   {-# INLINE basicSet #-}
   {-# INLINE basicUnsafeCopy #-}
   {-# INLINE basicUnsafeGrow #-}
+  {-# INLINE basicInitialize #-}
+  basicInitialize = \ (MV_ShapeSSN v) ->  GMV.basicInitialize v
   basicLength  = \ (MV_ShapeSSN v) -> GMV.basicLength v
   basicUnsafeSlice  = \ i n (MV_ShapeSSN v) -> MV_ShapeSSN $ GMV.basicUnsafeSlice i n v
   basicOverlaps  = \ (MV_ShapeSSN v1) (MV_ShapeSSN v2) -> GMV.basicOverlaps v1 v2

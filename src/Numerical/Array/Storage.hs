@@ -119,6 +119,7 @@ unsafeBufferThaw :: (Buffer rep a,PrimMonad m) => (BufferPure rep a) -> m (Buffe
 unsafeBufferThaw = VG.basicUnsafeThaw
 
 instance (VGM.MVector BV.MVector elem) => VGM.MVector (BufferMut Boxed)  elem where
+  basicInitialize = \(BoxedBufferMut v) -> VGM.basicInitialize v
   basicLength = \(BoxedBufferMut v) -> VGM.basicLength v
   basicUnsafeSlice =
     \ ix1 ix2 (BoxedBufferMut bv) ->
@@ -140,7 +141,7 @@ instance (VGM.MVector BV.MVector elem) => VGM.MVector (BufferMut Boxed)  elem wh
 --  basicUnsafeMove
 --  basicUnsafeGrow
 --  basicUnsafeReplicate
-
+  {-# INLINE basicInitialize #-}
   {-# INLINE basicLength #-}
   {-# INLINE basicUnsafeSlice #-}
   {-# INLINE basicOverlaps #-}
@@ -156,6 +157,7 @@ instance (VGM.MVector BV.MVector elem) => VGM.MVector (BufferMut Boxed)  elem wh
 --  {-# INLINE basicUnsafeReplicate#-}
 
 instance (SV.Storable elem) => VGM.MVector (BufferMut Stored)  elem where
+  basicInitialize = \(StorableBufferMut v) -> VGM.basicInitialize v
   basicLength = \(StorableBufferMut v) -> VGM.basicLength v
   basicUnsafeSlice =
     \ ix1 ix2 (StorableBufferMut bv) ->
@@ -168,7 +170,7 @@ instance (SV.Storable elem) => VGM.MVector (BufferMut Stored)  elem where
         return  (StorableBufferMut res)
   basicUnsafeRead= \(StorableBufferMut bv) ix -> VGM.basicUnsafeRead bv ix
   basicUnsafeWrite = \(StorableBufferMut bv ) ix val -> VGM.basicUnsafeWrite bv ix val
-
+  {-# INLINE basicInitialize #-}
   {-# INLINE basicLength #-}
   {-# INLINE basicUnsafeSlice #-}
   {-# INLINE basicOverlaps #-}
@@ -178,6 +180,8 @@ instance (SV.Storable elem) => VGM.MVector (BufferMut Stored)  elem where
 
 
 instance (VGM.MVector UV.MVector elem) => VGM.MVector (BufferMut Unboxed)  elem where
+  {-# INLINE basicInitialize #-}
+  basicInitialize = \(UnboxedBufferMut v) -> VGM.basicInitialize v
   basicLength = \(UnboxedBufferMut v) -> VGM.basicLength v
   basicUnsafeSlice =
     \ ix1 ix2 (UnboxedBufferMut bv) ->
@@ -190,7 +194,6 @@ instance (VGM.MVector UV.MVector elem) => VGM.MVector (BufferMut Unboxed)  elem 
         return  (UnboxedBufferMut res)
   basicUnsafeRead= \(UnboxedBufferMut bv) ix -> VGM.basicUnsafeRead bv ix
   basicUnsafeWrite = \(UnboxedBufferMut bv ) ix val -> VGM.basicUnsafeWrite bv ix val
-
 
   {-# INLINE basicLength #-}
   {-# INLINE basicUnsafeSlice #-}
