@@ -37,7 +37,7 @@ maintainer:          carter at wellposed dot com
 category:            Math
 
 build-type:          Simple
-tested-with:  GHC == 7.8.3, GHC == 7.10.3, GHC == 8.0.2 ,  GHC == 8.2.1 , GHC == 8.3.*
+tested-with:   GHC == 7.10.3, GHC == 8.0.2 ,  GHC == 8.2.1 , GHC == 8.3.*
 
 
 
@@ -111,7 +111,7 @@ library
 
 -- relax base constraint when i wanna support 7.6 again
     -- Other library packages from which modules are imported.
-    build-depends:       base >= 4.7  && < 5
+    build-depends:       base >= 4.8  && < 5
                         -- should shift to only supporting ghc 8.0.2 and newer
                         ,primitive >= 0.5 && < 0.7
                         ,vector >= 0.11 && < 0.13
