@@ -1,6 +1,3 @@
-
-
--- {-# LANGUAGE PolyKinds   #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -9,7 +6,7 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-#  LANGUAGE GADTs #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -51,7 +48,6 @@ import Prelude hiding (foldr,foldl,map,scanl,scanr,scanl1,scanr1)
 
 data Direct
 
-
 data Row
 
 
@@ -78,6 +74,8 @@ and banded matrices
   empty class instances for all the dense Layouts
   -}
 
+type instance LayoutLogicalFormat (Format Direct  cont ('S 'Z ) rep  )
+     = Format Direct 'Contiguous ('S 'Z) rep
 
 -- | @'Format' 'Direct' 'Contiguous' ('S' 'Z')@ is a 1dim array 'Layout' with unit stride
 data instance Format  Direct 'Contiguous ('S 'Z) rep  =
@@ -91,6 +89,9 @@ data instance Format  Direct 'Strided ('S 'Z) rep  =
         logicalShapeDirectStrided :: {-#UNPACK#-}!Int
         ,logicalStrideDirectStrided:: {-#UNPACK#-}!Int}
     --deriving (Show,Eq,Data)
+
+type instance LayoutLogicalFormat (Format Row  cont n rep  )
+     = Format Row 'Contiguous n rep
 
 -- | @'Format'  'Row'  'Contiguous' n@ is a rank n Array
 data instance  Format  Row  'Contiguous n rep   =
@@ -109,6 +110,9 @@ data instance  Format  Row  'InnerContiguous n rep  =
         boundsFormRowInnerContig :: !(Shape n Int)
         ,strideFormRowInnerContig:: !(Shape n Int)}
     --deriving (Show,Eq,Data)
+
+type instance LayoutLogicalFormat (Format Column  cont n rep  )
+     = Format Column 'Contiguous n rep
 
 data instance  Format  Column 'Contiguous n  rep =
     FormatColumnContiguous {
@@ -210,24 +214,30 @@ basicNextIndexDenseGeneric= \form ix _  ->
       Just $! basicNextDenseIndex form ix
     else
       Nothing
-{-
+
+
+
 {- | note that basicAffineAddressShiftGeneric may be suboptimal,
-need to investigate what the core looks like -}
+need to investigate what the core looks like
+also TODO needs tests
+-}
 {-# INLINE basicAffineAddressShiftDenseGeneric #-}
-basicAffineAddressShiftDenseGeneric :: (DenseLayout form rank, Address ~ LayoutAddress form)=>
+basicAffineAddressShiftDenseGeneric :: (DenseLayout form rank,
+  DenseLayout (LayoutLogicalFormat form) rank
+  ,Address~ LayoutAddress (LayoutLogicalFormat form))=>
   form -> Address -> Int -> Maybe Address
-basicAffineAddressShiftDenseGeneric form addy shift = do
-    newForm <- return $ basicFormContiguification form
+basicAffineAddressShiftDenseGeneric form  = \ addy shift ->
+  let newForm = basicLogicalForm form in
+   do
     nativeIndex <- return $ basicToDenseIndex form addy
-    ----- NOOOOO, this actually needs the "contiguifiction"
-    ----- its broken if we internally do a transponse between row and column
-    --- because this
     popBaseAddress <- return $   basicToDenseAddress newForm nativeIndex
     rng <- basicAddressRange newForm
-    candidateAddress <- return $ addy + Address shift
-    if getConst $ rangeMin (const . Const) rng <= candidateAddress
-        && candidateAddress  <=
--}
+    candidateAddress <- return $ popBaseAddress + Address shift
+    if (getConst $ rangeMin ( Const) rng) <= candidateAddress
+        && candidateAddress  <= (getConst $ rangeMax ( Const) rng)
+      then return $ basicToDenseAddress  form $ basicToDenseIndex newForm candidateAddress
+      else Nothing
+
 
 
 
@@ -239,7 +249,6 @@ basicAffineAddressShiftDenseGeneric form addy shift = do
 type instance LayoutAddress (Format Direct 'Contiguous ('S 'Z) rep) = Address
 type instance LayoutLogicalFormat  (Format Direct 'Contiguous ('S 'Z) rep) = Format Direct 'Contiguous ('S 'Z) rep
 instance Layout (Format Direct 'Contiguous ('S 'Z) rep)  ('S 'Z)  where
-
 
 
     {-# INLINE basicLogicalShape #-}
@@ -271,6 +280,7 @@ instance Layout (Format Direct 'Contiguous ('S 'Z) rep)  ('S 'Z)  where
       -- FIX me, add the range error checking
       -- in the style of the Sparse instances
 
+    basicAffineAddressShift = basicAffineAddressShiftDenseGeneric
 
     basicAddressAsInt = \ _ (Address a) -> a
 
@@ -283,12 +293,15 @@ instance Layout (Format Direct 'Contiguous ('S 'Z) rep)  ('S 'Z)  where
     {-# INLINE basicAddressPopCount #-}
 
 type instance LayoutAddress (Format Direct 'Strided ('S 'Z) rep) = Address
+
 instance  Layout (Format Direct 'Strided ('S 'Z) rep)  ('S 'Z)  where
 
     {-# INLINE basicLogicalShape #-}
     basicLogicalShape = \x -> (logicalShapeDirectStrided x) :* Nil
 
     transposedLayout = id
+
+    basicLogicalForm =  (\  (n :* Nil ) ->  FormatDirectContiguous n) . basicLogicalShape
 
     {-# INLINE basicCompareIndex #-}
     basicCompareIndex = \ _  (l:* _) (r:* _) -> compare l r
@@ -331,6 +344,8 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
     {-# INLINE basicLogicalShape #-}
     basicLogicalShape =  boundsFormRow
 
+    basicLogicalForm = id
+
     {-# INLINE basicCompareIndex #-}
     basicCompareIndex = \ _  ls rs -> foldl majorCompareLeftToRight EQ  $ S.map2 compare ls rs
 
@@ -363,6 +378,8 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
 
     {-# INLINE basicLogicalShape  #-}
     basicLogicalShape = boundsFormRowInnerContig
+
+    basicLogicalForm form = FormatRowContiguous $ basicLogicalShape form
 
     transposedLayout = \(FormatRowInnerContiguous shp stride) ->
         FormatColumnInnerContiguous  (reverseShape shp)  (reverseShape stride)
@@ -405,6 +422,8 @@ instance  (Applicative (Shape rank),Traversable (Shape rank))
     {-# INLINE basicLogicalShape  #-}
     basicLogicalShape =  boundsFormRowStrided
 
+    basicLogicalForm form = FormatRowContiguous $ basicLogicalShape form
+
     transposedLayout = \(FormatRowStrided shp stride) ->
         FormatColumnStrided  (reverseShape shp)  (reverseShape stride)
 
@@ -446,6 +465,8 @@ instance  (Applicative (Shape rank), Traversable (Shape rank))
     {-# INLINE basicLogicalShape  #-}
     basicLogicalShape =  boundsColumnContig
 
+    basicLogicalForm = id
+
     transposedLayout = \(FormatColumnContiguous shp)-> FormatRowContiguous $ reverseShape shp
 
     {-# INLINE basicCompareIndex #-}
@@ -483,6 +504,8 @@ instance  (Applicative (Shape rank), Traversable (Shape rank))
 
     {-# INLINE basicLogicalShape  #-}
     basicLogicalShape =  boundsColumnInnerContig
+
+    basicLogicalForm form = FormatColumnContiguous $ basicLogicalShape form
 
     transposedLayout = \(FormatColumnInnerContiguous shp stride)->
          FormatRowInnerContiguous (reverseShape shp) (reverseShape stride)
@@ -522,6 +545,8 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
 
     {-# INLINE basicLogicalShape  #-}
     basicLogicalShape = boundsColumnStrided
+
+    basicLogicalForm form = FormatColumnContiguous $ basicLogicalShape form
 
     transposedLayout = \(FormatColumnStrided shp stride)->
          FormatRowStrided (reverseShape shp) (reverseShape stride)
