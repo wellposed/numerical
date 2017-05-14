@@ -300,6 +300,11 @@ possible If I know how indexed structures are paged aligned and what not
 eg, when binary search, check both the first and last slot of a page I land on.
 Also on >= Nehalem, pages are "paired" so if you land on the lower page, the
 upper page is always loaded, etc etc. Not doing these for now.
+
+
+also should compare against search strategies defined in
+the vector-algorithms package, namely the
+galloping ones
 -}
 
 
@@ -452,7 +457,7 @@ instance V.Vector (BufferPure rep) Int
   basicLogicalShape = \ form -> _logicalShapeDirectSparse form  :* Nil
   -- {-# INLINE basicLogicalShape #-}
 
-  basicCompareIndex = \ _ (a:* Nil) (b :* Nil) ->compare a b
+  basicCompareIndex = \ _ (a:* Nil) (b :* Nil) -> compare a b
   -- {-# INLINE basicCompareIndex #-}
 
   basicAddressRange = \form ->
@@ -462,11 +467,11 @@ instance V.Vector (BufferPure rep) Int
 
     where
         minAddress =
-          \ (FormatDirectSparseContiguous _ _   lookupTable)->
+          \ (FormatDirectSparseContiguous _ _   lookupTable) ->
               if  V.length lookupTable >0 then  Just $! Address 0 else Nothing
 
         maxAddress =
-          \ (FormatDirectSparseContiguous _ _   lookupTable)->
+          \ (FormatDirectSparseContiguous _ _   lookupTable) ->
             if (V.length lookupTable >0 )
                then Just $! Address (V.length lookupTable - 1 )
                else Nothing
@@ -474,7 +479,7 @@ instance V.Vector (BufferPure rep) Int
 -- TODO, double check that im doing shift correctly
   {-# INLINE basicToAddress #-}
   basicToAddress =
-      \ (FormatDirectSparseContiguous shape  indexshift lookupTable) (ix:*_)->
+      \ (FormatDirectSparseContiguous shape  indexshift lookupTable) (ix:*_) ->
          if  not (ix < shape && ix > 0 ) then  Nothing
           else  fmap Address  $! lookupExact lookupTable (ix + indexshift)
 
@@ -562,13 +567,13 @@ instance  (V.Vector (BufferPure rep) Int )
   {-# INLINE transposedLayout #-}
 
 
-  basicLogicalShape = \ form ->  (_innerDimContiguousSparseFormat $ _getFormatContiguousCSR  form ) :*
+  basicLogicalShape = \ form -> (_innerDimContiguousSparseFormat $ _getFormatContiguousCSR  form ) :*
          ( _outerDimContiguousSparseFormat $ _getFormatContiguousCSR form ):* Nil
           --   x_ix :* y_ix
   {-# INLINE basicLogicalShape #-}
 
 
-  basicCompareIndex = \ _ as  bs ->shapeCompareRightToLeft as bs
+  basicCompareIndex = \ _ as  bs -> shapeCompareRightToLeft as bs
   {-# INLINE basicCompareIndex #-}
 
 
@@ -816,9 +821,6 @@ overhead, but in general branch prediction should work out ok.
         --      else
         --        resAddr `seq` (Just (basicToIndex form resAddr ,  resAddr))
 
-
--------
--------
 
 
 
