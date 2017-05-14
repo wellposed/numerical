@@ -1,15 +1,11 @@
 {-# LANGUAGE NoImplicitPrelude#-}
 module Numerical.InternalUtils(
     error
-    ,currentCallStack
-    ,whoCreated) where
+) where
 
-import GHC.Stack (errorWithStackTrace,currentCallStack,whoCreated)
-import Prelude hiding (error)
+--import GHC.Stack (errorWithStackTrace,currentCallStack,whoCreated)
+import Prelude (error)
 
-
-error :: String -> a
-error = errorWithStackTrace
 
 
 {-
