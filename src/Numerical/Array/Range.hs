@@ -35,7 +35,7 @@ class HasRange r a | r -> a where
 
 instance HasRange (Range a) a where
   rangeMax = _rangeMax
-  {-#INLINE rangeMax#-}
+  {-# INLINE rangeMax#-}
 
   rangeMin = _rangeMin
   {-# INLINE rangeMin #-}

@@ -244,11 +244,13 @@ instance Fun.Functor (Shape 'Z) where
 instance  (Fun.Functor (Shape r)) => Fun.Functor (Shape ('S r)) where
     fmap  = \ f (a :* rest) -> f a :* ( Fun.fmap f rest )
     {-# INLINE  fmap  #-}
+
 instance  A.Applicative (Shape 'Z) where
     pure = \ _ -> Nil
     {-# INLINE  pure  #-}
     (<*>) = \ _  _ -> Nil
     {-# INLINE  (<*>) #-}
+
 instance  A.Applicative (Shape r)=> A.Applicative (Shape ('S r)) where
     pure = \ a -> a :* (A.pure a)
     {-# INLINE pure #-}
