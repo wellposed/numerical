@@ -3,8 +3,6 @@
 
 -}
 
--- {-# LANGUAGE PolyKinds   #-}
--- {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -146,9 +144,9 @@ instance forall form  rank . (Eq (Shape rank Int),Layout form rank)
 -- over various rectilinear subsets of points though?
 data GDSlice (from :: Nat) (to :: Nat) :: *  where
   GDNil :: GDSlice 'Z 'Z
-  GDPick :: Int -> GDSlice from to -> GDSlice ('S from) to
-  GDRange :: (Int,Int,Int) {- this is a nonempty interval or error -} -> GDSlice from to -> GDSlice ('S from) ('S to)
-  GDAll :: GDSlice from to -> GDSlice ('S from) ('S to)
+  GDPick :: Int -> !(GDSlice from to) -> GDSlice ('S from) to
+  GDRange :: (Int,Int,Int) {- this is a nonempty interval or error -} -> !(GDSlice from to) -> GDSlice ('S from) ('S to)
+  GDAll :: !(GDSlice from to) -> GDSlice ('S from) ('S to)
 
 {-
 TODO: for things that
@@ -163,6 +161,7 @@ instance (Show (GDSlice (f) ('S t)),Show (GDSlice f t))=> Show (GDSlice ('S f) (
   show (tup `GDRange` rest) = show tup ++ " `GDRange` (" ++ show rest ++ ")"
   show (GDAll rest) =  "GDAll " ++ show rest
   show (ix `GDPick` rest) = show ix ++" `GDPick` " ++ show rest
+
 
 instance Show (GDSlice f 'Z)=> Show (GDSlice ('S f) 'Z) where
   show (ix `GDPick` rest) = show ix ++" `GDPick` " ++ show rest
@@ -203,6 +202,8 @@ type family  LayoutAddress (form :: *) :: *
 -- TODO / FIXME remove the basic* prefix  from all the operations
 -- this was done originally because
 
+
+-- TODO : should this be pushed into the type class?
 -- | every format has a "logical" sibling, that represents the address translation
 -- when the underlying buffer layer is contiguous and packed. So it could be claimed
 -- that  any type that obeys @a~'LayoutLogicalFormat' a@ is one that an be a legal
@@ -277,7 +278,7 @@ class Layout form  (rank :: Nat) | form -> rank  where
     -- | The semantics of @`basicAffineAddressShift` form addr step@ is that
     -- when  step > 0, its equivalent to iteratively computing 'basicNextAddress' @step@ times.
     -- However, the step size can be negative, which means it can
-    basicAffineAddressShift :: (addres ~ LayoutAddress form) =>
+    basicAffineAddressShift :: (address ~ LayoutAddress form) =>
         form -> address -> Int -> Maybe address
 
 
@@ -323,6 +324,12 @@ class Layout form rank =>
     -- | 'formRectOrientation' provides a runtime mechanism for reflecting
     -- the orientation of the format
     formRectOrientation :: p form -> SMajorOrientation oriented
+
+{-
+is array layout always static?
+for now lets say yes, cause you can always just existential up the class
+
+-}
 
     -- | For  @'rectlinearShape' form==shp@, we always have that
     -- @'basicLogicalShape' form  `weaklyDominates` shp@.

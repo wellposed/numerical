@@ -2,7 +2,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
-{-#  LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -280,11 +280,12 @@ instance Layout (Format Direct 'Contiguous ('S 'Z) rep)  ('S 'Z)  where
       -- FIX me, add the range error checking
       -- in the style of the Sparse instances
 
-    basicAffineAddressShift = basicAffineAddressShiftDenseGeneric
 
     basicAddressAsInt = \ _ (Address a) -> a
 
+    basicAffineAddressShift = basicAffineAddressShiftDenseGeneric
 
+    {-# INLINE basicAffineAddressShift #-}
     {-# INLINE basicAddressRange #-}
     {-# INLINE basicToAddress #-}
     {-# INLINE basicToIndex #-}
@@ -325,6 +326,9 @@ instance  Layout (Format Direct 'Strided ('S 'Z) rep)  ('S 'Z)  where
 
     basicAddressAsInt = \ _ (Address a) -> a
 
+    basicAffineAddressShift = basicAffineAddressShiftDenseGeneric
+
+    {-# INLINE basicAffineAddressShift #-}
     {-# INLINE basicAddressRange #-}
     {-# INLINE basicToAddress #-}
     {-# INLINE basicToIndex #-}
@@ -364,6 +368,9 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
 
     basicAddressAsInt = \ _ (Address a) -> a
 
+    basicAffineAddressShift = basicAffineAddressShiftDenseGeneric
+
+    {-# INLINE basicAffineAddressShift #-}
     {-# INLINE basicAddressRange #-}
     {-# INLINE basicToAddress #-}
     {-# INLINE basicToIndex #-}
@@ -407,6 +414,9 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
 
     basicAddressAsInt = \ _ (Address a) -> a
 
+    basicAffineAddressShift = basicAffineAddressShiftDenseGeneric
+
+    {-# INLINE basicAffineAddressShift #-}
     {-# INLINE basicAddressRange #-}
     {-# INLINE basicToAddress #-}
     {-# INLINE basicToIndex #-}
@@ -450,6 +460,9 @@ instance  (Applicative (Shape rank),Traversable (Shape rank))
 
     basicAddressAsInt = \ _ (Address a) -> a
 
+    basicAffineAddressShift = basicAffineAddressShiftDenseGeneric
+
+    {-# INLINE basicAffineAddressShift #-}
     {-# INLINE basicAddressRange #-}
     {-# INLINE basicToAddress #-}
     {-# INLINE basicToIndex #-}
@@ -490,6 +503,10 @@ instance  (Applicative (Shape rank), Traversable (Shape rank))
 
     basicAddressAsInt = \ _ (Address a) -> a
 
+
+    basicAffineAddressShift = basicAffineAddressShiftDenseGeneric
+
+    {-# INLINE basicAffineAddressShift #-}
     {-# INLINE basicAddressRange #-}
     {-# INLINE basicToAddress #-}
     {-# INLINE basicToIndex #-}
@@ -533,6 +550,9 @@ instance  (Applicative (Shape rank), Traversable (Shape rank))
     basicAddressAsInt = \ _ (Address a) -> a
  -- strideRow :: Shape rank Int,
 
+    basicAffineAddressShift = basicAffineAddressShiftDenseGeneric
+
+    {-# INLINE basicAffineAddressShift #-}
     {-# INLINE basicAddressRange #-}
     {-# INLINE basicToAddress #-}
     {-# INLINE basicToIndex #-}
@@ -573,6 +593,9 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
 
     basicAddressAsInt = \ _ (Address a) -> a
 
+    basicAffineAddressShift = basicAffineAddressShiftDenseGeneric
+
+    {-# INLINE basicAffineAddressShift #-}
     {-# INLINE basicAddressRange #-}
     {-# INLINE basicToAddress #-}
     {-# INLINE basicToIndex #-}
