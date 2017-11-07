@@ -6,3 +6,4 @@ report.html
 .hpc
 /dist*
 .*.swp
+cabal.project.local
