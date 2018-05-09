@@ -196,7 +196,7 @@ basicToIndexDenseGeneric = \form addr ->
 basicNextAddressDenseGeneric ::
   (Functor (Shape rank),F.Foldable (Shape rank),
     DenseLayout form rank,Address~LayoutAddress form) =>  form -> Address-> Maybe Address
-basicNextAddressDenseGeneric= \ form addy ->
+basicNextAddressDenseGeneric = \ form addy ->
   case  basicAddressRange form of
     Just  (Range lo hi ) ->  if addy >= lo && addy < hi
         then Just $! basicNextDenseAddress form addy
@@ -207,7 +207,7 @@ basicNextAddressDenseGeneric= \ form addy ->
 basicNextIndexDenseGeneric :: (Functor (Shape rank),F.Foldable (Shape rank),Applicative (Shape rank),
     DenseLayout form rank,Address~LayoutAddress form)  =>
     form -> Shape rank Int -> Maybe Address ->Maybe (Shape rank Int,Address)
-basicNextIndexDenseGeneric= \form ix _  ->
+basicNextIndexDenseGeneric = \form ix _  ->
   if (fmap (flip (-) 1)$ basicLogicalShape form) `strictlyDominates`  ix
       && ix `weaklyDominates` pure 0
     then
@@ -222,10 +222,10 @@ need to investigate what the core looks like
 also TODO needs tests
 -}
 {-# INLINE basicAffineAddressShiftDenseGeneric #-}
-basicAffineAddressShiftDenseGeneric :: (DenseLayout form rank,
-  DenseLayout (LayoutLogicalFormat form) rank
-  ,Address~ LayoutAddress (LayoutLogicalFormat form))=>
-  form -> Address -> Int -> Maybe Address
+basicAffineAddressShiftDenseGeneric :: (DenseLayout form rank
+  ,DenseLayout (LayoutLogicalFormat form) rank
+  ,Address~ LayoutAddress (LayoutLogicalFormat form))
+  => form -> Address -> Int -> Maybe Address
 basicAffineAddressShiftDenseGeneric form  = \ addy shift ->
   let newForm = basicLogicalForm form in
    do
@@ -268,9 +268,9 @@ instance Layout (Format Direct 'Contiguous ('S 'Z) rep)  ('S 'Z)  where
     basicToIndex = basicToIndexDenseGeneric
 
 
-    basicNextAddress=basicNextAddressDenseGeneric
+    basicNextAddress = basicNextAddressDenseGeneric
 
-    basicNextIndex= basicNextIndexDenseGeneric
+    basicNextIndex = basicNextIndexDenseGeneric
 
 
     basicAddressPopCount = \ _   (Range (Address lo) (Address hi )) ->
@@ -313,9 +313,9 @@ instance  Layout (Format Direct 'Strided ('S 'Z) rep)  ('S 'Z)  where
 
     basicToIndex = basicToIndexDenseGeneric
 
-    basicNextAddress=  basicNextAddressDenseGeneric
+    basicNextAddress =  basicNextAddressDenseGeneric
 
-    basicNextIndex=  basicNextIndexDenseGeneric
+    basicNextIndex =  basicNextIndexDenseGeneric
 
     basicAddressPopCount = \form@(FormatDirectStrided size _ ) (Range loA hiA)->
       let newForm = (FormatDirectContiguous size)
@@ -362,9 +362,9 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
 
     basicToIndex = basicToIndexDenseGeneric
 
-    basicNextAddress=  basicNextAddressDenseGeneric
+    basicNextAddress =  basicNextAddressDenseGeneric
 
-    basicNextIndex=  basicNextIndexDenseGeneric
+    basicNextIndex =  basicNextIndexDenseGeneric
 
     basicAddressAsInt = \ _ (Address a) -> a
 
@@ -401,9 +401,9 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
 
     basicToIndex = basicToIndexDenseGeneric
 
-    basicNextAddress=  basicNextAddressDenseGeneric
+    basicNextAddress =  basicNextAddressDenseGeneric
 
-    basicNextIndex=  basicNextIndexDenseGeneric
+    basicNextIndex =  basicNextIndexDenseGeneric
 
     basicAddressPopCount = \form@(FormatRowInnerContiguous size _) (Range loA hiA)->
       let newForm = (FormatRowContiguous size)
@@ -447,9 +447,9 @@ instance  (Applicative (Shape rank),Traversable (Shape rank))
 
     basicToIndex = basicToIndexDenseGeneric
 
-    basicNextAddress=  basicNextAddressDenseGeneric
+    basicNextAddress =  basicNextAddressDenseGeneric
 
-    basicNextIndex=  basicNextIndexDenseGeneric
+    basicNextIndex =  basicNextIndexDenseGeneric
 
     basicAddressPopCount = \form@(FormatRowStrided size _) (Range loA hiA)->
       let newForm = (FormatRowContiguous size)
@@ -497,9 +497,9 @@ instance  (Applicative (Shape rank), Traversable (Shape rank))
 
     basicToIndex = basicToIndexDenseGeneric
 
-    basicNextAddress=  basicNextAddressDenseGeneric
+    basicNextAddress =  basicNextAddressDenseGeneric
 
-    basicNextIndex=  basicNextIndexDenseGeneric
+    basicNextIndex =  basicNextIndexDenseGeneric
 
     basicAddressAsInt = \ _ (Address a) -> a
 
@@ -580,9 +580,9 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
 
     basicToIndex = basicToIndexDenseGeneric
 
-    basicNextAddress=  basicNextAddressDenseGeneric
+    basicNextAddress =  basicNextAddressDenseGeneric
 
-    basicNextIndex=  basicNextIndexDenseGeneric
+    basicNextIndex =  basicNextIndexDenseGeneric
 
     basicAddressPopCount = \form@(FormatColumnStrided size _) (Range loA hiA)->
       let newForm = (FormatColumnContiguous size)
