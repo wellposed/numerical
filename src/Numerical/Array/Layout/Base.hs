@@ -204,6 +204,7 @@ type family  LayoutAddress (form :: *) :: *
 
 
 -- TODO : should this be pushed into the type class?
+-- TODO : should this be pushed into the type class?
 -- | every format has a "logical" sibling, that represents the address translation
 -- when the underlying buffer layer is contiguous and packed. So it could be claimed
 -- that  any type that obeys @a~'LayoutLogicalFormat' a@ is one that an be a legal
