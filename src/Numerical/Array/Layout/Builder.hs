@@ -30,14 +30,10 @@ import   Data.Traversable as T
 import   Control.Applicative as A
 
 import Numerical.Data.Vector.Pair
-
 import Numerical.Array.Layout.Sparse
-
 import Data.Vector.Algorithms.Intro as IntroSort
 import Data.List (group)
-
 import Numerical.InternalUtils
-
 import Prelude hiding (error)
 
 
