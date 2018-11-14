@@ -281,8 +281,6 @@ instance (Buffer rep Int) => LayoutBuilder (Format CompressedSparseRow 'Contiguo
             ++ show (xyVect VG.! i) ++ " and " ++ show (xyVect VG.! (i+1))
             ++ "starting at position "  ++ show i
 
-  buildFormatM _ _  _ _= error "this is actually impossible, what'd you do ?! CSR builder"
-        --- needed to placate coverage checker
 
 computeRunLengths :: (VG.Vector v e, Eq e)=> v e -> [(e,Int)]
 computeRunLengths =  \y ->   fmap   (\x ->(head x,length x)) $ group $ VG.toList y
