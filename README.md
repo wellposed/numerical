@@ -33,6 +33,8 @@ The initial
 
 When you have an index tuple, just think  ``x,y,z``  to keep track of the meaning.
 Indexing tuples are written as statically sized lists, eg ``x:*y:*z:*Nil``.
+This follows the tradition of x,y,z axes used in plotting. Note well: the underlying memory
+order can be row OR column major or other!
 
 
 All the computations on these static sized lists get specialized away into
@@ -52,7 +54,8 @@ see bug.md for how to file a bug report
 
 # Performance FAQ
 1. How do I use Numerical haskell to write fast code thats outstandingly high level !?
-    * The leading cause of poor performance in numerical routines is bad memory locality,
+    * The leading cause of poor performance in numerical routines (aside from poor choice
+    in algorithms) is bad memory locality,
     which has but a single easy cure: ** block recursive algorithms **
     * Yes, you heard me, in compiled languages recursion is pretty cheap outside of the inner
     most loops! It also is a fantastic tool for facilitating good memory locality!

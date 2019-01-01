@@ -6,6 +6,7 @@ might be replaced with an HList of Vectors approach
 
 
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeFamilyDependencies#-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE PolyKinds #-}
@@ -80,7 +81,7 @@ vUnHPair = \ (VHNode (VHLeaf va) (VHLeaf vb))-> (va,vb)
 
 type instance  V.Mutable (VHProd  prod)= MVHProd  (MutableHProdTree prod)
 
-type family MutableHProdTree (a :: HProd (* -> *)) :: HProd (* -> * -> * )  where
+type family MutableHProdTree (a :: HProd (* -> *))  = r | r -> a where
   MutableHProdTree ('HUnit v ) = 'HUnit (V.Mutable v)
   MutableHProdTree ('HPair left right) = 'HPair (MutableHProdTree left) (MutableHProdTree right )
 

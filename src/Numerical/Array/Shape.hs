@@ -312,6 +312,9 @@ instance ( F.Foldable (Shape ('S r)) )=> F.Foldable (Shape ('S ('S r))) where
     {-# INLINE foldl1 #-}
     {-# INLINE foldr1 #-}
 
+instance (Semigroup a, A.Applicative (Shape n))=> (Semigroup (Shape n a)) where
+  (<>) = \ a b -> A.pure (<>) A.<*> a A.<*> b
+
 instance (Monoid.Monoid a, A.Applicative (Shape n))=> Monoid.Monoid (Shape n a) where
   mempty = A.pure Monoid.mempty
   mappend = \ a b -> A.pure Monoid.mappend A.<*> a A.<*> b
