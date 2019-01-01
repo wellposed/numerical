@@ -56,9 +56,6 @@ source-repository head
   type: git
   location: http://github.com/wellposed/numerical.git
 
-flag lib-Werror
-  default: False
-  manual: True
 
 library
     -- Modules exported by the library.
