@@ -1,4 +1,4 @@
-
+{-# LANGUAGE CPP #-}
 module Control.NumericalMonad.State.Strict where
 
 --import Data.Functor.Identity
@@ -8,6 +8,10 @@ import Control.Applicative
 import Control.Monad
 import Control.Monad.Fix
 
+
+#if MIN_VERSION_base(4,9,0)
+import qualified Control.Monad.Fail as Fail
+#endif
 
 {-
 
@@ -182,13 +186,24 @@ instance (Functor m, MonadPlus m) => Alternative (StateT s m) where
     {-#INLINE (<|>)#-}
 
 instance (Monad m) => Monad (StateT s m) where
+#if !(MIN_VERSION_base(4,8,0))
     {-# INLINE return #-}
     return  = \ a ->  state $ \s -> (a, s)
+#endif
     {-# INLINE (>>=)#-}
     (>>=)   = \m k ->  StateT $ \s -> do
         (a, s') <- runStateT m s
         runStateT (k a) s'
-    fail str = StateT $ \_ -> fail str
+#if !(MIN_VERSION_base(4,13,0))
+    fail str = StateT $ \ _ -> fail str
+    {-# INLINE fail #-}
+#endif
+
+#if MIN_VERSION_base(4,9,0)
+instance (Fail.MonadFail m) => Fail.MonadFail (StateT s m) where
+    fail str = StateT $ \ _ -> Fail.fail str
+    {-# INLINE fail #-}
+#endif
 
 instance (MonadPlus m) => MonadPlus (StateT s m) where
     mzero       = StateT $ \_ -> mzero

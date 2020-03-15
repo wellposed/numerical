@@ -13,7 +13,7 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-
+{-# LANGUAGE CPP #-}
 
 module Numerical.Array.Shape(
   -- * Shape
@@ -72,6 +72,10 @@ import qualified Data.Vector.Unboxed as UV
 import  qualified  Data.Vector.Unboxed.Mutable as UVM
 import qualified Data.Vector.Generic as GV
 import qualified Data.Vector.Generic.Mutable as GMV
+
+#if !MIN_VERSION_base(4,11,0)
+import Data.Semigroup
+#endif
 
 {-
 Shape may get renamed to Index in the near future!

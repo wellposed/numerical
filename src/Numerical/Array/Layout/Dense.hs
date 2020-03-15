@@ -12,9 +12,7 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE StandaloneDeriving #-}
-#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
- {-# LANGUAGE AutoDeriveTypeable #-}
-#endif
+
 
 module Numerical.Array.Layout.Dense(
   DenseLayout(..)

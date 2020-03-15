@@ -174,8 +174,11 @@ class P.PureArray (ArrPure marr)  rank a => Array marr (rank:: Nat)  a | marr ->
 
     -- I think the case could be made for a basicPreviousAddress opeeration
 
-    -- | gives the next valid array index, the least valid index that is
-    -- or
+    -- | `'basicSparseNextIndex' arr ix addhint` returns first index address pair
+    -- that is >=  `ix` in the  of memory order of the layout.
+    -- addHint is an optional address position to help accelerate the lookup.
+    -- Used effectively, `addHint` can make these successor index lookups
+    -- essentially `O(1)`. Look at sparse/generic dot product for an example
     basicSparseNextIndex ::(address ~ MArrayAddress marr)=>
          marr st  a ->  Index rank -> Maybe address  -> Maybe ( Index rank, address)
 
@@ -280,7 +283,7 @@ instance (Buffer rep el, Layout (Format  lay locality  rank rep) rank )
 
 
     basicUnsafeAffineAddressShift = error "carter needs to add this"
-    basicLocalAffineAddressRegion = error "crter needs to add this"
+    basicLocalAffineAddressRegion = error "carter needs to add this"
 {-
 
 

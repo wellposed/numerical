@@ -20,9 +20,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
- {-# LANGUAGE AutoDeriveTypeable #-}
-#endif
 
 
 module Numerical.Array.Layout.Base(

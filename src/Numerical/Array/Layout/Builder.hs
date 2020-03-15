@@ -287,15 +287,15 @@ computeRunLengths =  \y ->   fmap   (\x ->(head x,length x)) $ group $ VG.toList
 
 computeStarts:: (Enum a, Ord a, Num b )=>[(a,b)]-> a -> a -> [(a,b)]
 computeStarts [] start end | start <= end  = fmap (\x -> (x ,0)) [start..end]
-                          |  otherwise = error "bad start end arguments to computeStarts"
+                           |  otherwise    = error "bad start end arguments to computeStarts"
 computeStarts ls start end | start <= end  = go start 0 ls
-                            | otherwise =  error "bad start end arguments to computeStarts"
+                           | otherwise     =  error "bad start end arguments to computeStarts"
   where
     --go :: a ->b->[(a,b)]-> [(a,b)]
     go !posNext preSum [] | posNext <= end = fmap (\x -> (x,preSum)) [posNext .. end]
                       | otherwise  = error "impossible go computeStarts "
     go !posNext !preSum gls@((posAt,atSum):rest)
-            | posNext < posAt= (posNext,preSum):  go (succ posNext) preSum gls
+            | posNext < posAt  = (posNext,preSum):  go (succ posNext) preSum gls
             | posNext == posAt = (posNext,preSum) : go (succ posNext) (preSum + atSum) rest
             | otherwise = error "bad position in prefix stream for computeStarts go, literally unpossible "
 

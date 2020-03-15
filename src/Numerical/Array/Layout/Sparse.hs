@@ -34,9 +34,7 @@ that acts only on the outermost dimension.
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
- {-# LANGUAGE AutoDeriveTypeable #-}
-#endif
+
 module Numerical.Array.Layout.Sparse(
   Layout(..)
   ,DirectSparse
@@ -447,15 +445,17 @@ type instance  Transposed (Format DirectSparse 'Contiguous ('S 'Z) rep )=
 
 type instance LayoutAddress (Format DirectSparse 'Contiguous ('S 'Z) rep) =  Address
 
-
-instance V.Vector (BufferPure rep) Int
-  => Layout  (Format DirectSparse 'Contiguous ('S 'Z) rep ) ('S 'Z) where
+type instance LayoutLogicalFormat (Format DirectSparse 'Contiguous ('S 'Z) rep )
+    = (Format DirectSparse 'Contiguous ('S 'Z) rep )
+instance V.Vector (BufferPure rep) Int => Layout  (Format DirectSparse 'Contiguous ('S 'Z) rep ) ('S 'Z) where
 
   transposedLayout  = id
   -- {-# INLINE transposedLayout #-}
 
   basicLogicalShape = \ form -> _logicalShapeDirectSparse form  :* Nil
   -- {-# INLINE basicLogicalShape #-}
+
+  basicLogicalForm = id
 
   basicCompareIndex = \ _ (a:* Nil) (b :* Nil) -> compare a b
   -- {-# INLINE basicCompareIndex #-}
@@ -558,6 +558,7 @@ type instance Transposed (Format CompressedSparseRow 'Contiguous ('S ('S 'Z)) re
 
 
 type instance LayoutAddress (Format CompressedSparseRow 'Contiguous ('S ('S 'Z)) rep ) = SparseAddress
+type instance LayoutLogicalFormat (Format CompressedSparseRow 'Contiguous ('S ('S 'Z)) rep ) = (Format CompressedSparseRow 'Contiguous ('S ('S 'Z)) rep )
 
 instance  (V.Vector (BufferPure rep) Int )
   => Layout  (Format CompressedSparseRow 'Contiguous ('S ('S 'Z)) rep ) ('S ('S 'Z)) where

@@ -185,7 +185,8 @@ instance (MV.MVector mv a) => MV.MVector (MVHProd  ('HUnit mv )) a where
   basicUnsafeGrow = \ (MVHLeaf mva ) growth ->
       MVHLeaf <$$$> MV.basicUnsafeGrow mva growth
 
-
+  basicInitialize = \ (MVHLeaf mva) -> MV.basicInitialize mva
+  {-# INLINE basicInitialize #-}
 
 instance (MV.MVector (MVHProd pra) a,MV.MVector (MVHProd  prb) b)
   => MV.MVector (MVHProd  ('HPair pra prb)) (a,b) where
@@ -229,7 +230,10 @@ instance (MV.MVector (MVHProd pra) a,MV.MVector (MVHProd  prb) b)
       MVHNode <$$$> MV.basicUnsafeGrow mva growth <***>
           MV.basicUnsafeGrow mvb growth
 
-
+  basicInitialize = \ (MVHNode mva mvb) ->
+                        do  MV.basicInitialize mva ;
+                            MV.basicInitialize mvb
+  {-# INLINE basicInitialize #-}
 
 
 
