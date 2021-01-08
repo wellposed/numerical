@@ -249,6 +249,11 @@ instance  (Fun.Functor (Shape r)) => Fun.Functor (Shape ('S r)) where
     fmap  = \ f (a :* rest) -> f a :* ( Fun.fmap f rest )
     {-# INLINE  fmap  #-}
 
+
+{-
+Shape has the ZipList applicative
+
+-}
 instance  A.Applicative (Shape 'Z) where
     pure = \ _ -> Nil
     {-# INLINE  pure  #-}

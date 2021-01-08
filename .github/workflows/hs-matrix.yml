@@ -10,7 +10,7 @@ name: build
 # adjust THISPACKAGE to be your package name and then have fun
 env:
       THISPACKAGE: numerical
-      CONFIG: --enable-tests --enable-benchmarks
+      CONFIG: --enable-tests  #--enable-benchmarks
 defaults:
   run:
     shell: bash
@@ -78,7 +78,7 @@ jobs:
       - run: cabal build  --only-dependencies
       - run: cabal build
       - run: cabal test
-      - run: cabal bench
+      # - run: cabal bench
       - run: cabal check
       - run: cabal sdist -o `pwd`
       - run: cabal v1-install ${THISPACKAGE}*.tar.gz
