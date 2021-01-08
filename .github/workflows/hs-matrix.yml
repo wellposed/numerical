@@ -1,0 +1,85 @@
+# NOTICE: permission is granted reuse/adapt this file if and only if this header section is preserved
+# or replicated in a  DEDICATION file in the top level directory of a project repository OR some end user visible element along with
+# other open source license notices
+# this file was originally authored by carter schonwald,
+# In Memoriam: Graham Gordon "Papa". 1925/11/17 - 2020/12/03. A warm loving grandparent, he is missed.
+# permission is granted to reuse/adapt this in your own CI, as long as you include the
+# original license  and copyright info and associated attributions and memorial
+on: [push, pull_request]
+name: build
+# adjust THISPACKAGE to be your package name and then have fun
+env:
+      THISPACKAGE: numerical
+      CONFIG: --enable-tests --enable-benchmarks
+defaults:
+  run:
+    shell: bash
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        ghc:  ['8.6.5', '8.8.3','8.10.3','latest'] # ['7.0.4','7.2.2','7.4.2','7.6.3','7.8.4', 7.10.3 ..  '8.0.2','8.2.2','8.4.4',
+        # needs 7.10 onwards for applicative in base, truly we are in a more civilized era
+        cabal: ['3.2.0.0'] # ,'latest'
+        os: [ubuntu-latest] #, macOS-latest, windows-latest]
+        include:
+          - os: macOS-latest
+            ghc: latest
+            cabal: latest
+          - os: ubuntu-latest
+            ghc: latest
+            cabal: latest
+          - os: windows-latest
+            ghc: '8.10.3'
+            cabal: '3.2.0.0'
+            # 8.10.2.2 is a bug fix for a bad windows packaging
+            # i hope that actions/setup-haskell upstream does a fix to ghc latest to point to this
+    name: GHC${{ matrix.ghc }},cabal${{matrix.cabal}},${{matrix.os}}
+    # double curly brace is a javascript splice or something??
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Haskell
+        # uses: actions/setup-haskell@v1.1.4 # the .3 is a bug fix? as is .4
+        # the v1 tag tracks the most recent release for the setup-haskell plugin,
+        # less ci bump exhaustion this way
+        uses: haskell/actions/setup@v1 # migrated , should track v1.1.* maybe?
+        # actions/setup-haskell@v1 # had to bump to .3 then .4, i'm tired :). I'd rather track close, but eh
+        with:
+          ghc-version: ${{ matrix.ghc }}
+          cabal-version: ${{ matrix.cabal }}
+      - run: cabal update
+      - run: cabal clean
+      - run: cabal configure $CONFIG
+      - run: cabal freeze $CONFIG
+      - uses: actions/cache@v2
+        name: windows caching
+        with:
+          path: |
+            c:\sr
+            dist-newstyle
+          key: ${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
+          # restore keys is a fall back when the freeze plan is different
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.ghc }}-
+        if:  matrix.os == 'windows-latest'
+      - uses: actions/cache@v2
+        name: ubuntu-linux and osx caching
+        with:
+          path: |
+            ~/.cabal/store
+            dist-newstyle
+          key: ${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
+          # restore keys is a fall back when the freeze plan is different
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.ghc }}-
+        if:  matrix.os != 'windows-latest'
+      - run: cabal build  --only-dependencies
+      - run: cabal build
+      - run: cabal test
+      - run: cabal bench
+      - run: cabal check
+      - run: cabal sdist -o `pwd`
+      - run: cabal v1-install ${THISPACKAGE}*.tar.gz
+
