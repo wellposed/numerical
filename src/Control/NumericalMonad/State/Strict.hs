@@ -26,8 +26,8 @@ ONLY use if writing generic code in your inner loops
 -}
 
 
-import Data.Foldable (Foldable(foldMap))
-import Data.Traversable (Traversable(traverse))
+--import Data.Foldable (Foldable(foldMap))
+--import Data.Traversable (Traversable(traverse))
 
 -- | Identity functor and monad.
 newtype Identity a = Identity { runIdentity :: a }
