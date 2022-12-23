@@ -29,7 +29,7 @@ import qualified Data.Vector.Generic.Mutable as MV
 
 import Control.Monad.Primitive (PrimMonad)
 
-
+import Data.Kind (Type)
 
 --type instance V.Mutable (VPair v) = MVPair (V.Mutable v)
 
@@ -62,11 +62,11 @@ data HProd a  where
     HPair :: HProd a-> HProd a  -> HProd a
     HUnit :: a -> HProd a
 
-data  VHProd  (prd:: HProd ( * -> * )) val where
+data  VHProd  (prd:: HProd ( Type -> Type )) val where
     VHLeaf ::  !(v a) -> VHProd   ('HUnit v) a
     VHNode  :: !(VHProd  pra a) -> !(VHProd  prb b ) ->VHProd  ('HPair  pra prb) (a,b)
 
-data  MVHProd   (prd:: HProd (* -> * -> *) ) (st :: * ) val where
+data  MVHProd   (prd:: HProd (Type -> Type -> Type) ) (st :: Type ) val where
     MVHLeaf :: !(mv  st a) -> MVHProd   ('HUnit mv) st  a
     MVHNode  :: !(MVHProd pra st a) -> !(MVHProd   prb   st b ) -> MVHProd  ('HPair pra prb) st (a,b)
 
@@ -81,7 +81,7 @@ vUnHPair = \ (VHNode (VHLeaf va) (VHLeaf vb))-> (va,vb)
 
 type instance  V.Mutable (VHProd  prod)= MVHProd  (MutableHProdTree prod)
 
-type family MutableHProdTree (a :: HProd (* -> *))  = r | r -> a where
+type family MutableHProdTree (a :: HProd (Type -> Type))  = r | r -> a where
   MutableHProdTree ('HUnit v ) = 'HUnit (V.Mutable v)
   MutableHProdTree ('HPair left right) = 'HPair (MutableHProdTree left) (MutableHProdTree right )
 

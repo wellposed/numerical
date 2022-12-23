@@ -54,7 +54,7 @@ instance Applicative Identity where
     {-# INLINE (<*>) #-}
 
 instance Monad Identity where
-    return a = Identity a
+    return  =  pure 
     {-# INLINE return #-}
     m >>= k  = k (runIdentity m)
     {-# INLINE (>>=)#-}

@@ -228,7 +228,7 @@ instance VG.Vector BV.Vector  a  => VG.Vector (BufferPure Boxed) a   where
 instance (SV.Storable a)  => VG.Vector (BufferPure Stored) a   where
 
   basicUnsafeFreeze =
-     \(StorableBufferMut mv) -> (\x ->return $StorableBuffer x) =<<  VG.basicUnsafeFreeze mv
+     \(StorableBufferMut mv) -> (\x ->return $ StorableBuffer x) =<<  VG.basicUnsafeFreeze mv
   basicUnsafeThaw=
     \(StorableBuffer v) -> (\x -> return $ StorableBufferMut x) =<< VG.basicUnsafeThaw v
   basicLength = \(StorableBuffer v) -> VG.basicLength v

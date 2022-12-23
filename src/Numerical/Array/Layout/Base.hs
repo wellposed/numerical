@@ -52,7 +52,7 @@ module Numerical.Array.Layout.Base(
 
 
 import Data.Data
-
+import Data.Kind(Type)
 import Numerical.Nat
 import Numerical.Array.Address
 import Numerical.Array.Locality
@@ -119,7 +119,7 @@ shapeCompareRightToLeft =   \  ls rs -> foldl majorCompareRightToLeft EQ  $ map2
 
 
 -- | this is kinda a hack
-newtype TaggedShape (form :: *) (rank::Nat) = TaggedShape {unTagShape:: Shape rank Int }
+newtype TaggedShape (form :: Type) (rank::Nat) = TaggedShape {unTagShape:: Shape rank Int }
 instance Eq (Shape rank Int)=> Eq (TaggedShape f rank) where
   (==) l r =  (==) (unTagShape l) (unTagShape r )
 
@@ -139,7 +139,7 @@ instance forall form  rank . (Eq (Shape rank Int),Layout form rank)
 -- at least in general. For formats that aren't "rectilinear dense",
 -- this COULD be used as a description format for traversing
 -- over various rectilinear subsets of points though?
-data GDSlice (from :: Nat) (to :: Nat) :: *  where
+data GDSlice (from :: Nat) (to :: Nat) :: Type  where
   GDNil :: GDSlice 'Z 'Z
   GDPick :: Int -> !(GDSlice from to) -> GDSlice ('S from) to
   GDRange :: (Int,Int,Int) {- this is a nonempty interval or error -} -> !(GDSlice from to) -> GDSlice ('S from) ('S to)
@@ -177,7 +177,7 @@ In some (moderately precise sense)
 --computeSlicePlan:: GDSlice from to -> Shape from Int -> Shape from (Either Int (AffineRange Int))
 --computeSlicePlan GDNil  Nil = Nil
 --computeSlicePlan  ( ix `GDPick` gdRest )
---                  (bd:* shpRest)| ix < bd   && ix >= 0 = Left ix :* computeSlicePlan gdRest shpRest
+--                  (bd:Type shpRest)| ix < bd   && ix >= 0 = Left ix :* computeSlicePlan gdRest shpRest
 --                      | otherwise = error
 --                          $ "bad indices for computeSlicePlan " ++ show (ix,bd)
 --computeSlicePlan ( (strt,step,end) `GDRange` grest) (bd:* shprest)
@@ -188,13 +188,13 @@ data family Format  lay (contiguity:: Locality)  (rank :: Nat) rep
 
 deriving instance Typeable Format
 
-type family FormatStorageRep ( a:: * ) :: *
+type family FormatStorageRep ( a:: Type ) :: Type
 
 type instance FormatStorageRep (Format lay ctg rnk rep)= rep
 
-type family  Transposed (form :: *) :: *
+type family  Transposed (form :: Type) :: Type
 
-type family  LayoutAddress (form :: *) :: *
+type family  LayoutAddress (form :: Type) :: Type
 
 -- TODO / FIXME remove the basic* prefix  from all the operations
 -- this was done originally because
@@ -206,7 +206,7 @@ type family  LayoutAddress (form :: *) :: *
 -- when the underlying buffer layer is contiguous and packed. So it could be claimed
 -- that  any type that obeys @a~'LayoutLogicalFormat' a@ is one that an be a legal
 -- instance of LayoutBuilder?
-type family LayoutLogicalFormat (form :: *) :: *
+type family LayoutLogicalFormat (form :: Type) :: Type
 
 -- | the 'Layout' type class
 class Layout form  (rank :: Nat) | form -> rank  where
@@ -303,9 +303,9 @@ data SMajorOrientation (o :: MajorOrientation) where
 -- 'RectOrientationForm', 'RectDownRankForm', and 'InnerContigForm'
 type family RectOrientationForm form :: MajorOrientation
 
-type family RectDownRankForm   form :: *
+type family RectDownRankForm   form :: Type
 
-type family InnerContigForm form :: *
+type family InnerContigForm form :: Type
 
 {- | 'RectilinearLayout' is the type class that supports the modle widely
   usable class of slicing operations in Numerical.

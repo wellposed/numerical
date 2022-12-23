@@ -81,7 +81,7 @@ data instance Format DirectSparse 'Contiguous ('S 'Z) rep =
     FormatDirectSparseContiguous {
       _logicalShapeDirectSparse:: {-# UNPACK#-} !Int
       ,_logicalBaseIndexShiftDirectSparse::{-# UNPACK#-} !Int
-      ,_indexTableDirectSparse :: ! (BufferPure rep Int )  }
+      ,_indexTableDirectSparse :: !(BufferPure rep Int )  }
 
 
 deriving instance Show  (BufferPure rep Int )  => Show (Format DirectSparse 'Contiguous ('S 'Z) rep)
@@ -201,7 +201,7 @@ data ContiguousCompressedSparseMatrix rep =
       _outerDimContiguousSparseFormat ::  {-# UNPACK #-} !Int
       ,_innerDimContiguousSparseFormat ::  {-# UNPACK #-} !Int
       ,_innerDimIndexContiguousSparseFormat :: !(BufferPure rep Int)
-      ,_outerDim2InnerDimContiguousSparseFormat:: ! (BufferPure rep Int )
+      ,_outerDim2InnerDimContiguousSparseFormat:: !(BufferPure rep Int )
   }
   deriving (Typeable)
 
@@ -227,8 +227,8 @@ data  InnerContiguousCompressedSparseMatrix rep =
       ,_innerDimIndexShiftInnerContiguousSparseFormat:: {-# UNPACK #-} !Int
 
       ,_innerDimIndexInnerContiguousSparseFormat :: !(BufferPure rep Int)
-      ,_outerDim2InnerDimStartInnerContiguousSparseFormat:: ! (BufferPure rep Int )
-      ,_outerDim2InnerDimEndInnerContiguousSparseFormat:: ! (BufferPure rep Int )
+      ,_outerDim2InnerDimStartInnerContiguousSparseFormat:: !(BufferPure rep Int )
+      ,_outerDim2InnerDimEndInnerContiguousSparseFormat:: !(BufferPure rep Int )
          }
      deriving Typeable
 

@@ -18,6 +18,12 @@ import Data.Type.Equality(gcastWith)
 import Data.Proxy
 #endif
 
+
+#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 904
+import Data.Kind (Type)
+#endif 
+
+
 type LitNat = TL.Nat
 
 data Nat = S !Nat  | Z
@@ -64,12 +70,17 @@ type family n1 + n2 where
 
 
 -- singleton for Nat
-
+#if __GLASGOW_HASKELL__ < 904
 
 data SNat :: Nat -> * where
   SZero :: SNat 'Z
   SSucc :: SNat n -> SNat ('S n)
+#else   
 
+data SNat :: Nat -> Type where
+  SZero :: SNat 'Z
+  SSucc :: SNat n -> SNat ('S n)
+#endif 
 
 
 -- inductive proof of right-identity of +

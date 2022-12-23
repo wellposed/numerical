@@ -326,8 +326,9 @@ instance (Semigroup a, A.Applicative (Shape n))=> (Semigroup (Shape n a)) where
 
 instance (Monoid.Monoid a, A.Applicative (Shape n))=> Monoid.Monoid (Shape n a) where
   mempty = A.pure Monoid.mempty
+#if !(MIN_VERSION_base(4,11,0))
   mappend = \ a b -> A.pure Monoid.mappend A.<*> a A.<*> b
-
+#endif 
 
 
 

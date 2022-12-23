@@ -57,7 +57,7 @@ _rangeMax =  \ fun rec -> fmap (\mup -> rec{_RangeMax= mup}) $ fun (_RangeMax re
 
 -- | this is uniform address interval by any other name
 data AffineRange a = AffineRange{_AffineRangeMin :: !a
-                                ,_AffineRangeStride :: ! Int
+                                ,_AffineRangeStride :: !Int
                                 ,_AffineRangeMax :: !a}
         deriving (Eq,Show,Data,Generic,Typeable,Functor,Foldable,Traversable )
 

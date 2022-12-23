@@ -50,6 +50,8 @@ import Control.Monad (liftM)
 --import qualified Data.Vector.Unboxed.Mutable as UM
 --import qualified Data.Vector.Mutable as BM
 
+import Data.Kind
+
 {-
 For now we're going to just crib the vector style api and Lift it
 up into a multi dimensional setting.
@@ -100,31 +102,31 @@ data family MArray world rep lay (view::Locality) (rank :: Nat ) st  el
 
 data instance  MArray Native rep lay locality rank st el =
   MutableNativeArray {
-          nativeBuffer  :: ! (S.BufferMut rep st el  )
-          ,nativeFormat :: ! (Format lay locality rank rep)
+          nativeBuffer  :: !(S.BufferMut rep st el  )
+          ,nativeFormat :: !(Format lay locality rank rep)
     }
 
 
 -- | Every 'MutableArray'  instance has a contiguous version
 -- of itself, This contiguous version will ALWAYS have a Builder instance.
-type family MutableArrayContiguous (marr :: * -> * -> *) :: * ->  * -> *
+type family MutableArrayContiguous (marr :: Type -> Type -> Type) :: Type ->  Type -> Type
 type instance  MutableArrayContiguous (MArray world rep layout locality rank)= MArray world rep layout 'Contiguous rank
 
 -- | Sadly 'ArrMutable'  will have to have instances written by hand for now
 -- May later migrate the freeze / thaw machinery to Array.Phased, but lets
-type  family  ArrMutable ( arr :: * -> * )  :: * -> * -> *
+type  family  ArrMutable ( arr :: Type -> Type )  :: Type -> Type -> Type
 
 class P.PureArray (ArrPure marr)  rank a => Array marr (rank:: Nat)  a | marr -> rank  where
 
-    type   ArrPure (marr :: * -> * -> * ) :: * -> *
+    type   ArrPure (marr :: Type -> Type -> Type ) :: Type -> Type
 
     -- the type of the underlying storage buffer
-    --type MutableArrayBuffer marr :: * -> * -> *
+    --type MutableArrayBuffer marr :: Type -> Type -> Type
 
     -- really shouldnt appear in end user code, will only
     -- come up in writing new combinators
     -- the abstraction here is a reflection of the need for
-    type MArrayAddress (marr :: * -> * -> * ) ::  *
+    type MArrayAddress (marr :: Type -> Type -> Type ) ::  Type
 
     -- | 'basicUnsafeAffineAddressShift' is needed to handle abstracting access in popcount space
     basicUnsafeAffineAddressShift :: (address ~ MArrayAddress marr) => marr st a -> Int -> address -> address
@@ -287,9 +289,9 @@ instance (Buffer rep el, Layout (Format  lay locality  rank rep) rank )
 {-
 
 
-type ArrPure marr :: * -> *
+type ArrPure marr :: Type -> Type
 
-type MArrayAddress marr :: *
+type MArrayAddress marr :: Type
 
 basicUnsafeAffineAddressShift :: (address ~ MArrayAddress marr) => marr st a -> Int -> address -> address
 
@@ -375,16 +377,16 @@ class RectilinearArray marr rank a | marr -> rank   where
     -- @'MutableRectilinearOrientation' marr~Row)=> marr -> b @
     -- for operations where majorAxix projections are correct only for Row
     -- major formats. Such  as Row based forward/backward substitution (triangular solvers)
-    type MutableRectilinearOrientation marr :: *
+    type MutableRectilinearOrientation marr :: Type
 
-    type MutableArrayDownRank  marr ( st:: * ) a
+    type MutableArrayDownRank  marr ( st:: Type ) a
 
 
     -- | MutableInnerContigArray is the "meet" (minimum) of the locality level of marr and InnerContiguous.
     -- Thus both Contiguous and InnerContiguous are made InnerContiguous, and Strided stays Strided
     -- for now this makes sense to have in the MutableRectilinear class, though that may change.
     -- This could also be thought of as being the GLB (greatest lower bound) on locality
-    type MutableInnerContigArray (marr :: * ->  * -> *)  st  a
+    type MutableInnerContigArray (marr :: Type ->  Type -> Type)  st  a
 
 
 

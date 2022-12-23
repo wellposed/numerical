@@ -24,6 +24,7 @@ module  Numerical.Data.Vector.Pair(
     --,mvPair
       ) where
 
+import Data.Kind (Type )
 import qualified Data.Vector.Generic as V
 import qualified Data.Vector.Generic.Mutable as MV
 
@@ -36,14 +37,14 @@ import qualified Data.Vector.Generic.Mutable as MV
 data Prod = Pair Prod Prod | Unit
 
 
-data family   VProd  (vect :: * -> * ) (prd:: Prod ) val  -- where
+data family   VProd  (vect :: Type -> Type ) (prd:: Prod ) val  -- where
 data instance VProd v 'Unit a where
     VLeaf ::  !(v a) -> VProd v   'Unit a
 
 data instance VProd v ('Pair pra prb )  (a,b) where
     VPair  :: !(VProd v pra a) -> !(VProd v prb b ) ->VProd v ('Pair  pra prb) (a,b)
 
-data family   MVProd  (vect :: * -> * -> * )  (prd:: Prod ) (st :: * ) val  -- where
+data family   MVProd  (vect :: Type -> Type -> Type  )  (prd:: Prod ) (st :: Type ) val  -- where
 data instance   MVProd mv 'Unit  st a where
   MVLeaf :: !(mv  st a) -> MVProd mv  'Unit st  a
 data instance   MVProd mv ('Pair pra prb)  st (a,b) where
