@@ -348,6 +348,7 @@ for now lets say yes, cause you can always just existential up the class
     -- @O(1)@ / @O(rank)@
     majorAxisSlice :: form -> (Int,Int)-> form
      -- should this be -> Maybe form?
+    {- need to clarify how this would work on tiled stuff -}
 
 
     -- | @'majorAxixProject' form x@ picks a "row" with respect to the outer most
@@ -392,6 +393,7 @@ class Layout form rank =>  DenseLayout form  (rank :: Nat) | form -> rank  where
        basicNextDenseAddress form  $ basicToDenseAddress form  shp
     {-# INLINE  basicNextDenseIndex #-}
 
+    {- TODO: add generalized slice notation support here   -}
 
 #if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
     {-# MINIMAL  basicToDenseIndex, basicToDenseAddress,
