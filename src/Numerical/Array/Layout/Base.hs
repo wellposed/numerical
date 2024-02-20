@@ -11,7 +11,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE NoImplicitPrelude #-}
+
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE CPP #-}
 
@@ -20,7 +20,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Numerical.Array.Layout.Base(
   Layout(..)
@@ -51,6 +51,7 @@ module Numerical.Array.Layout.Base(
 ) where
 
 
+import Data.Dynamic 
 import Data.Data
 import Data.Kind(Type)
 import Numerical.Nat
@@ -279,6 +280,8 @@ class Layout form  (rank :: Nat) | form -> rank  where
     basicAffineAddressShift :: (address ~ LayoutAddress form) =>
         form -> address -> Int -> Maybe address
 
+
+ 
 
     {-# MINIMAL basicToAddress, basicToIndex, basicNextAddress,basicNextIndex
           ,basicAddressRange,basicLogicalShape,basicCompareIndex

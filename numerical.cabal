@@ -65,6 +65,7 @@ library
         Numerical.Array.Layout.Base
         Numerical.Array.Layout.Dense
         Numerical.Array.Layout.Sparse
+        Numerical.Array.Layout.Het
         --Numerical.Array.Layout.Dense.Builder
         Numerical.Array.Layout.Builder
         Numerical.Array
