@@ -3,7 +3,7 @@
 # Currently Experimental
 
 
-# About  Numerical-Core
+# About Wellposed™️ Numerical-Core
 This is the core Package for Numerical Haskell, a project by Carter Schonwald aka
 Wellposed Ltd, and (soon I hope!) other contributors.
 
