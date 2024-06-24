@@ -1,13 +1,17 @@
 [![Wellposed](http://www.wellposed.com/mini.png)](http://www.wellposed.com)™
 
-# Currently in Pre alpha release engineering, so nearly ready for experimental consumption
-(though please dont publicize yet)
+# Currently Experimental
+
 
 # About  Numerical-Core
 This is the core Package for Numerical Haskell, a project by Carter Schonwald aka
 Wellposed Ltd, and (soon I hope!) other contributors.
 
 Numerical-Core is an open source component of the [Wellposed](http://www.wellposed.com)® Numerical Haskell software suite.
+
+## How to use
+This library is a technology demonstrator for mechanisms to simplify writing
+arbitrary 
 
 ##Build Status
 

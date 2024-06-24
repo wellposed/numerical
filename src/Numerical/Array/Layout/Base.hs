@@ -280,8 +280,14 @@ class Layout form  (rank :: Nat) | form -> rank  where
     basicAffineAddressShift :: (address ~ LayoutAddress form) =>
         form -> address -> Int -> Maybe address
 
+    --- this operation is needed 
+    --- so that we can define composite formats, eg 
+    --- zero copy concatenations of arrays with mixed but 
+    --- compatible formats 
+    --- this needs to be in the type class 
+    fromSomeAddress :: (Typeable addr, addr ~ LayoutAddress form ) => p form -> Dynamic -> Maybe addr
+    fromSomeAddress _ x = fromDynamic x
 
- 
 
     {-# MINIMAL basicToAddress, basicToIndex, basicNextAddress,basicNextIndex
           ,basicAddressRange,basicLogicalShape,basicCompareIndex
