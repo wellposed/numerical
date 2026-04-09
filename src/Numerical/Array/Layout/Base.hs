@@ -33,9 +33,15 @@ module Numerical.Array.Layout.Base(
   ,RectOrientationForm
   ,RectDownRankForm
   ,InnerContigForm
+  ,SlicedForm
   ,Format
   ,TaggedShape(..)
-  ,GDSlice(..) --- right? right?
+  ,GDSlice(..)
+  ,RSlice(..)
+  ,rsIdentity
+  ,rsMajorProject
+  ,rsMajorSlice
+  ,rsFromCorners
   ,SMajorOrientation(..)
   ,MajorOrientation(..)
   ,majorCompareRightToLeft
@@ -129,27 +135,37 @@ instance Show (Shape rank Int) => Show (TaggedShape f rank) where
 
 instance forall form  rank . (Eq (Shape rank Int),Layout form rank)
   => Ord (TaggedShape form rank) where
-  compare left right = basicCompareIndex (Proxy:: Proxy form ) (unTagShape left) (unTagShape right)
+  compare left right = compareIndex (Proxy:: Proxy form ) (unTagShape left) (unTagShape right)
 
 
--- | Generalized Dense Slice Projection notation,
--- not sure if it should be defined in this module or elsewhere
--- This provides a type safe interface for the classical
--- general array slice notation.
--- That said, its only useful for dense array formats,
--- at least in general. For formats that aren't "rectilinear dense",
--- this COULD be used as a description format for traversing
--- over various rectilinear subsets of points though?
+-- | Generalized Dense Slice Projection notation (legacy, strided variant).
+-- Kept for backwards compatibility.
+-- Prefer 'RSlice' for non-strided rectilinear slicing.
 data GDSlice (from :: Nat) (to :: Nat) :: Type  where
   GDNil :: GDSlice 'Z 'Z
   GDPick :: Int -> !(GDSlice from to) -> GDSlice ('S from) to
   GDRange :: (Int,Int,Int) {- this is a nonempty interval or error -} -> !(GDSlice from to) -> GDSlice ('S from) ('S to)
   GDAll :: !(GDSlice from to) -> GDSlice ('S from) ('S to)
 
-{-
-TODO: for things that
-
--}
+-- | 'RSlice' is the non-strided rectilinear slice type.
+-- It is a morphism @RSlice from to@ that selects a sub-layout of rank @to@
+-- from a layout of rank @from@, using only pick (rank reduction),
+-- range (sub-interval), and all (identity on one axis).
+--
+-- This is the right type for 'RectilinearLayout' operations:
+--   * @'RSPick' ix rest@ projects out one axis at index @ix@ (rank reduction)
+--   * @'RSRange' (lo,hi) rest@ selects an inclusive sub-range on one axis
+--   * @'RSAll' rest@ passes one axis through unchanged
+--   * @'RSNil'@ is the base case at rank zero
+--
+-- All of 'majorAxisSlice', 'majorAxisProject', and 'rectSlice'
+-- are expressible as applications of 'RSlice'.
+data RSlice (from :: Nat) (to :: Nat) :: Type  where
+  RSNil   :: RSlice 'Z 'Z
+  RSPick  :: {-# UNPACK #-} !Int -> !(RSlice from to) -> RSlice ('S from) to
+  RSRange :: {-# UNPACK #-} !Int -> {-# UNPACK #-} !Int
+          -> !(RSlice from to) -> RSlice ('S from) ('S to)
+  RSAll   :: !(RSlice from to) -> RSlice ('S from) ('S to)
 
 
 instance Show (GDSlice 'Z 'Z) where
@@ -163,25 +179,48 @@ instance (Show (GDSlice (f) ('S t)),Show (GDSlice f t))=> Show (GDSlice ('S f) (
 
 instance Show (GDSlice f 'Z)=> Show (GDSlice ('S f) 'Z) where
   show (ix `GDPick` rest) = show ix ++" `GDPick` " ++ show rest
---instance Show (GDSlice f t)  where
---  func =
 
-{-
-In some (moderately precise sense)
+-- RSlice Show instances
+instance Show (RSlice 'Z 'Z) where
+  show RSNil = "RSNil"
 
--}
+instance (Show (RSlice f ('S t)), Show (RSlice f t)) => Show (RSlice ('S f) ('S t)) where
+  show (RSRange lo hi rest) = "RSRange " ++ show lo ++ " " ++ show hi ++ " (" ++ show rest ++ ")"
+  show (RSAll rest) = "RSAll (" ++ show rest ++ ")"
+  show (RSPick ix rest) = "RSPick " ++ show ix ++ " (" ++ show rest ++ ")"
 
+instance Show (RSlice f 'Z) => Show (RSlice ('S f) 'Z) where
+  show (RSPick ix rest) = "RSPick " ++ show ix ++ " (" ++ show rest ++ ")"
 
--- GDRange (from,step,to)
-  -- GDAll is just sugar for a special case of GDRange, but maybe its worthwhile sugar?
+-- | Build an identity 'RSlice' of a given rank from a 'Shape' witness.
+-- @rsAll (3 :* 4 :* Nil)@ yields @RSAll (RSAll RSNil)@.
+rsIdentity :: Shape rank a -> RSlice rank rank
+rsIdentity Nil = RSNil
+rsIdentity (_ :* rest) = RSAll (rsIdentity rest)
 
---computeSlicePlan:: GDSlice from to -> Shape from Int -> Shape from (Either Int (AffineRange Int))
---computeSlicePlan GDNil  Nil = Nil
---computeSlicePlan  ( ix `GDPick` gdRest )
---                  (bd:Type shpRest)| ix < bd   && ix >= 0 = Left ix :* computeSlicePlan gdRest shpRest
---                      | otherwise = error
---                          $ "bad indices for computeSlicePlan " ++ show (ix,bd)
---computeSlicePlan ( (strt,step,end) `GDRange` grest) (bd:* shprest)
+-- | Build an 'RSlice' that picks the major (outermost) axis at index @ix@,
+-- passing all remaining axes through. This is @majorAxisProject@ as a slice.
+rsMajorProject :: Shape rank a -> Int -> RSlice ('S rank) rank
+rsMajorProject Nil ix = RSPick ix RSNil
+rsMajorProject (_ :* rest) ix = RSPick ix (rsIdentity (_ :* rest))
+  where _ = rest -- suppress unused warning; shape only used for rank witness
+
+-- | Build an 'RSlice' that restricts the major axis to @[lo..hi]@ inclusive,
+-- passing all remaining axes through. This is @majorAxisSlice@ as a slice.
+rsMajorSlice :: Shape rank a -> Int -> Int -> RSlice ('S rank) ('S rank)
+rsMajorSlice Nil lo hi = RSRange lo hi RSNil
+rsMajorSlice (_ :* rest) lo hi = RSRange lo hi (rsIdentity (_ :* rest))
+  where _ = rest
+
+-- | Build a full rectilinear range slice from two corner 'Index' values.
+-- Each axis gets @RSRange (lo_i) (hi_i)@.
+rsFromCorners :: Index rank -> Index rank -> RSlice rank rank
+rsFromCorners Nil Nil = RSNil
+rsFromCorners (lo :* loRest) (hi :* hiRest) = RSRange lo hi (rsFromCorners loRest hiRest)
+
+-- | The type family for the result form of applying an 'RSlice' to a format.
+-- Implementations should provide instances.
+type family SlicedForm (form :: Type) (from :: Nat) (to :: Nat) :: Type
 
 
 
@@ -197,101 +236,96 @@ type family  Transposed (form :: Type) :: Type
 
 type family  LayoutAddress (form :: Type) :: Type
 
--- TODO / FIXME remove the basic* prefix  from all the operations
--- this was done originally because
-
-
--- TODO : should this be pushed into the type class?
--- TODO : should this be pushed into the type class?
 -- | every format has a "logical" sibling, that represents the address translation
 -- when the underlying buffer layer is contiguous and packed. So it could be claimed
--- that  any type that obeys @a~'LayoutLogicalFormat' a@ is one that an be a legal
+-- that  any type that obeys @a~'LayoutLogicalFormat' a@ is one that can be a legal
 -- instance of LayoutBuilder?
 type family LayoutLogicalFormat (form :: Type) :: Type
 
--- | the 'Layout' type class
+-- | The 'Layout' type class captures the 5-tuple from the layout algebra spec:
+--
+--   * 'toAddress'  (lkup): index to address (partial)
+--   * 'seek':               find first valid entry at or after an index
+--   * 'toIndex'   (dec):    address to index (total on valid addresses)
+--   * 'nextAddr'  (next):   successor address in enumeration order
+--   * 'logicalShape':       the extent of the coordinate space
+--
+-- Complexity requirements are part of the specification:
+--   'toIndex' in O(rank), 'toAddress' in O(rank) for dense / O(rank + log nnz) for sparse,
+--   'seek' in O(rank + log n), 'nextAddr' in O(1) amortized.
+--
+-- Laws:
+--   * Inverse: @toIndex form (toAddress form i) == i@ for all @i@ in the domain of 'toAddress'
+--   * Seek-lookup: @seek form i == Just (j, a)@ and @j == i@ implies @toAddress form i == Just a@
 class Layout form  (rank :: Nat) | form -> rank  where
 
-    -- | 'basicLogicalShape' gives the extent of the format
-    basicLogicalShape :: form -> Shape rank Int
+    -- | The extent of the format's coordinate space.
+    logicalShape :: form -> Shape rank Int
 
-    -- | 'basicLogicalForm' converts a given format into its "contiguous" analogue
-    -- this is useful for supporting various address translation manipulation tricks
-    -- efficiently. Note that any valid  simple format should strive to ensure this is an O(1) operation.
-    -- though certain composite 'Layout' instances may provide a slower implementation.
-    basicLogicalForm :: (logicalForm ~ LayoutLogicalFormat form ) => form -> logicalForm
+    -- | Convert a format into its "contiguous" analogue.
+    -- Useful for address translation tricks. Should be O(1) for simple formats.
+    logicalForm :: (logicalForm ~ LayoutLogicalFormat form ) => form -> logicalForm
 
-
-    -- | 'transposedLayout' transposes the format data type
+    -- | Transpose the format data type.
+    -- Law: @transposedLayout . transposedLayout == id@
     transposedLayout :: (form ~ Transposed transform,transform~Transposed form)=> form  -> transform
 
-    -- | 'basicCompareIndex' lets you compare where two (presumably inbounds)
-    -- 'Index' values are in a formats ordering. The logical 'Shape' of the array
-    -- is not needed
-    basicCompareIndex :: p form-> Shape rank Int ->Shape rank Int -> Ordering
+    -- | Compare where two (presumably in-bounds) 'Index' values are
+    -- in this format's total order.
+    compareIndex :: p form-> Shape rank Int ->Shape rank Int -> Ordering
 
-    -- | the (possibly empty) min and max of the valid addresses for a given format.
-    -- @minAddress = fmap _RangeMin . rangedFormatAddress@
-    -- and @maxAddress = fmap _RangeMax . rangedFormatAddress@
-    -- FIXME : This also is a terrible name
-    basicAddressRange ::  (address ~ LayoutAddress form)=> form -> Maybe (Range address)
-    -- FIX ME! this name is crap, i dont like it
+    -- | The (possibly empty) min and max of the valid addresses for a given format.
+    addressRange ::  (address ~ LayoutAddress form)=> form -> Maybe (Range address)
 
-    -- | 'basicToAddress' takes an Index, and tries to translate it to an address if its in bounds
-    --
-    basicToAddress :: (address ~ LayoutAddress form)=>
+    -- | Index to address translation. Returns 'Nothing' for out-of-bounds
+    -- or non-manifest indices.
+    toAddress :: (address ~ LayoutAddress form)=>
         form  -> Index rank  -> Maybe  address
 
-    -- | 'basicToIndex' takes an address, and always successfully translates it to
-    -- a valid index. Behavior of invalid addresses constructed by a library user
-    -- is unspecified.
-    basicToIndex ::(address ~ LayoutAddress form)=>
+    -- | Address to index translation. Total on valid addresses.
+    -- Behavior on invalid addresses is unspecified.
+    -- Complexity: O(rank).
+    toIndex ::(address ~ LayoutAddress form)=>
         form -> address -> Index rank
 
-    -- | 'basicNextAddress' takes an address, and tries to compute the next valid
-    -- address, or returns Nothing if there is no subsequent valid address.
-    basicNextAddress :: (address ~ LayoutAddress form)=>
+    -- | Compute the next valid address after the given one, or 'Nothing'
+    -- if there is no successor. Complexity: O(1) amortized.
+    nextAddr :: (address ~ LayoutAddress form)=>
         form  -> address -> Maybe  address
 
-    -- |  @'basicNextIndex' form ix mbeAddress@  computes the next valid index after
-    -- @ix@ if it exists. It takes a @'Maybe' address@ as a hint for where to do the search for the successor.
-    -- If the index is in bounds and not the last index, it returns both the index and the associated address.
-    basicNextIndex :: (address ~ LayoutAddress form)=>
+    -- | @'seek' form ix addressHint@ finds the first valid index at or after @ix@.
+    -- The 'Maybe address' hint can accelerate the search.
+    -- Returns the found index paired with its address, or 'Nothing'.
+    -- Complexity: O(rank + log n) where n is the number of valid entries.
+    seek :: (address ~ LayoutAddress form)=>
           form  -> Index rank -> Maybe address  -> Maybe ( Index rank, address)
 
 
-    basicAddressPopCount :: (address ~ LayoutAddress form)=>
+    addressPopCount :: (address ~ LayoutAddress form)=>
         form -> Range address -> Int
 
-    -- | This operation is REALLY unsafe
-    -- This should ONLY be used on Formats that are directly
-    -- paired with a Buffer or Mutable Buffer (ie a Vector)
-    --  This operation being in this class is also kinda a hack
-    -- but lets leave it here for now
-    basicAddressAsInt :: (address ~ LayoutAddress form)=>
+    -- | UNSAFE. Convert an address to a raw buffer offset.
+    -- Only valid on formats directly backed by a buffer.
+    addressAsInt :: (address ~ LayoutAddress form)=>
         form ->  address -> Int
-    basicAddressAsInt =
+    addressAsInt =
        \ _ _ ->
-        error "called basicAddressAsInt on a Layout thats not meant for this world"
+        error "called addressAsInt on a Layout thats not meant for this world"
 
-    -- | The semantics of @`basicAffineAddressShift` form addr step@ is that
-    -- when  step > 0, its equivalent to iteratively computing 'basicNextAddress' @step@ times.
-    -- However, the step size can be negative, which means it can
-    basicAffineAddressShift :: (address ~ LayoutAddress form) =>
+    -- | @'affineAddressShift' form addr step@ computes the address @step@ positions
+    -- away from @addr@ (positive = forward, negative = backward).
+    affineAddressShift :: (address ~ LayoutAddress form) =>
         form -> address -> Int -> Maybe address
 
-    --- this operation is needed 
-    --- so that we can define composite formats, eg 
-    --- zero copy concatenations of arrays with mixed but 
-    --- compatible formats 
-    --- this needs to be in the type class 
+    -- | Recover a typed address from a 'Dynamic'. Needed for composite formats
+    -- (e.g., zero-copy concatenation of arrays with mixed but compatible formats).
     fromSomeAddress :: (Typeable addr, addr ~ LayoutAddress form ) => p form -> Dynamic -> Maybe addr
     fromSomeAddress _ x = fromDynamic x
 
 
-    {-# MINIMAL basicToAddress, basicToIndex, basicNextAddress,basicNextIndex
-          ,basicAddressRange,basicLogicalShape,basicCompareIndex
-          , transposedLayout, basicAddressPopCount,basicLogicalForm, basicAffineAddressShift #-}
+    {-# MINIMAL toAddress, toIndex, nextAddr, seek
+          , addressRange, logicalShape, compareIndex
+          , transposedLayout, addressPopCount, logicalForm, affineAddressShift #-}
 
 
 {- |
@@ -316,109 +350,88 @@ type family RectDownRankForm   form :: Type
 
 type family InnerContigForm form :: Type
 
-{- | 'RectilinearLayout' is the type class that supports the modle widely
-  usable class of slicing operations in Numerical.
-  for every instance @'RectilinearLayout' format rank orientation@, a corresponding
-  @'RectOrientationForm' form @, @'RectDownRankForm' form@
-  and @'InnerContigForm' form@ type family instance should be defined
+{- | 'RectilinearLayout' supports structure-preserving sub-layout extraction.
+  This is a separate axis from the 5-tuple element access in 'Layout'.
+  You cannot derive "give me rows 5-10 as a CSR" from toAddress/seek/toIndex/nextAddr;
+  slicing is a distinct operation with its own complexity requirements.
 
-  The purpose of 'RectilinearLayout' class is to provide
-
+  The core method is 'applySlice', which takes an 'RSlice' morphism and
+  produces a sub-layout. Convenience functions 'majorAxisSlice',
+  'majorAxisProject', and 'rectSlice' are defined outside the class in terms of it.
 -}
 class Layout form rank =>
   RectilinearLayout form (rank :: Nat) (oriented :: MajorOrientation) | form -> rank oriented where
 
-    -- | 'formRectOrientation' provides a runtime mechanism for reflecting
-    -- the orientation of the format
+    -- | Runtime reflection of the orientation.
     formRectOrientation :: p form -> SMajorOrientation oriented
 
-{-
-is array layout always static?
-for now lets say yes, cause you can always just existential up the class
-
--}
-
-    -- | For  @'rectlinearShape' form==shp@, we always have that
-    -- @'basicLogicalShape' form  `weaklyDominates` shp@.
-    -- when 'strictlyDominates' holds, that implies that the underlying array format
-    -- is a rectilinear layout whose "elements" are tiles of a fixed size array format.
-    -- For this initial release and initial set of applicable rectilinear array formats,
-    -- the following is always true @'basicLogicalShape' form  == basicLogicalShape' form @
-    -- Should be @O(1)@ always. Or more precisely @O(rank)@
+    -- | The rectilinear shape. Equal to 'logicalShape' for untiled layouts.
+    -- For tiled layouts, the tile-grid shape.
+    -- Complexity: O(rank).
     rectlinearShape :: form -> Index rank
 
+    -- | Decompose a shape into its outermost component and the rest.
     unconsOuter:: ('S down ~ rank)=> p form -> Shape rank a -> (a, Shape down a)
+
+    -- | Prepend a value onto a shape as the outermost component.
     consOuter ::  ('S down ~ rank)=> p form -> a -> Shape down a -> Shape rank a
 
-    -- | @'majorAxisSlice' fm (x,y)@ requires that y-x>=1, ie that more than
-    -- one sub range wrt the major axis be selected, so that the logical
-    -- rank of the selected array stays the same. This operation also preserves
-    -- memory locality as applicable.
-    -- @O(1)@ / @O(rank)@
+    -- TODO: applySlice will go here once SlicedForm type family instances
+    -- are defined for all formats. For now the old methods remain as the
+    -- MINIMAL set so existing instances keep compiling.
+
+    -- | Slice the major (outermost) axis to an inclusive sub-range.
+    -- Preserves rank and memory locality.
+    -- Complexity: O(1) / O(rank).
     majorAxisSlice :: form -> (Int,Int)-> form
-     -- should this be -> Maybe form?
-    {- need to clarify how this would work on tiled stuff -}
 
-
-    -- | @'majorAxixProject' form x@ picks a "row" with respect to the outer most
-    -- dimension of the array format. This will
-    -- @O(1)@ or @O(rank)@
+    -- | Project the major axis at a single index, reducing rank by one.
+    -- Complexity: O(1) / O(rank).
     majorAxisProject :: (RectilinearLayout downForm subRank oriented,
      rank ~ ('S subRank) , downForm~ RectDownRankForm form) => form -> Int -> downForm
 
-    -- | this is the nonstrided subset of general array slice notation.
-    --  Invoke as @'rectilinearSlice'  form  leastCorner greatestCorner@,
-    -- where the least and greatest corners of the sub array are determined
-    -- by the 'strictlyDominates' partial order on the bounds of the sub array.
-    -- For Dense array formats, this should be @O(1)@ or more precisely @O(rank)@
-    -- For the basic Sparse array formats thus far the complexity should be
-    -- @O(size of outermost dimension)@, which could be computed by
-    --  @fst . unconsOuter [form] . rectilinearShape $ form@
-    rectlinearSlice :: (RectilinearLayout icForm rank oriented,icForm~InnerContigForm form )=>form -> Index rank -> Index rank -> icForm -- FIXME, need the range infos????? (icfFOrm, adddress,address)
+    -- | Non-strided rectilinear slice from two corner indices (inclusive).
+    -- For dense: O(rank). For sparse: O(outer dimension size).
+    rectSlice :: (RectilinearLayout icForm rank oriented,icForm~InnerContigForm form )
+              => form -> Index rank -> Index rank -> icForm
 
 
-{- | 'DenseLayout' only has instances for Dense array formats.
-this class will need some sprucing up for the beta,
-but its ok for now. NB that 'DenseLayout' is really strictly meant to be used
-for optimization purposes, and not meant as a default api
+{- | 'DenseLayout' has instances only for dense array formats.
+  These operations provide direct address arithmetic that bypasses
+  the Maybe-returning 'toAddress' / 'nextAddr'.
+  Intended for optimization, not as a default API.
 -}
 class Layout form rank =>  DenseLayout form  (rank :: Nat) | form -> rank  where
 
+    toDenseAddress :: form  -> Index rank  ->   Address
 
+    toDenseIndex :: form -> Address -> Index rank
 
-    basicToDenseAddress :: form  -> Index rank  ->   Address
+    nextDenseAddress :: form  -> Address ->  Address
+    nextDenseAddress =  \form shp -> snd
+      (nextDenseIndex form  $ toDenseIndex form  shp )
+    {-# INLINE nextDenseAddress #-}
 
-    basicToDenseIndex :: form -> Address -> Index rank
-
-
-
-    basicNextDenseAddress :: form  -> Address ->  Address
-    basicNextDenseAddress =  \form shp -> snd
-      (basicNextDenseIndex form  $ basicToDenseIndex form  shp )
-    {-# INLINE basicNextDenseAddress #-}
-
-    basicNextDenseIndex :: form  -> Index rank ->(Index rank ,Address)
-    basicNextDenseIndex  = \form shp -> (\ addr ->( basicToDenseIndex form addr, addr) ) $!
-       basicNextDenseAddress form  $ basicToDenseAddress form  shp
-    {-# INLINE  basicNextDenseIndex #-}
-
-    {- TODO: add generalized slice notation support here   -}
+    nextDenseIndex :: form  -> Index rank ->(Index rank ,Address)
+    nextDenseIndex  = \form shp -> (\ addr ->( toDenseIndex form addr, addr) ) $!
+       nextDenseAddress form  $ toDenseAddress form  shp
+    {-# INLINE  nextDenseIndex #-}
 
 #if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
-    {-# MINIMAL  basicToDenseIndex, basicToDenseAddress,
-     (basicNextDenseIndex | basicNextDenseAddress)   #-}
+    {-# MINIMAL  toDenseIndex, toDenseAddress,
+     (nextDenseIndex | nextDenseAddress)   #-}
 #endif
 
 {-
-*Numerical.Array.Layout> basicToAddress (FormColumn (2 :* 3 :* 7 :* Nil)) (0:* 2 :* 2 :* Nil)
+*Numerical.Array.Layout> toAddress (FormColumn (2 :* 3 :* 7 :* Nil)) (0:* 2 :* 2 :* Nil)
 Address 16
-*Numerical.Array.Layout> basicToAddress (FormColumn (2 :* 3 :* 7 :* Nil)) (1:* 0 :* 0 :* Nil)
+*Numerical.Array.Layout> toAddress (FormColumn (2 :* 3 :* 7 :* Nil)) (1:* 0 :* 0 :* Nil)
 Address 1
-*Numerical.Array.Layout> basicToAddress (FormColumn (2 :* 3 :* 7 :* Nil)) (0:* 0 :* 0 :* Nil)
+*Numerical.Array.Layout> toAddress (FormColumn (2 :* 3 :* 7 :* Nil)) (0:* 0 :* 0 :* Nil)
 Address 0
-*Numerical.Array.Layout> basicToAddress (FormColumn (2 :* 3 :* 7 :* Nil)) (0:* 1 :* 0 :* Nil)
+*Numerical.Array.Layout> toAddress (FormColumn (2 :* 3 :* 7 :* Nil)) (0:* 1 :* 0 :* Nil)
 Address 2
-*Numerical.Array.Layout> basicToAddress (FormColumn (2 :* 3 :* 7 :* Nil)) (0:* 0 :* 1 :* Nil)
+*Numerical.Array.Layout> toAddress (FormColumn (2 :* 3 :* 7 :* Nil)) (0:* 0 :* 1 :* Nil)
 
 
 

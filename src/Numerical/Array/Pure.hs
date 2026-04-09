@@ -76,7 +76,7 @@ class  PureArray arr   (rank:: Nat)   a |  arr -> rank   where
     basicAddressToIndex :: (address ~ PureArrayAddress  arr) => arr a -> address ->  (Index rank  )
 
     -- |  return the Range of valid logical addresses
-    basicAddressRange :: (address ~ PureArrayAddress  arr)=>  arr a -> Maybe (Range address)
+    addressRange :: (address ~ PureArrayAddress  arr)=>  arr a -> Maybe (Range address)
 
 
 
@@ -84,13 +84,13 @@ class  PureArray arr   (rank:: Nat)   a |  arr -> rank   where
     -- undefined on invalid addresses and the greatest valid address.
     -- Note that for invalid addresses in between minAddress and maxAddress,
     -- will return the next valid address
-    basicNextAddress :: (address ~ PureArrayAddress  arr)=>  arr a -> address -> Maybe address
+    nextAddr :: (address ~ PureArrayAddress  arr)=>  arr a -> address -> Maybe address
 
     -- I think the case could be made for a basicPreviousAddress opeeration
 
     -- | gives the next valid array index
     -- undefined on invalid indices and the greatest valid index
-    basicNextIndex :: (address ~ PureArrayAddress  arr)=>
+    seek :: (address ~ PureArrayAddress  arr)=>
       arr a ->  Index rank -> Maybe address  -> Maybe ( Index rank, address)
 
 
@@ -120,22 +120,22 @@ instance (Buffer rep el , L.Layout (L.Format  lay locality  rank rep) rank)
         =L.LayoutAddress (L.Format lay locality rank rep)
 
       {-# INLINE basicShape #-}
-      basicShape = L.basicLogicalShape . nativeFormatPure
+      basicShape = L.logicalShape . nativeFormatPure
 
       {-# INLINE basicSparseIndexToAddress #-}
-      basicSparseIndexToAddress= L.basicToAddress . nativeFormatPure
+      basicSparseIndexToAddress= L.toAddress . nativeFormatPure
 
       {-#  INLINE basicAddressToIndex #-}
-      basicAddressToIndex = L.basicToIndex . nativeFormatPure
+      basicAddressToIndex = L.toIndex . nativeFormatPure
 
-      {-# INLINE basicAddressRange #-}
-      basicAddressRange = L.basicAddressRange . nativeFormatPure
+      {-# INLINE addressRange #-}
+      addressRange = L.addressRange . nativeFormatPure
 
-      {-# INLINE basicNextAddress #-}
-      basicNextAddress= L.basicNextAddress . nativeFormatPure
+      {-# INLINE nextAddr #-}
+      nextAddr= L.nextAddr . nativeFormatPure
 
-      {-# INLINE basicNextIndex #-}
-      basicNextIndex = L.basicNextIndex . nativeFormatPure
+      {-# INLINE seek #-}
+      seek = L.seek . nativeFormatPure
 
       {-# INLINE basicUnsafeSparseRead #-}
       basicUnsafeSparseRead =
@@ -147,7 +147,7 @@ instance (Buffer rep el , L.Layout (L.Format  lay locality  rank rep) rank)
       basicUnsafeAddressRead =
           \ arr  addr ->
             VG.basicUnsafeIndexM (nativeBufferPure arr)
-                (L.basicAddressAsInt (nativeFormatPure arr) $ addr)
+                (L.addressAsInt (nativeFormatPure arr) $ addr)
 
 class PureArray arr rank a => PureDenseArray arr rank a where
 

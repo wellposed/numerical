@@ -163,77 +163,77 @@ a bunch of routines used to give various Layout operations for
 array Formats that have  DenseLayout instance
 not exported or for human use
 -}
-{-# INLINE basicAddressRangeGeneric #-}
-basicAddressRangeGeneric ::
+{-# INLINE addressRangeGeneric #-}
+addressRangeGeneric ::
   (Functor (Shape rank),Applicative (Shape rank),F.Foldable (Shape rank),
             DenseLayout form rank, Address~LayoutAddress form)=> form -> Maybe (Range Address)
-basicAddressRangeGeneric = \ form ->
-  if  (fmap (flip (-) 1)$ basicLogicalShape form) `strictlyDominates`  pure 0
+addressRangeGeneric = \ form ->
+  if  (fmap (flip (-) 1)$ logicalShape form) `strictlyDominates`  pure 0
     then Just $!
-       Range  (basicToDenseAddress form  $! pure 0)
-              (basicToDenseAddress form $!
-                  fmap (flip (-) 1) $! basicLogicalShape form)
+       Range  (toDenseAddress form  $! pure 0)
+              (toDenseAddress form $!
+                  fmap (flip (-) 1) $! logicalShape form)
     else Nothing
 
-{-# INLINE basicToAddressDenseGeneric #-}
-basicToAddressDenseGeneric :: (Functor (Shape rank),Applicative (Shape rank),F.Foldable (Shape rank),
+{-# INLINE toAddressDenseGeneric #-}
+toAddressDenseGeneric :: (Functor (Shape rank),Applicative (Shape rank),F.Foldable (Shape rank),
     DenseLayout form rank,Address~LayoutAddress form) => form -> Shape rank Int -> Maybe Address
-basicToAddressDenseGeneric = \ form ix ->
-  if (fmap (flip (-) 1)$ basicLogicalShape form) `weaklyDominates`  ix
+toAddressDenseGeneric = \ form ix ->
+  if (fmap (flip (-) 1)$ logicalShape form) `weaklyDominates`  ix
     && ix `weaklyDominates` pure 0
-    then Just $ basicToDenseAddress form ix
+    then Just $ toDenseAddress form ix
     else Nothing
-{-# INLINE basicToIndexDenseGeneric #-}
-basicToIndexDenseGeneric ::
+{-# INLINE toIndexDenseGeneric #-}
+toIndexDenseGeneric ::
   (Functor (Shape rank),F.Foldable (Shape rank),
     DenseLayout form rank,Address~LayoutAddress form) =>  form -> Address -> Shape rank Int
-basicToIndexDenseGeneric = \form addr ->
-  basicToDenseIndex form addr
+toIndexDenseGeneric = \form addr ->
+  toDenseIndex form addr
 
-{-# INLINE basicNextAddressDenseGeneric #-}
-basicNextAddressDenseGeneric ::
+{-# INLINE nextAddrDenseGeneric #-}
+nextAddrDenseGeneric ::
   (Functor (Shape rank),F.Foldable (Shape rank),
     DenseLayout form rank,Address~LayoutAddress form) =>  form -> Address-> Maybe Address
-basicNextAddressDenseGeneric = \ form addy ->
-  case  basicAddressRange form of
+nextAddrDenseGeneric = \ form addy ->
+  case  addressRange form of
     Just  (Range lo hi ) ->  if addy >= lo && addy < hi
-        then Just $! basicNextDenseAddress form addy
+        then Just $! nextDenseAddress form addy
         else Nothing
     Nothing -> Nothing
 
-{-# INLINE basicNextIndexDenseGeneric #-}
-basicNextIndexDenseGeneric :: (Functor (Shape rank),F.Foldable (Shape rank),Applicative (Shape rank),
+{-# INLINE seekDenseGeneric #-}
+seekDenseGeneric :: (Functor (Shape rank),F.Foldable (Shape rank),Applicative (Shape rank),
     DenseLayout form rank,Address~LayoutAddress form)  =>
     form -> Shape rank Int -> Maybe Address ->Maybe (Shape rank Int,Address)
-basicNextIndexDenseGeneric = \form ix _  ->
-  if (fmap (flip (-) 1)$ basicLogicalShape form) `strictlyDominates`  ix
+seekDenseGeneric = \form ix _  ->
+  if (fmap (flip (-) 1)$ logicalShape form) `strictlyDominates`  ix
       && ix `weaklyDominates` pure 0
     then
-      Just $! basicNextDenseIndex form ix
+      Just $! nextDenseIndex form ix
     else
       Nothing
 
 
 
-{- | note that basicAffineAddressShiftGeneric may be suboptimal,
+{- | note that affineAddressShiftGeneric may be suboptimal,
 need to investigate what the core looks like
 also TODO needs tests
 -}
-{-# INLINE basicAffineAddressShiftDenseGeneric #-}
-basicAffineAddressShiftDenseGeneric :: (DenseLayout form rank
+{-# INLINE affineAddressShiftDenseGeneric #-}
+affineAddressShiftDenseGeneric :: (DenseLayout form rank
   ,DenseLayout (LayoutLogicalFormat form) rank
   ,Address~ LayoutAddress (LayoutLogicalFormat form))
   => form -> Address -> Int -> Maybe Address
-basicAffineAddressShiftDenseGeneric form  = \ addy shift ->
-  let newForm = basicLogicalForm form in
+affineAddressShiftDenseGeneric form  = \ addy shift ->
+  let newForm = logicalForm form in
    do
-    nativeIndex <- return $ basicToDenseIndex form addy
-    popBaseAddress <- return $   basicToDenseAddress newForm nativeIndex
-    rng <- basicAddressRange newForm
+    nativeIndex <- return $ toDenseIndex form addy
+    popBaseAddress <- return $   toDenseAddress newForm nativeIndex
+    rng <- addressRange newForm
     candidateAddress <- return $ popBaseAddress + Address shift
     if (getConst $ rangeMin ( Const) rng) <= candidateAddress
         && candidateAddress  <= (getConst $ rangeMax ( Const) rng)
-      then return $ basicToDenseAddress  form $ basicToDenseIndex newForm candidateAddress
+      then return $ toDenseAddress  form $ toDenseIndex newForm candidateAddress
       else Nothing
 
 
@@ -249,90 +249,90 @@ type instance LayoutLogicalFormat  (Format Direct 'Contiguous ('S 'Z) rep) = For
 instance Layout (Format Direct 'Contiguous ('S 'Z) rep)  ('S 'Z)  where
 
 
-    {-# INLINE basicLogicalShape #-}
-    basicLogicalShape = \ x -> (logicalShapeDirectContiguous x) :* Nil
+    {-# INLINE logicalShape #-}
+    logicalShape = \ x -> (logicalShapeDirectContiguous x) :* Nil
 
-    basicLogicalForm = id
+    logicalForm = id
 
     transposedLayout = id
 
-    {-# INLINE basicCompareIndex #-}
-    basicCompareIndex = \ _  (l:* _) (r:* _) -> compare l r
+    {-# INLINE compareIndex #-}
+    compareIndex = \ _  (l:* _) (r:* _) -> compare l r
 
-    basicAddressRange =  basicAddressRangeGeneric
+    addressRange =  addressRangeGeneric
 
-    basicToAddress = basicToAddressDenseGeneric
+    toAddress = toAddressDenseGeneric
 
-    basicToIndex = basicToIndexDenseGeneric
-
-
-    basicNextAddress = basicNextAddressDenseGeneric
-
-    basicNextIndex = basicNextIndexDenseGeneric
+    toIndex = toIndexDenseGeneric
 
 
-    basicAddressPopCount = \ _   (Range (Address lo) (Address hi )) ->
+    nextAddr = nextAddrDenseGeneric
+
+    seek = seekDenseGeneric
+
+
+    addressPopCount = \ _   (Range (Address lo) (Address hi )) ->
       if  hi >= lo then hi - lo
-        else error $ "for basicAddressPopCount requires address obey hi >= lo, given: "
+        else error $ "for addressPopCount requires address obey hi >= lo, given: "
           ++ show hi ++ " "  ++ show lo
       -- FIX me, add the range error checking
       -- in the style of the Sparse instances
 
 
-    basicAddressAsInt = \ _ (Address a) -> a
+    addressAsInt = \ _ (Address a) -> a
 
-    basicAffineAddressShift = basicAffineAddressShiftDenseGeneric
+    affineAddressShift = affineAddressShiftDenseGeneric
 
-    {-# INLINE basicAffineAddressShift #-}
-    {-# INLINE basicAddressRange #-}
-    {-# INLINE basicToAddress #-}
-    {-# INLINE basicToIndex #-}
-    {-# INLINE basicNextAddress #-}
-    {-# INLINE basicNextIndex #-}
-    {-# INLINE basicAddressPopCount #-}
+    {-# INLINE affineAddressShift #-}
+    {-# INLINE addressRange #-}
+    {-# INLINE toAddress #-}
+    {-# INLINE toIndex #-}
+    {-# INLINE nextAddr #-}
+    {-# INLINE seek #-}
+    {-# INLINE addressPopCount #-}
 
 type instance LayoutAddress (Format Direct 'Strided ('S 'Z) rep) = Address
 
 instance  Layout (Format Direct 'Strided ('S 'Z) rep)  ('S 'Z)  where
 
-    {-# INLINE basicLogicalShape #-}
-    basicLogicalShape = \x -> (logicalShapeDirectStrided x) :* Nil
+    {-# INLINE logicalShape #-}
+    logicalShape = \x -> (logicalShapeDirectStrided x) :* Nil
 
     transposedLayout = id
 
-    basicLogicalForm =  (\  (n :* Nil ) ->  FormatDirectContiguous n) . basicLogicalShape
+    logicalForm =  (\  (n :* Nil ) ->  FormatDirectContiguous n) . logicalShape
 
-    {-# INLINE basicCompareIndex #-}
-    basicCompareIndex = \ _  (l:* _) (r:* _) -> compare l r
+    {-# INLINE compareIndex #-}
+    compareIndex = \ _  (l:* _) (r:* _) -> compare l r
 
-    basicAddressRange = basicAddressRangeGeneric
+    addressRange = addressRangeGeneric
 
-    basicToAddress = basicToAddressDenseGeneric
+    toAddress = toAddressDenseGeneric
 
-    basicToIndex = basicToIndexDenseGeneric
+    toIndex = toIndexDenseGeneric
 
-    basicNextAddress =  basicNextAddressDenseGeneric
+    nextAddr =  nextAddrDenseGeneric
 
-    basicNextIndex =  basicNextIndexDenseGeneric
+    seek =  seekDenseGeneric
 
-    basicAddressPopCount = \form@(FormatDirectStrided size _ ) (Range loA hiA)->
+    addressPopCount = \form@(FormatDirectStrided size _ ) (Range loA hiA)->
       let newForm = (FormatDirectContiguous size)
         in
-          basicAddressPopCount  newForm
-            (Range (basicToDenseAddress newForm $ basicToDenseIndex form loA)
-                 (basicToDenseAddress newForm $ basicToDenseIndex form hiA) )
+          addressPopCount  newForm
+            (Range (toDenseAddress newForm $ toDenseIndex form loA)
+                 (toDenseAddress newForm $ toDenseIndex form hiA) )
 
-    basicAddressAsInt = \ _ (Address a) -> a
+    addressAsInt = \ _ (Address a) -> a
 
-    basicAffineAddressShift = basicAffineAddressShiftDenseGeneric
+    affineAddressShift = affineAddressShiftDenseGeneric
 
-    {-# INLINE basicAffineAddressShift #-}
-    {-# INLINE basicAddressRange #-}
-    {-# INLINE basicToAddress #-}
-    {-# INLINE basicToIndex #-}
-    {-# INLINE basicNextAddress #-}
-    {-# INLINE basicNextIndex #-}
-    {-# INLINE basicAddressPopCount #-}
+    {-# INLINE affineAddressShift #-}
+    {-# INLINE addressRange #-}
+    {-# INLINE toAddress #-}
+    {-# INLINE toIndex #-}
+    {-# INLINE nextAddr #-}
+    {-# INLINE seek #-}
+    {-# INLINE addressPopCount #-}
 
 
 -- one type family instance for all the rows
@@ -343,263 +343,263 @@ instance   (Applicative (Shape rank), Traversable (Shape rank))
 
     transposedLayout = \(FormatRowContiguous shp) -> FormatColumnContiguous $ reverseShape shp
 
-    {-# INLINE basicLogicalShape #-}
-    basicLogicalShape =  boundsFormRow
+    {-# INLINE logicalShape #-}
+    logicalShape =  boundsFormRow
 
-    basicLogicalForm = id
+    logicalForm = id
 
-    {-# INLINE basicCompareIndex #-}
-    basicCompareIndex = \ _  ls rs -> foldl majorCompareLeftToRight EQ  $ S.map2 compare ls rs
+    {-# INLINE compareIndex #-}
+    compareIndex = \ _  ls rs -> foldl majorCompareLeftToRight EQ  $ S.map2 compare ls rs
 
-    basicAddressPopCount = \ _   (Range (Address lo) (Address hi )) -> hi - lo
+    addressPopCount = \ _   (Range (Address lo) (Address hi )) -> hi - lo
       -- FIX me, add the range error checking
       -- in the style of the Sparse instances
-    basicAddressRange = basicAddressRangeGeneric
+    addressRange = addressRangeGeneric
 
-    basicToAddress = basicToAddressDenseGeneric
+    toAddress = toAddressDenseGeneric
 
-    basicToIndex = basicToIndexDenseGeneric
+    toIndex = toIndexDenseGeneric
 
-    basicNextAddress =  basicNextAddressDenseGeneric
+    nextAddr =  nextAddrDenseGeneric
 
-    basicNextIndex =  basicNextIndexDenseGeneric
+    seek =  seekDenseGeneric
 
-    basicAddressAsInt = \ _ (Address a) -> a
+    addressAsInt = \ _ (Address a) -> a
 
-    basicAffineAddressShift = basicAffineAddressShiftDenseGeneric
+    affineAddressShift = affineAddressShiftDenseGeneric
 
-    {-# INLINE basicAffineAddressShift #-}
-    {-# INLINE basicAddressRange #-}
-    {-# INLINE basicToAddress #-}
-    {-# INLINE basicToIndex #-}
-    {-# INLINE basicNextAddress #-}
-    {-# INLINE basicNextIndex #-}
-    {-# INLINE basicAddressPopCount #-}
+    {-# INLINE affineAddressShift #-}
+    {-# INLINE addressRange #-}
+    {-# INLINE toAddress #-}
+    {-# INLINE toIndex #-}
+    {-# INLINE nextAddr #-}
+    {-# INLINE seek #-}
+    {-# INLINE addressPopCount #-}
 
 
 
 instance   (Applicative (Shape rank), Traversable (Shape rank))
   =>  Layout (Format Row  'InnerContiguous rank rep)  rank  where
 
-    {-# INLINE basicLogicalShape  #-}
-    basicLogicalShape = boundsFormRowInnerContig
+    {-# INLINE logicalShape  #-}
+    logicalShape = boundsFormRowInnerContig
 
-    basicLogicalForm form = FormatRowContiguous $ basicLogicalShape form
+    logicalForm form = FormatRowContiguous $ logicalShape form
 
     transposedLayout = \(FormatRowInnerContiguous shp stride) ->
         FormatColumnInnerContiguous  (reverseShape shp)  (reverseShape stride)
 
-    {-# INLINE basicCompareIndex #-}
-    basicCompareIndex = \ _  ls rs ->
+    {-# INLINE compareIndex #-}
+    compareIndex = \ _  ls rs ->
       foldl majorCompareLeftToRight EQ  $ S.map2 compare ls rs
 
-    basicAddressRange = basicAddressRangeGeneric
+    addressRange = addressRangeGeneric
 
-    basicToAddress = basicToAddressDenseGeneric
+    toAddress = toAddressDenseGeneric
 
-    basicToIndex = basicToIndexDenseGeneric
+    toIndex = toIndexDenseGeneric
 
-    basicNextAddress =  basicNextAddressDenseGeneric
+    nextAddr =  nextAddrDenseGeneric
 
-    basicNextIndex =  basicNextIndexDenseGeneric
+    seek =  seekDenseGeneric
 
-    basicAddressPopCount = \form@(FormatRowInnerContiguous size _) (Range loA hiA)->
+    addressPopCount = \form@(FormatRowInnerContiguous size _) (Range loA hiA)->
       let newForm = (FormatRowContiguous size)
         in
-          basicAddressPopCount  newForm
-            (Range (basicToDenseAddress newForm $ basicToDenseIndex form loA)
-                 (basicToDenseAddress newForm $ basicToDenseIndex form hiA) )
+          addressPopCount  newForm
+            (Range (toDenseAddress newForm $ toDenseIndex form loA)
+                 (toDenseAddress newForm $ toDenseIndex form hiA) )
 
-    basicAddressAsInt = \ _ (Address a) -> a
+    addressAsInt = \ _ (Address a) -> a
 
-    basicAffineAddressShift = basicAffineAddressShiftDenseGeneric
+    affineAddressShift = affineAddressShiftDenseGeneric
 
-    {-# INLINE basicAffineAddressShift #-}
-    {-# INLINE basicAddressRange #-}
-    {-# INLINE basicToAddress #-}
-    {-# INLINE basicToIndex #-}
-    {-# INLINE basicNextAddress #-}
-    {-# INLINE basicNextIndex #-}
-    {-# INLINE basicAddressPopCount #-}
+    {-# INLINE affineAddressShift #-}
+    {-# INLINE addressRange #-}
+    {-# INLINE toAddress #-}
+    {-# INLINE toIndex #-}
+    {-# INLINE nextAddr #-}
+    {-# INLINE seek #-}
+    {-# INLINE addressPopCount #-}
 
 
 
 instance  (Applicative (Shape rank),Traversable (Shape rank))
   =>  Layout (Format Row 'Strided rank rep) rank  where
 
-    {-# INLINE basicLogicalShape  #-}
-    basicLogicalShape =  boundsFormRowStrided
+    {-# INLINE logicalShape  #-}
+    logicalShape =  boundsFormRowStrided
 
-    basicLogicalForm form = FormatRowContiguous $ basicLogicalShape form
+    logicalForm form = FormatRowContiguous $ logicalShape form
 
     transposedLayout = \(FormatRowStrided shp stride) ->
         FormatColumnStrided  (reverseShape shp)  (reverseShape stride)
 
-    {-# INLINE basicCompareIndex #-}
-    basicCompareIndex = \ _  ls rs ->
+    {-# INLINE compareIndex #-}
+    compareIndex = \ _  ls rs ->
         foldl majorCompareLeftToRight EQ  $ S.map2 compare ls rs
 
-    basicAddressRange = basicAddressRangeGeneric
+    addressRange = addressRangeGeneric
 
-    basicToAddress = basicToAddressDenseGeneric
+    toAddress = toAddressDenseGeneric
 
-    basicToIndex = basicToIndexDenseGeneric
+    toIndex = toIndexDenseGeneric
 
-    basicNextAddress =  basicNextAddressDenseGeneric
+    nextAddr =  nextAddrDenseGeneric
 
-    basicNextIndex =  basicNextIndexDenseGeneric
+    seek =  seekDenseGeneric
 
-    basicAddressPopCount = \form@(FormatRowStrided size _) (Range loA hiA)->
+    addressPopCount = \form@(FormatRowStrided size _) (Range loA hiA)->
       let newForm = (FormatRowContiguous size)
         in
-          basicAddressPopCount  newForm
-            (Range (basicToDenseAddress newForm $ basicToDenseIndex form loA)
-                 (basicToDenseAddress newForm $ basicToDenseIndex form hiA) )
+          addressPopCount  newForm
+            (Range (toDenseAddress newForm $ toDenseIndex form loA)
+                 (toDenseAddress newForm $ toDenseIndex form hiA) )
 
-    basicAddressAsInt = \ _ (Address a) -> a
+    addressAsInt = \ _ (Address a) -> a
 
-    basicAffineAddressShift = basicAffineAddressShiftDenseGeneric
+    affineAddressShift = affineAddressShiftDenseGeneric
 
-    {-# INLINE basicAffineAddressShift #-}
-    {-# INLINE basicAddressRange #-}
-    {-# INLINE basicToAddress #-}
-    {-# INLINE basicToIndex #-}
-    {-# INLINE basicNextAddress #-}
-    {-# INLINE basicNextIndex #-}
-    {-# INLINE basicAddressPopCount #-}
+    {-# INLINE affineAddressShift #-}
+    {-# INLINE addressRange #-}
+    {-# INLINE toAddress #-}
+    {-# INLINE toIndex #-}
+    {-# INLINE nextAddr #-}
+    {-# INLINE seek #-}
+    {-# INLINE addressPopCount #-}
 
 
 type instance LayoutAddress (Format Column locality    rank rep) = Address
 instance  (Applicative (Shape rank), Traversable (Shape rank))
   =>  Layout (Format Column 'Contiguous rank rep)  rank where
 
-    {-# INLINE basicLogicalShape  #-}
-    basicLogicalShape =  boundsColumnContig
+    {-# INLINE logicalShape  #-}
+    logicalShape =  boundsColumnContig
 
-    basicLogicalForm = id
+    logicalForm = id
 
     transposedLayout = \(FormatColumnContiguous shp)-> FormatRowContiguous $ reverseShape shp
 
-    {-# INLINE basicCompareIndex #-}
-    basicCompareIndex = \ _  ls rs -> foldr majorCompareRightToLeft EQ  $ S.map2 compare ls rs
+    {-# INLINE compareIndex #-}
+    compareIndex = \ _  ls rs -> foldr majorCompareRightToLeft EQ  $ S.map2 compare ls rs
 
-    basicAddressPopCount = \ _   (Range (Address lo) (Address hi )) ->
+    addressPopCount = \ _   (Range (Address lo) (Address hi )) ->
         if hi >= lo then hi - lo
-            else  error  $ "for basicAddressPopCount, require address hi >= lo, given: "
+            else  error  $ "for addressPopCount, require address hi >= lo, given: "
               ++ show hi ++ " " ++ show lo
       -- FIX me, add the range error checking
       -- in the style of the Sparse instances
-    basicAddressRange = basicAddressRangeGeneric
+    addressRange = addressRangeGeneric
 
-    basicToAddress = basicToAddressDenseGeneric
+    toAddress = toAddressDenseGeneric
 
-    basicToIndex = basicToIndexDenseGeneric
+    toIndex = toIndexDenseGeneric
 
-    basicNextAddress =  basicNextAddressDenseGeneric
+    nextAddr =  nextAddrDenseGeneric
 
-    basicNextIndex =  basicNextIndexDenseGeneric
+    seek =  seekDenseGeneric
 
-    basicAddressAsInt = \ _ (Address a) -> a
+    addressAsInt = \ _ (Address a) -> a
 
 
-    basicAffineAddressShift = basicAffineAddressShiftDenseGeneric
+    affineAddressShift = affineAddressShiftDenseGeneric
 
-    {-# INLINE basicAffineAddressShift #-}
-    {-# INLINE basicAddressRange #-}
-    {-# INLINE basicToAddress #-}
-    {-# INLINE basicToIndex #-}
-    {-# INLINE basicNextAddress #-}
-    {-# INLINE basicNextIndex #-}
-    {-# INLINE basicAddressPopCount #-}
+    {-# INLINE affineAddressShift #-}
+    {-# INLINE addressRange #-}
+    {-# INLINE toAddress #-}
+    {-# INLINE toIndex #-}
+    {-# INLINE nextAddr #-}
+    {-# INLINE seek #-}
+    {-# INLINE addressPopCount #-}
 
 
 instance  (Applicative (Shape rank), Traversable (Shape rank))
   => Layout (Format Column 'InnerContiguous rank rep) rank  where
 
 
-    {-# INLINE basicLogicalShape  #-}
-    basicLogicalShape =  boundsColumnInnerContig
+    {-# INLINE logicalShape  #-}
+    logicalShape =  boundsColumnInnerContig
 
-    basicLogicalForm form = FormatColumnContiguous $ basicLogicalShape form
+    logicalForm form = FormatColumnContiguous $ logicalShape form
 
     transposedLayout = \(FormatColumnInnerContiguous shp stride)->
          FormatRowInnerContiguous (reverseShape shp) (reverseShape stride)
 
-    {-# INLINE basicCompareIndex #-}
-    basicCompareIndex = \ _  ls rs -> foldr majorCompareRightToLeft EQ  $ S.map2 compare ls rs
+    {-# INLINE compareIndex #-}
+    compareIndex = \ _  ls rs -> foldr majorCompareRightToLeft EQ  $ S.map2 compare ls rs
 
-    basicAddressRange = basicAddressRangeGeneric
+    addressRange = addressRangeGeneric
 
-    basicToAddress = basicToAddressDenseGeneric
+    toAddress = toAddressDenseGeneric
 
-    basicToIndex = basicToIndexDenseGeneric
+    toIndex = toIndexDenseGeneric
 
-    basicNextAddress=  basicNextAddressDenseGeneric
+    nextAddr=  nextAddrDenseGeneric
 
-    basicNextIndex=  basicNextIndexDenseGeneric
+    seek=  seekDenseGeneric
 
-    basicAddressPopCount = \form@(FormatColumnInnerContiguous size _) (Range loA hiA)->
+    addressPopCount = \form@(FormatColumnInnerContiguous size _) (Range loA hiA)->
       let newForm = (FormatColumnContiguous size)
         in
-          basicAddressPopCount  newForm
-            (Range (basicToDenseAddress newForm $ basicToDenseIndex form loA)
-                 (basicToDenseAddress newForm $ basicToDenseIndex form hiA) )
+          addressPopCount  newForm
+            (Range (toDenseAddress newForm $ toDenseIndex form loA)
+                 (toDenseAddress newForm $ toDenseIndex form hiA) )
 
-    basicAddressAsInt = \ _ (Address a) -> a
+    addressAsInt = \ _ (Address a) -> a
  -- strideRow :: Shape rank Int,
 
-    basicAffineAddressShift = basicAffineAddressShiftDenseGeneric
+    affineAddressShift = affineAddressShiftDenseGeneric
 
-    {-# INLINE basicAffineAddressShift #-}
-    {-# INLINE basicAddressRange #-}
-    {-# INLINE basicToAddress #-}
-    {-# INLINE basicToIndex #-}
-    {-# INLINE basicNextAddress #-}
-    {-# INLINE basicNextIndex #-}
-    {-# INLINE basicAddressPopCount #-}
+    {-# INLINE affineAddressShift #-}
+    {-# INLINE addressRange #-}
+    {-# INLINE toAddress #-}
+    {-# INLINE toIndex #-}
+    {-# INLINE nextAddr #-}
+    {-# INLINE seek #-}
+    {-# INLINE addressPopCount #-}
 
 instance   (Applicative (Shape rank), Traversable (Shape rank))
   => Layout (Format Column 'Strided rank rep) rank where
 
-    {-# INLINE basicLogicalShape  #-}
-    basicLogicalShape = boundsColumnStrided
+    {-# INLINE logicalShape  #-}
+    logicalShape = boundsColumnStrided
 
-    basicLogicalForm form = FormatColumnContiguous $ basicLogicalShape form
+    logicalForm form = FormatColumnContiguous $ logicalShape form
 
     transposedLayout = \(FormatColumnStrided shp stride)->
          FormatRowStrided (reverseShape shp) (reverseShape stride)
 
-    {-# INLINE basicCompareIndex #-}
-    basicCompareIndex = \ _  ls rs -> foldr majorCompareRightToLeft EQ $ S.map2 compare ls rs
+    {-# INLINE compareIndex #-}
+    compareIndex = \ _  ls rs -> foldr majorCompareRightToLeft EQ $ S.map2 compare ls rs
 
-    basicAddressRange = basicAddressRangeGeneric
+    addressRange = addressRangeGeneric
 
-    basicToAddress = basicToAddressDenseGeneric
+    toAddress = toAddressDenseGeneric
 
-    basicToIndex = basicToIndexDenseGeneric
+    toIndex = toIndexDenseGeneric
 
-    basicNextAddress =  basicNextAddressDenseGeneric
+    nextAddr =  nextAddrDenseGeneric
 
-    basicNextIndex =  basicNextIndexDenseGeneric
+    seek =  seekDenseGeneric
 
-    basicAddressPopCount = \form@(FormatColumnStrided size _) (Range loA hiA)->
+    addressPopCount = \form@(FormatColumnStrided size _) (Range loA hiA)->
       let newForm = (FormatColumnContiguous size)
         in
-          basicAddressPopCount  newForm
-            (Range (basicToDenseAddress newForm $ basicToDenseIndex form loA)
-                 (basicToDenseAddress newForm $ basicToDenseIndex form hiA) )
+          addressPopCount  newForm
+            (Range (toDenseAddress newForm $ toDenseIndex form loA)
+                 (toDenseAddress newForm $ toDenseIndex form hiA) )
 
-    basicAddressAsInt = \ _ (Address a) -> a
+    addressAsInt = \ _ (Address a) -> a
 
-    basicAffineAddressShift = basicAffineAddressShiftDenseGeneric
+    affineAddressShift = affineAddressShiftDenseGeneric
 
-    {-# INLINE basicAffineAddressShift #-}
-    {-# INLINE basicAddressRange #-}
-    {-# INLINE basicToAddress #-}
-    {-# INLINE basicToIndex #-}
-    {-# INLINE basicNextAddress #-}
-    {-# INLINE basicNextIndex #-}
-    {-# INLINE basicAddressPopCount #-}
+    {-# INLINE affineAddressShift #-}
+    {-# INLINE addressRange #-}
+    {-# INLINE toAddress #-}
+    {-# INLINE toIndex #-}
+    {-# INLINE nextAddr #-}
+    {-# INLINE seek #-}
+    {-# INLINE addressPopCount #-}
 
 ----------------------
 ----------------------
@@ -647,16 +647,16 @@ instance DenseLayout (Format Direct 'Contiguous ('S 'Z) rep)  ('S 'Z)  where
     --maxDenseAddress = \ (FormatDirectContiguous ix) -> Address (ix -1)
 
 
-    {-#INLINE basicToDenseAddress #-}
-    basicToDenseAddress   = \ (FormatDirectContiguous _) (j :* _ ) -> Address j
+    {-#INLINE toDenseAddress #-}
+    toDenseAddress   = \ (FormatDirectContiguous _) (j :* _ ) -> Address j
 
-    --basicNextIndex=  undefined -- \ _ x ->  Just $! x + 1
+    --seek=  undefined -- \ _ x ->  Just $! x + 1
     --note its unchecked!
-    {-# INLINE basicToDenseIndex #-}
-    basicToDenseIndex =  \ (FormatDirectContiguous _) (Address ix)  -> (ix ) :* Nil
+    {-# INLINE toDenseIndex #-}
+    toDenseIndex =  \ (FormatDirectContiguous _) (Address ix)  -> (ix ) :* Nil
 
-    {-# INLINE basicNextDenseAddress #-}
-    basicNextDenseAddress = \ _ addr -> addr + 1
+    {-# INLINE nextDenseAddress #-}
+    nextDenseAddress = \ _ addr -> addr + 1
 
 
 
@@ -667,18 +667,18 @@ instance DenseLayout (Format Direct 'Strided ('S 'Z) rep)  ('S 'Z)  where
 
 
 
-    {-#INLINE basicToDenseAddress #-}
-    basicToDenseAddress   = \ (FormatDirectStrided _ strid) (j :* Nil )->  Address (strid * j)
+    {-#INLINE toDenseAddress #-}
+    toDenseAddress   = \ (FormatDirectStrided _ strid) (j :* Nil )->  Address (strid * j)
 
-    {-# INLINE basicNextDenseAddress #-}
-    basicNextDenseAddress = \ (FormatDirectStrided _ strid) addr ->  addr + Address strid
+    {-# INLINE nextDenseAddress #-}
+    nextDenseAddress = \ (FormatDirectStrided _ strid) addr ->  addr + Address strid
 
-    {-# INLINE basicNextDenseIndex #-}
-    basicNextDenseIndex =  \ form  (i:* Nil ) ->  (\ix -> (ix,basicToDenseAddress form ix)) $! (i + 1 :* Nil )
+    {-# INLINE nextDenseIndex #-}
+    nextDenseIndex =  \ form  (i:* Nil ) ->  (\ix -> (ix,toDenseAddress form ix)) $! (i + 1 :* Nil )
 
 
-    {-# INLINE basicToDenseIndex #-}
-    basicToDenseIndex = \ (FormatDirectStrided _ stride) (Address ix)  -> (ix `div` stride ) :* Nil
+    {-# INLINE toDenseIndex #-}
+    toDenseIndex = \ (FormatDirectStrided _ stride) (Address ix)  -> (ix `div` stride ) :* Nil
 
 
 -----
@@ -695,17 +695,17 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape
 TODO  AUDIT
 
 -}
-    {-# INLINE basicToDenseAddress #-}
-    --basicToAddress = \rs tup -> let !strider =takePrefix $! S.scanr (*) 1 (boundsFormRow rs)
-    basicToDenseAddress = \rs tup ->
+    {-# INLINE toDenseAddress #-}
+    --toAddress = \rs tup -> let !strider =takePrefix $! S.scanr (*) 1 (boundsFormRow rs)
+    toDenseAddress = \rs tup ->
           let !strider =  computeStrideShape traverse (boundsFormRow rs)
                   in Address $! S.foldl'  (+) 0 $! map2 (*) strider tup
 
-    {-# INLINE basicNextDenseAddress #-}
-    basicNextDenseAddress = \_ addr -> addr + 1
+    {-# INLINE nextDenseAddress #-}
+    nextDenseAddress = \_ addr -> addr + 1
 
-    {-# INLINE basicToDenseIndex #-}
-    basicToDenseIndex  =   \ rs (Address ix) ->
+    {-# INLINE toDenseIndex #-}
+    toDenseIndex  =   \ rs (Address ix) ->
         let !striderShape  = computeStrideShape traverse (boundsFormRow rs)
 
             in
@@ -729,15 +729,15 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape
   => DenseLayout (Format Row  'InnerContiguous rank rep) rank  where
 
 
-    {-# INLINE basicToDenseAddress #-}
-    basicToDenseAddress = \rs tup ->
+    {-# INLINE toDenseAddress #-}
+    toDenseAddress = \rs tup ->
                        Address $! S.foldl'  (+) 0 $!
                          map2 (*) (strideFormRowInnerContig rs ) tup
 
-    {-# INLINE basicNextDenseIndex #-}
-    basicNextDenseIndex = \ form@(FormatRowInnerContiguous shape _) ix ->
+    {-# INLINE nextDenseIndex #-}
+    nextDenseIndex = \ form@(FormatRowInnerContiguous shape _) ix ->
         --S.map snd $!
-      (\index -> (index,basicToDenseAddress form  index)) $!
+      (\index -> (index,toDenseAddress form  index)) $!
         flip evalState 1 $
            for   ((,) <$> ix <*> shape) $
               \(ixv ,shpv   )->
@@ -747,8 +747,8 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape
                       return modVal
 
 
-    {-# INLINE basicToDenseIndex #-}
-    basicToDenseIndex  =   \ rs (Address ix) ->   flip evalState ix $
+    {-# INLINE toDenseIndex #-}
+    toDenseIndex  =   \ rs (Address ix) ->   flip evalState ix $
                           flip ( S.backwards traverse)  (strideFormRowInnerContig rs ) $
                               \ currentStride ->
                                      do remainderIx <- get ;
@@ -767,13 +767,13 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape 
 
 
 
-    {-# INLINE basicToDenseAddress #-}
-    basicToDenseAddress = \rs tup ->   Address $!
+    {-# INLINE toDenseAddress #-}
+    toDenseAddress = \rs tup ->   Address $!
           S.foldl'  (+) 0 $! map2 (*) (strideFormRowStrided rs ) tup
 
-    {-# INLINE basicNextDenseIndex #-}
-    basicNextDenseIndex = \ form@(FormatRowStrided shape _) ix ->
-      (\index -> (index,basicToDenseAddress form index)) $!
+    {-# INLINE nextDenseIndex #-}
+    nextDenseIndex = \ form@(FormatRowStrided shape _) ix ->
+      (\index -> (index,toDenseAddress form index)) $!
         flip evalState 1 $
            for  ((,) <$> ix <*> shape) $
               \(ixv ,shpv   )->
@@ -783,8 +783,8 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape 
                       return modVal
 
 
-    {-# INLINE basicToDenseIndex #-}
-    basicToDenseIndex  =   \ rs (Address ix) ->   flip evalState ix $
+    {-# INLINE toDenseIndex #-}
+    toDenseIndex  =   \ rs (Address ix) ->   flip evalState ix $
                           flip (S.backwards traverse ) (strideFormRowStrided rs ) $
                               \ currentStride ->
                                      do remainderIx <- get ;
@@ -806,16 +806,16 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape 
 
 
 
-    {-# INLINE basicToDenseAddress #-}
-    basicToDenseAddress = \rs tup ->
+    {-# INLINE toDenseAddress #-}
+    toDenseAddress = \rs tup ->
           let !strider = computeStrideShape  (S.backwards traverse) (boundsColumnContig rs)
                                 in Address $! S.foldl'  (+) 0 $! map2 (*) strider tup
 
-    {-# INLINE basicNextDenseAddress #-}
-    basicNextDenseAddress = \_ addr -> addr + 1
+    {-# INLINE nextDenseAddress #-}
+    nextDenseAddress = \_ addr -> addr + 1
 
-    {-# INLINE basicToDenseIndex #-}
-    basicToDenseIndex  =   \ rs (Address ix) ->
+    {-# INLINE toDenseIndex #-}
+    toDenseIndex  =   \ rs (Address ix) ->
             let !striderShape  =  computeStrideShape  (S.backwards traverse) (boundsColumnContig rs)
                 in
                    flip evalState ix $
@@ -835,13 +835,13 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape 
   => DenseLayout (Format Column  'InnerContiguous rank rep) rank  where
 
 
-    {-# INLINE basicToDenseAddress #-}
-    basicToDenseAddress    =   \ form tup -> let !strider =   strideFormColumnInnerContig form
+    {-# INLINE toDenseAddress #-}
+    toDenseAddress    =   \ form tup -> let !strider =   strideFormColumnInnerContig form
                                 in Address $! foldl' (+) 0  $! map2 (*) strider tup
-    {-# INLINE basicNextDenseIndex #-}
-    basicNextDenseIndex = \ form@(FormatColumnInnerContiguous shape _) ix ->
+    {-# INLINE nextDenseIndex #-}
+    nextDenseIndex = \ form@(FormatColumnInnerContiguous shape _) ix ->
         --S.map snd $!
-      (\index -> (index,basicToDenseAddress form index)) $!
+      (\index -> (index,toDenseAddress form index)) $!
         flip evalState 1 $
            flip (S.backwards traverse)  ((,) <$> ix <*> shape) $
               \(ixv ,shpv   )->
@@ -851,8 +851,8 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape 
                       return modVal
 
 
-    {-# INLINE basicToDenseIndex #-}
-    basicToDenseIndex  =   \ rs (Address ix) ->   flip evalState ix $
+    {-# INLINE toDenseIndex #-}
+    toDenseIndex  =   \ rs (Address ix) ->   flip evalState ix $
                           flip S.traverse  (strideFormColumnInnerContig rs ) $
                               \ currentStride ->
                                      do remainderIx <- get ;
@@ -866,14 +866,14 @@ instance  (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape 
 instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape rank))
   => DenseLayout (Format Column  'Strided rank rep) rank where
 
-    {-# INLINE basicToDenseAddress #-}
-    basicToDenseAddress    =   \ form tup -> let !strider =   strideFormColumnStrided form
+    {-# INLINE toDenseAddress #-}
+    toDenseAddress    =   \ form tup -> let !strider =   strideFormColumnStrided form
                                 in Address $! foldl' (+) 0  $! map2 (*) strider tup
 
-    {-# INLINE basicNextDenseIndex #-}
-    basicNextDenseIndex = \ form@(FormatColumnStrided shape _) ix ->
+    {-# INLINE nextDenseIndex #-}
+    nextDenseIndex = \ form@(FormatColumnStrided shape _) ix ->
         --S.map snd $!
-      (\index -> (index,basicToDenseAddress form index)) $!
+      (\index -> (index,toDenseAddress form index)) $!
         flip evalState 1 $
            flip (S.backwards traverse)  ((,) <$> ix <*> shape) $
               \(ixv ,shpv   )->
@@ -883,8 +883,8 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape
                       return modVal
 
 
-    {-# INLINE basicToDenseIndex #-}
-    basicToDenseIndex  =   \ rs (Address ix) ->   flip evalState ix $
+    {-# INLINE toDenseIndex #-}
+    toDenseIndex  =   \ rs (Address ix) ->   flip evalState ix $
                           flip S.traverse  (strideFormColumnStrided rs ) $
                               \ currentStride ->
                                      do remainderIx <- get ;
@@ -898,15 +898,15 @@ instance   (Applicative (Shape rank),F.Foldable (Shape rank), Traversable (Shape
 
 
 {-
-*Numerical.Array.Layout> basicToAddress (FormColumn (2 :* 3 :* 7 :* Nil)) (0:* 2 :* 2 :* Nil)
+*Numerical.Array.Layout> toAddress (FormColumn (2 :* 3 :* 7 :* Nil)) (0:* 2 :* 2 :* Nil)
 Address 16
-*Numerical.Array.Layout> basicToAddress (FormColumn (2 :* 3 :* 7 :* Nil)) (1:* 0 :* 0 :* Nil)
+*Numerical.Array.Layout> toAddress (FormColumn (2 :* 3 :* 7 :* Nil)) (1:* 0 :* 0 :* Nil)
 Address 1
-*Numerical.Array.Layout> basicToAddress (FormColumn (2 :* 3 :* 7 :* Nil)) (0:* 0 :* 0 :* Nil)
+*Numerical.Array.Layout> toAddress (FormColumn (2 :* 3 :* 7 :* Nil)) (0:* 0 :* 0 :* Nil)
 Address 0
-*Numerical.Array.Layout> basicToAddress (FormColumn (2 :* 3 :* 7 :* Nil)) (0:* 1 :* 0 :* Nil)
+*Numerical.Array.Layout> toAddress (FormColumn (2 :* 3 :* 7 :* Nil)) (0:* 1 :* 0 :* Nil)
 Address 2
-*Numerical.Array.Layout> basicToAddress (FormColumn (2 :* 3 :* 7 :* Nil)) (0:* 0 :* 1 :* Nil)
+*Numerical.Array.Layout> toAddress (FormColumn (2 :* 3 :* 7 :* Nil)) (0:* 0 :* 1 :* Nil)
 -}
 
 

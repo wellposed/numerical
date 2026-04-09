@@ -163,7 +163,7 @@ class P.PureArray (ArrPure marr)  rank a => Array marr (rank:: Nat)  a | marr ->
     basicAddressToIndex :: (address ~ MArrayAddress marr) =>marr s   a -> address ->    Index rank
 
     -- |  return the smallest and largest valid logical address
-    basicAddressRange :: (address ~ MArrayAddress marr)=> marr st   a ->  Maybe (Range address)
+    addressRange :: (address ~ MArrayAddress marr)=> marr st   a ->  Maybe (Range address)
 
 
     -- | gives the next valid logical address
@@ -237,7 +237,7 @@ instance (Buffer rep el, Layout (Format  lay locality  rank rep) rank )
     type MArrayAddress (MArray Native rep lay locality rank)= LayoutAddress (Format  lay locality  rank rep)
 
     {-# INLINE basicShape #-}
-    basicShape =  L.basicLogicalShape . nativeFormat
+    basicShape =  L.logicalShape . nativeFormat
 
     {-# NOINLINE basicUnsafeFreeze #-}
     basicUnsafeFreeze = \marr -> do
@@ -250,16 +250,16 @@ instance (Buffer rep el, Layout (Format  lay locality  rank rep) rank )
         return $ MutableNativeArray mutBuffer $ P.nativeFormatPure parr
 
     {-# INLINE basicSparseIndexToAddress #-}
-    basicSparseIndexToAddress = \ marr  -> L.basicToAddress (nativeFormat marr)
+    basicSparseIndexToAddress = \ marr  -> L.toAddress (nativeFormat marr)
 
     {-# INLINE basicAddressToIndex #-}
-    basicAddressToIndex = \ marr  -> L.basicToIndex (nativeFormat marr)
+    basicAddressToIndex = \ marr  -> L.toIndex (nativeFormat marr)
 
     {-# INLINE basicSparseNextAddress #-}
-    basicSparseNextAddress = \marr -> L.basicNextAddress (nativeFormat marr)
+    basicSparseNextAddress = \marr -> L.nextAddr (nativeFormat marr)
 
     {-# INLINE basicSparseNextIndex #-}
-    basicSparseNextIndex = \marr -> L.basicNextIndex (nativeFormat marr)
+    basicSparseNextIndex = \marr -> L.seek (nativeFormat marr)
 
     basicOverlaps = \marr1 marr2 -> VGM.overlaps (nativeBuffer marr1) (nativeBuffer marr2)
 
@@ -267,25 +267,32 @@ instance (Buffer rep el, Layout (Format  lay locality  rank rep) rank )
 
     {-# INLINE basicUnsafeAddressRead #-}
     basicUnsafeAddressRead = \marr addr ->
-      VGM.unsafeRead (nativeBuffer marr) (L.basicAddressAsInt (nativeFormat marr) addr)
+      VGM.unsafeRead (nativeBuffer marr) (L.addressAsInt (nativeFormat marr) addr)
 
     {-# INLINE basicUnsafeAddressWrite #-}
     basicUnsafeAddressWrite = \marr addr v->
-      VGM.unsafeWrite (nativeBuffer marr) (L.basicAddressAsInt (nativeFormat marr) addr) v
+      VGM.unsafeWrite (nativeBuffer marr) (L.addressAsInt (nativeFormat marr) addr) v
 
     {-# INLINE basicUnsafeSparseRead #-}
     basicUnsafeSparseRead = \marr ix  ->  do
       maddr <- return $ basicSparseIndexToAddress marr ix
       maybe (return Nothing) (\addr -> liftM Just $  basicUnsafeAddressRead marr addr ) maddr
 
-    {-# INLINE basicAddressRange #-}
-    basicAddressRange = \marr -> L.basicAddressRange (nativeFormat marr)
+    {-# INLINE addressRange #-}
+    addressRange = \marr -> L.addressRange (nativeFormat marr)
 
-    basicCardinality = \marr -> L.basicAddressPopCount (nativeFormat marr)
+    basicCardinality = \marr -> L.addressPopCount (nativeFormat marr)
 
 
-    basicUnsafeAffineAddressShift = error "carter needs to add this"
-    basicLocalAffineAddressRegion = error "carter needs to add this"
+    basicUnsafeAffineAddressShift = \marr step addr ->
+      case L.affineAddressShift (nativeFormat marr) addr step of
+        Just a  -> a
+        Nothing -> error "basicUnsafeAffineAddressShift: shift out of bounds"
+
+    basicLocalAffineAddressRegion = \marr addr ->
+      -- For the general case, return a singleton interval (stride 0, min=max=addr).
+      -- Dense layout instances can override with the full contiguous range.
+      AffineRange addr 1 addr
 {-
 
 
@@ -331,14 +338,14 @@ class ( Array marr rank a, P.PureDenseArray (ArrPure marr) rank a  )=>
     -- Note that for invalid addresses in between minAddress and maxAddress,
     -- will return the next valid address.
 
-    basicNextAddress ::  marr st  a -> Address ->  Address
+    nextAddr ::  marr st  a -> Address ->  Address
 
 
     -- I think the case could be made for a basicPreviousAddress opeeration
 
     -- | gives the next valid array index
     -- undefined on invalid indices and the greatest valid index
-    basicNextIndex :: marr st  a -> Index rank  -> Index rank
+    seek :: marr st  a -> Index rank  -> Index rank
 
 
 

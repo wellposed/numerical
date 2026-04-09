@@ -53,13 +53,100 @@ module Numerical.Array.Layout.Sparse(
   ) where
 
 import Data.Data
-import Data.Bits (unsafeShiftR)
+import Data.Bits (unsafeShiftR, shiftR, shiftL, (.&.))
 import Control.Applicative
 import Numerical.Array.Layout.Base
 --import Numerical.Array.Shape
 import Numerical.InternalUtils
 import qualified  Data.Vector.Generic as V
 import Prelude hiding (error )
+
+
+-- | Skip-encoded rowptr for CSR/CSC: O(1) non-empty row lookup.
+--
+-- Normal rowptr entries are non-negative buffer offsets.
+-- Empty rows get a negative entry encoding forward and backward skip distances
+-- to the nearest non-empty rows. This turns the O(rows) empty-row scan
+-- in 'seek' into O(1).
+--
+-- Encoding (for a negative entry):
+--   magnitude = abs(entry)
+--   fwd_skip  = magnitude `shiftR` 31    -- upper 32 bits: rows forward to next non-empty
+--   bwd_skip  = magnitude .&. 0x7FFFFFFF -- lower 31 bits: rows backward to prev non-empty
+--
+-- Convention: skip of 0 means "no non-empty row in that direction."
+
+-- | Encode an empty row's skip metadata as a negative Int.
+encodeEmptyRow :: Int -> Int -> Int
+encodeEmptyRow fwdSkip bwdSkip =
+  negate ((fwdSkip `shiftL` 31) + (bwdSkip .&. 0x7FFFFFFF))
+{-# INLINE encodeEmptyRow #-}
+
+-- | Is this rowptr entry an empty row (negative)?
+isEmptyRowEntry :: Int -> Bool
+isEmptyRowEntry x = x < 0
+{-# INLINE isEmptyRowEntry #-}
+
+-- | Extract forward skip from a negative rowptr entry.
+-- Caller must ensure the entry is negative.
+fwdSkip :: Int -> Int
+fwdSkip x = abs x `shiftR` 31
+{-# INLINE fwdSkip #-}
+
+-- | Extract backward skip from a negative rowptr entry.
+-- Caller must ensure the entry is negative.
+bwdSkip :: Int -> Int
+bwdSkip x = abs x .&. 0x7FFFFFFF
+{-# INLINE bwdSkip #-}
+
+-- | Given a skip-encoded rowptr and a row index, resolve the actual buffer offset.
+-- For non-empty rows: the entry itself.
+-- For empty rows: follow the forward skip to the next non-empty row
+-- and use its offset (which equals the end of the last non-empty row before it).
+-- If no non-empty row exists forward, uses the sentinel (last entry, always non-negative).
+resolveRowStart :: V.Vector vec Int => vec Int -> Int -> Int
+resolveRowStart rowptr i =
+  let !entry = rowptr V.! i
+  in if entry >= 0
+     then entry
+     else let !skip = fwdSkip entry
+          in if skip > 0
+             then rowptr V.! (i + skip)  -- next non-empty row's start = our start
+             else rowptr V.! (V.length rowptr - 1)  -- sentinel: total nnz
+{-# INLINE resolveRowStart #-}
+
+-- | Build a skip-encoded rowptr from a traditional (monotone non-negative) rowptr.
+-- The input must have length nrows+1 with the last entry being nnz.
+-- Empty rows (where rowptr[i] == rowptr[i+1]) get skip-encoded.
+buildSkipRowPtr :: (V.Vector vec Int, V.Vector vec Int) => vec Int -> vec Int
+buildSkipRowPtr traditional =
+  let !n = V.length traditional - 1  -- number of rows
+      isEmpty i = (traditional V.! i) == (traditional V.! (i+1))
+
+      -- Forward pass: compute fwd_skip for each empty row
+      -- fwd_skip[i] = distance to next non-empty row (or 0 if none)
+      fwdSkips = V.generate n $ \i ->
+        if not (isEmpty i) then 0
+        else let go j | j >= n = 0          -- no non-empty row after us
+                      | not (isEmpty j) = j - i
+                      | otherwise = go (j+1)
+             in go (i+1)
+
+      -- Backward pass: compute bwd_skip for each empty row
+      bwdSkips = V.generate n $ \i ->
+        if not (isEmpty i) then 0
+        else let go j | j < 0 = 0           -- no non-empty row before us
+                      | not (isEmpty j) = i - j
+                      | otherwise = go (j-1)
+             in go (i-1)
+
+      -- Build the encoded rowptr (n+1 entries, last is sentinel = nnz)
+  in V.generate (n+1) $ \i ->
+       if i == n then traditional V.! n  -- sentinel always non-negative
+       else if isEmpty i
+            then encodeEmptyRow (fwdSkips V.! i) (bwdSkips V.! i)
+            else traditional V.! i
+{-# INLINABLE buildSkipRowPtr #-}
 
 
 data CompressedSparseRow
@@ -452,15 +539,15 @@ instance V.Vector (BufferPure rep) Int => Layout  (Format DirectSparse 'Contiguo
   transposedLayout  = id
   -- {-# INLINE transposedLayout #-}
 
-  basicLogicalShape = \ form -> _logicalShapeDirectSparse form  :* Nil
-  -- {-# INLINE basicLogicalShape #-}
+  logicalShape = \ form -> _logicalShapeDirectSparse form  :* Nil
+  -- {-# INLINE logicalShape #-}
 
-  basicLogicalForm = id
+  logicalForm = id
 
-  basicCompareIndex = \ _ (a:* Nil) (b :* Nil) -> compare a b
-  -- {-# INLINE basicCompareIndex #-}
+  compareIndex = \ _ (a:* Nil) (b :* Nil) -> compare a b
+  -- {-# INLINE compareIndex #-}
 
-  basicAddressRange = \form ->
+  addressRange = \form ->
     case (minAddress form , maxAddress form ) of
       (Just least, Just greatest) -> Just (Range least greatest )
       _ -> Nothing
@@ -477,35 +564,35 @@ instance V.Vector (BufferPure rep) Int => Layout  (Format DirectSparse 'Contiguo
                else Nothing
 
 -- TODO, double check that im doing shift correctly
-  {-# INLINE basicToAddress #-}
-  basicToAddress =
+  {-# INLINE toAddress #-}
+  toAddress =
       \ (FormatDirectSparseContiguous shape  indexshift lookupTable) (ix:*_) ->
          if  not (ix < shape && ix > 0 ) then  Nothing
           else  fmap Address  $! lookupExact lookupTable (ix + indexshift)
 
-  {-# INLINE basicToIndex #-}
-  basicToIndex =
+  {-# INLINE toIndex #-}
+  toIndex =
     \ (FormatDirectSparseContiguous _ shift lut) (Address addr) ->
         ((lut V.! addr ) - shift) :* Nil
-  {-# INLINE basicAddressAsInt #-}
-  basicAddressAsInt = \ _ (Address a) -> a
+  {-# INLINE addressAsInt #-}
+  addressAsInt = \ _ (Address a) -> a
 
-  {-# INLINE basicNextAddress #-}
-  basicNextAddress =
+  {-# INLINE nextAddr #-}
+  nextAddr =
     \ (FormatDirectSparseContiguous _ _ lut) (Address addr) ->
       if  addr >= (V.length lut) then Nothing else Just  (Address (addr+1))
 
-  -- {-# INLINE basicAddressPopCount #-}
-  basicAddressPopCount = \ form (Range loadr@(Address lo) hiadr@(Address hi)) ->
+  -- {-# INLINE addressPopCount #-}
+  addressPopCount = \ form (Range loadr@(Address lo) hiadr@(Address hi)) ->
     if not ( lo <= hi ) then
-      error $! "basicAddressPopCount was passed a bad Address Range " ++ show loadr ++" " ++ show hiadr
+      error $! "addressPopCount was passed a bad Address Range " ++ show loadr ++" " ++ show hiadr
       else
-        case  basicAddressRange form of
+        case  addressRange form of
           Nothing -> 0
           Just (Range (Address loBound) (Address  hiBound)) ->
             if not $ (loBound<= lo ) && (hi <= hiBound)
               then error $!
-               "basicAddressPopCount was passed a bad Address Range: "
+               "addressPopCount was passed a bad Address Range: "
                 ++show lo++" "++ show hi++"\nwith format Address range"
                 ++ show loBound ++ " " ++ show hiBound
               else hi - lo
@@ -518,8 +605,8 @@ instance V.Vector (BufferPure rep) Int => Layout  (Format DirectSparse 'Contiguo
     NOTE: also need to remember to do those index space shifts for
     1dim direct sparse, and test them thoroughly
 -}
-  -- {-# INLINE basicNextIndex #-}
-  basicNextIndex =
+  -- {-# INLINE seek #-}
+  seek =
     \form@(FormatDirectSparseContiguous size shift lut) (ix:*Nil) mebeAddress ->
       if  ix >= size || ix >= (lut V.! (V.length lut -1) - shift ) then Nothing
             -- if ix is out of bounds or the last element, we're done!
@@ -528,7 +615,7 @@ instance V.Vector (BufferPure rep) Int => Layout  (Format DirectSparse 'Contiguo
             resAddr = Address $! bsearchUp  (\lix-> ix < ((lut V.! lix)-shift) )
                         0 (V.length lut )
         in case mebeAddress of
-          Nothing ->  resAddr `seq` (Just (basicToIndex form resAddr ,  resAddr))
+          Nothing ->  resAddr `seq` (Just (toIndex form resAddr ,  resAddr))
                 -- Q: do i want the Index part of the tuple to be strict or not?
                 -- leaving it lazy for now
                 -- TODO / FIX / AUDIT ME / NOT SURE
@@ -545,9 +632,23 @@ instance V.Vector (BufferPure rep) Int => Layout  (Format DirectSparse 'Contiguo
                                 basicHybridSearchUp
                                   (\lix-> ix <  ((lut V.! lix)-shift ) )
                                   adr (V.length lut -1)
-                  in  Just (basicToIndex form nextAddr ,  nextAddr)
+                  in  Just (toIndex form nextAddr ,  nextAddr)
               else
-                resAddr `seq` (Just (basicToIndex form resAddr ,  resAddr))
+                resAddr `seq` (Just (toIndex form resAddr ,  resAddr))
+
+  -- Sparse rank-1 affine shift: walk via nextAddr forward or prevAddr backward. O(|step|).
+  affineAddressShift = \form addr step ->
+    if step == 0 then Just addr
+    else if step > 0
+      then let go 0 a = Just a
+               go n a = case nextAddr form a of
+                          Nothing -> Nothing
+                          Just a' -> go (n-1) a'
+           in go step addr
+      else -- negative: for rank-1 sparse, addresses are plain Ints, just decrement
+           let (Address pos) = addr
+               newPos = pos + step  -- step is negative
+           in if newPos >= 0 then Just (Address newPos) else Nothing
 
 
 ------------
@@ -568,41 +669,38 @@ instance  (V.Vector (BufferPure rep) Int )
   {-# INLINE transposedLayout #-}
 
 
-  basicLogicalShape = \ form -> (_innerDimContiguousSparseFormat $ _getFormatContiguousCSR  form ) :*
+  logicalShape = \ form -> (_innerDimContiguousSparseFormat $ _getFormatContiguousCSR  form ) :*
          ( _outerDimContiguousSparseFormat $ _getFormatContiguousCSR form ):* Nil
           --   x_ix :* y_ix
-  {-# INLINE basicLogicalShape #-}
+  {-# INLINE logicalShape #-}
 
 
-  basicCompareIndex = \ _ as  bs -> shapeCompareRightToLeft as bs
-  {-# INLINE basicCompareIndex #-}
+  compareIndex = \ _ as  bs -> shapeCompareRightToLeft as bs
+  {-# INLINE compareIndex #-}
 
 
-  {-# INLINE basicAddressPopCount #-}
-  basicAddressPopCount = \ form (Range (SparseAddress _ lo) (SparseAddress _ hi)) ->
+  {-# INLINE addressPopCount #-}
+  addressPopCount = \ form (Range (SparseAddress _ lo) (SparseAddress _ hi)) ->
     if not ( lo <= hi ) then
-      error $! "basicAddressPopCount was passed a bad Address Range " ++ show lo ++" " ++ show hi
+      error $! "addressPopCount was passed a bad Address Range " ++ show lo ++" " ++ show hi
       else
-        case  basicAddressRange form of
+        case  addressRange form of
           Nothing -> 0
           Just (Range (SparseAddress _ loBound) (SparseAddress _ hiBound)) ->
             if not $ (loBound<= lo ) && (hi <= hiBound)
               then error $!
-               "basicAddressPopCount was passed a bad SparseAddress Range: "
+               "addressPopCount was passed a bad SparseAddress Range: "
                 ++show lo++" "++ show hi++"\nwith format SparseAddress range"
                 ++ show loBound ++ " " ++ show hiBound
               else hi - lo
 
    -- {-# INLINE rangedFormatAddress #-}
-  basicAddressRange = \ form ->
+  addressRange = \ form ->
     case (minAddress form,maxAddress form) of
       (Just least, Just greatest)-> Just (Range least greatest)
       _ -> Nothing
 
     where
-      {-
-      probably should deduplicate min/maxAddress
-      -}
       minAddress =
             \(FormatContiguousCompressedSparseRow
                 (FormatContiguousCompressedSparseInternal  y_row_range x_col_range
@@ -610,37 +708,27 @@ instance  (V.Vector (BufferPure rep) Int )
                     if  y_row_range < 1  || x_col_range < 1|| (V.length columnIndex  < 1)
                       then Nothing
                       else
-                      -- the value buffer has the invariant the the end points
-                      -- of the buffer MUST be valid  in bounds values if length buffer > 0
-                    --SparseAddress $! 0 $! 0
-
-                    -- hoisted where into if branch as let so lets could be strict
                         let
-                          !addrShift = columnIndex V.! 0
+                          !shift = rowStartIndex V.! 0
 
-                          -- for now assuming candidateRow is ALWAYS valid
-                          --- haven't proven this, FIXME
-                          !candidateRow= {-linearSearchUp-}
-                               basicHybridSearchUp nonZeroRow 0 (y_row_range-1 )
+                          -- With skip encoding: if row 0 entry is negative, use fwdSkip.
+                          -- Otherwise: hybrid search for first non-empty row.
+                          !candidateRow =
+                            let !entry0 = rowStartIndex V.! 0
+                            in if isEmptyRowEntry entry0
+                               then let !skip = fwdSkip entry0
+                                    in if skip > 0 then skip else y_row_range -- no non-empty rows
+                               else if resolveRowStart rowStartIndex 1 - shift > 0
+                                    then 0  -- row 0 is non-empty
+                                    else basicHybridSearchUp
+                                           (\r -> not (isEmptyRowEntry (rowStartIndex V.! r))
+                                               && resolveRowStart rowStartIndex (r+1) - shift
+                                                > resolveRowStart rowStartIndex r - shift)
+                                           1 (y_row_range - 1)
 
-
-                          {- FIXME, to get the right complexity
-                          to linear search on first log #rows + 1 slots, then fall
-                          back to binary search
-                          punting for now because this probably wont matter than often
-
-                          the solution will be to replace linearSearchUp
-                          with a hybridSearchUp
-                           -}
-                          nonZeroRow =
-                              \ !row_ix ->
-                                   -- the first row to satisfy this property
-                                  (rowStartIndex V.! (row_ix+1) >  rowStartIndex V.! row_ix)
-                                  -- if the start index is >0, already past the min address row!
-                                    ||  (rowStartIndex V.! row_ix) - addrShift > 0
-
-                                  --else  maxIxP1 >  rowStartIndex V.! row_ix
-                        in Just $! SparseAddress  candidateRow $! 0
+                        in if candidateRow < y_row_range
+                           then Just $! SparseAddress candidateRow $! 0
+                           else Nothing
 
       maxAddress  =
         \(FormatContiguousCompressedSparseRow
@@ -649,52 +737,87 @@ instance  (V.Vector (BufferPure rep) Int )
                 if  y_row_range < 1  || x_col_range < 1|| (V.length columnIndex  < 1)
                   then Nothing
                   else
-                  -- the value buffer has the invariant the the end points
-                  -- of the buffer MUST be valid  in bounds values if length buffer > 0
-                --SparseAddress $! 0 $! 0
-
-                -- hoisted where into if branch as let so lets could be strict
                     let
-                      !addrShift = columnIndex V.! 0
-                      !maxIxP1 = V.length columnIndex
-
-                      -- for now assuming candidateRow is ALWAYS valid
-                      --- haven't proven this, FIXME
-                      !candidateRow= {-linearSearchDown-}
-                          basicHybridSearchDown nonZeroRow 0 (y_row_range-1 )
-
-
-                      {- FIXME, to get the right complexity
-                      to linear search on last log #rows + 1 slots, then fall
-                      back to binary search
-                      punting for now because this probably wont matter than often
-
-                      the solution will be to replace linearSearchDown
-                      with a hybridSearchDown
-                       -}
-                      nonZeroRow =
-                          \ !row_ix ->
-                       -- the first row to satisfy this property (going down from last row)
-                              (rowStartIndex V.! (row_ix+1) >  rowStartIndex V.! row_ix)
-                      -- if the start index is >= maxIxP1, havent gone down to max addres yet
-                      -- if < maxIxp1, we're at or below the max address
-                                ||  (rowStartIndex V.! row_ix) - addrShift < maxIxP1
-
-                              --else  maxIxP1 >  rowStartIndex V.! row_ix
-                    in
-                        Just $!
-                         SparseAddress  candidateRow $! (V.length columnIndex - 1 )
+                      -- Find last non-empty row: scan from end, or use bwdSkip
+                      !lastRow = y_row_range - 1
+                      !entryLast = rowStartIndex V.! lastRow
+                      !candidateRow =
+                        if isEmptyRowEntry entryLast
+                        then let !skip = bwdSkip entryLast
+                             in if skip > 0 then lastRow - skip else -1
+                        else -- check if this row is actually non-empty
+                          let !shift = rowStartIndex V.! 0
+                          in if resolveRowStart rowStartIndex (lastRow + 1) - shift
+                              > resolveRowStart rowStartIndex lastRow - shift
+                             then lastRow
+                             else basicHybridSearchDown
+                                    (\r -> not (isEmptyRowEntry (rowStartIndex V.! r))
+                                        && resolveRowStart rowStartIndex (r+1)
+                                         - (rowStartIndex V.! 0)
+                                         > resolveRowStart rowStartIndex r
+                                         - (rowStartIndex V.! 0))
+                                    0 (lastRow - 1)
+                    in if candidateRow >= 0
+                       then Just $! SparseAddress candidateRow $! (V.length columnIndex - 1)
+                       else Nothing
 
        -- \ (FormatContiguousCompressedSparseRow
        -- (FormatContiguousCompressedSparseInternal _ y_range
        --          columnIndex _)) ->
        --       SparseAddress (y_range - 1) (V.length columnIndex - 1 )
 
-  {-#  INLINE basicAddressAsInt #-}
-  basicAddressAsInt = \ _ (SparseAddress _ addr)-> addr
+  {-#  INLINE addressAsInt #-}
+  addressAsInt = \ _ (SparseAddress _ addr)-> addr
 
-  {-# INLINE basicToIndex #-}
-  basicToIndex =
+  logicalForm = id
+
+  -- For sparse formats, affine address shift walks step-by-step.
+  -- Forward via nextAddr, backward via row-aware decrement.
+  -- O(|step|) amortized (each row visited at most once during backward scan).
+  affineAddressShift = \form@(FormatContiguousCompressedSparseRow
+      (FormatContiguousCompressedSparseInternal
+        _y_row_range _x_col_range columnIndex rowStartIndex))
+    addr step ->
+    if step == 0 then Just addr
+    else if step > 0
+      then let go 0 a = Just a
+               go n a = case nextAddr form a of
+                          Nothing -> Nothing
+                          Just a' -> go (n-1) a'
+           in go step addr
+      else -- negative: walk backward using buffer offset and row boundaries
+           let !shift = rowStartIndex V.! 0
+               prevSparse (SparseAddress row pos)
+                 | pos > resolveRowStart rowStartIndex row - shift =
+                     -- still entries before us in this row
+                     Just $! SparseAddress row (pos - 1)
+                 | row <= 0 = Nothing
+                 | otherwise =
+                     -- find previous non-empty row
+                     -- O(1) with skip encoding, linear scan fallback
+                     let findPrev r
+                           | r < 0 = Nothing
+                           | isEmptyRowEntry (rowStartIndex V.! r) =
+                               -- skip-encoded: jump backward
+                               let !skip = bwdSkip (rowStartIndex V.! r)
+                               in if skip > 0 && r - skip >= 0
+                                  then let !targetRow = r - skip
+                                           !lastPos = resolveRowStart rowStartIndex (targetRow + 1) - shift - 1
+                                       in Just $! SparseAddress targetRow lastPos
+                                  else Nothing
+                           | resolveRowStart rowStartIndex (r+1) - shift > resolveRowStart rowStartIndex r - shift =
+                               let !lastPos = resolveRowStart rowStartIndex (r+1) - shift - 1
+                               in Just $! SparseAddress r lastPos
+                           | otherwise = findPrev (r - 1)
+                     in findPrev (row - 1)
+               go 0 a = Just a
+               go n a = case prevSparse a of
+                          Nothing -> Nothing
+                          Just a' -> go (n-1) a'
+           in go (negate step) addr
+
+  {-# INLINE toIndex #-}
+  toIndex =
         \ (FormatContiguousCompressedSparseRow
             (FormatContiguousCompressedSparseInternal  _ _ columnIndex _))
             (SparseAddress outer inner) ->
@@ -712,115 +835,169 @@ we make the VERY strong assumption that no illegal addresses are ever made!
 note that for very very small sparse matrices, the branching will have some
 overhead, but in general branch prediction should work out ok.
 -}
-  {-# INLINE basicNextAddress #-}
-  basicNextAddress =
+  {-# INLINE nextAddr #-}
+  nextAddr =
          \ (FormatContiguousCompressedSparseRow
-            (FormatContiguousCompressedSparseInternal  _ _
+            (FormatContiguousCompressedSparseInternal  y_row_range _
               columnIndex rowStartIndex))
             (SparseAddress outer inner) ->
-              if  inner < (V.length columnIndex -1)
-               -- can advance further
-                 -- && ( outer == (y_row_range-1)
-                  --- either last row
-                  || ((inner +1) < (rowStartIndex V.! (outer + 1)  - (rowStartIndex V.! 0 )))
-                     -- or our address is before the next row starts
-                     -- 3 vector CSR has a +1 slot at the end of the rowStartIndex
+              let !shift = rowStartIndex V.! 0
+                  !rowEnd = resolveRowStart rowStartIndex (outer + 1) - shift
+              in if inner + 1 < rowEnd
+                 then
+                   -- Still within current row
+                   Just (SparseAddress outer (inner+1))
+                 else if inner >= (V.length columnIndex - 1)
+                   then Nothing  -- last entry in entire matrix
+                   else
+                     -- Crossed row boundary: find next non-empty row.
+                     -- With skip encoding this is O(1); without, linear scan.
+                     let findNext !r
+                           | r >= y_row_range = Nothing
+                           | isEmptyRowEntry (rowStartIndex V.! r) =
+                               let !skip = fwdSkip (rowStartIndex V.! r)
+                               in if skip > 0 then findNext (r + skip)
+                                  else Nothing
+                           | resolveRowStart rowStartIndex (r+1) - shift > resolveRowStart rowStartIndex r - shift =
+                               Just (SparseAddress r (inner + 1))
+                           | otherwise = findNext (r + 1)
+                     in findNext (outer + 1)
 
-                then
-                  Just (SparseAddress outer (inner+1))
-                else
-                  if inner == (V.length columnIndex -1)
-                    then Nothing
-                    else Just (SparseAddress (outer + 1) (inner + 1 ) )
 
-
-  -- {-# INLINE basicToAddress #-}
-  basicToAddress =
+  -- {-# INLINE toAddress #-}
+  toAddress =
         \ (FormatContiguousCompressedSparseRow
             (FormatContiguousCompressedSparseInternal  y_row_range x_col_range
               columnIndex rowStartIndex))
           (ix_x:*ix_y :* _ ) ->
             if  not (ix_x >= x_col_range ||  ix_y >=y_row_range )
               then
-              -- slightly different logic when ix_y < range_y-1 vs == range_y-1
-              -- because contiguous, don't need the index space shift though!
-                let
-                  shift = (rowStartIndex V.! 0)
-                  checkIndex i =
-                      if  (columnIndex V.!i) == ix_x
-                        then Just i
-                        else Nothing
-                in
-                 (SparseAddress ix_y  <$>) $!
-                    checkIndex =<<
-                 --- FIXME  : need to check
-                      lookupExactRange columnIndex ix_x
-                          ((rowStartIndex V.! ix_y) - shift)
-                          ((rowStartIndex V.! (ix_y+1) ) - shift)
+                let !rowEntry = rowStartIndex V.! ix_y
+                in if isEmptyRowEntry rowEntry
+                   then Nothing  -- skip-encoded empty row: O(1) bail
+                   else
+                     let
+                       !shift = (rowStartIndex V.! 0)
+                       !rowLo = rowEntry - shift
+                       !rowHi = resolveRowStart rowStartIndex (ix_y + 1) - shift
+                       checkIndex i =
+                           if  (columnIndex V.!i) == ix_x
+                             then Just i
+                             else Nothing
+                     in
+                      (SparseAddress ix_y  <$>) $!
+                         checkIndex =<<
+                           lookupExactRange columnIndex ix_x rowLo rowHi
 
               else   (Nothing :: Maybe SparseAddress )
 
 
-  -- {-# INLINE basicNextIndex #-}
-  {-  because nextIndex acts like a range query
-      it doesn't make sense for inner loops
+  -- {-# INLINE seek #-}
+  {-  seek acts like a range query -- not meant for inner loops.
+      Strategy: find first non-empty row at or after outerY (linear then gallop),
+      then within that row find first column >= innerX (hybrid search).
+      With address hint: narrow the search range when possible.
   -}
-  basicNextIndex =
-     \_form@(FormatContiguousCompressedSparseRow
+  seek =
+     \form@(FormatContiguousCompressedSparseRow
               (FormatContiguousCompressedSparseInternal
-                y_row_range x_col_range _columnIndex _rowStartIndex))
-      _ix@(innerX :* outerY :*Nil) mebeSparseAddress ->
+                y_row_range x_col_range columnIndex rowStartIndex))
+      (innerX :* outerY :*Nil) mebeSparseAddress ->
         if  not $ (innerX >=0 && innerX  < x_col_range ) && (outerY >= 0 && outerY < y_row_range)
-          -- checking if index is inbounds for logical shape
-          -- return Nothing if its out of bounds
-          -- QUESTION: should it throw an error instead of returning nothing?
         then Nothing
         else
-          case mebeSparseAddress of
-            Nothing -> error "finish me "
-              where
-              {- Okay here we check if the proposed current index is manifest, or not
-                Is it the right Row To search for the next index,
-                Or if We need to search further along. This is the way that
-                enables Usage of operations That give a complexity that is O(1)
-                in the average/best case and O(log N )in the worst case
+          let
+            !shift = rowStartIndex V.! 0
+            !nnz = V.length columnIndex
 
-                The logical we do is roughly first check If there is an element
-                strictly Greater than ix in next we are doing the successor
-                That is within that Row And if so we can directly
-                  do a binary search therein
-                -}
-                _resRow = error "finish me "
+            -- Given a row, return the [lo, hi) range into columnIndex.
+            -- Handles skip-encoded rowptr (negative entries).
+            rowRange !r = let !lo = resolveRowStart rowStartIndex r - shift
+                              !hi = resolveRowStart rowStartIndex (r+1) - shift
+                          in (lo, hi)
 
-            (Just (SparseAddress _innerix _outerix) )
-                -> error "really finish me"
+            -- Find the first non-empty row at or after startRow.
+            -- O(1) when rowptr is skip-encoded (negative entries encode fwd_skip).
+            -- Falls back to hybrid search for traditional rowptrs.
+            findNonEmptyRow !startRow
+              | startRow >= y_row_range = Nothing
+              | otherwise =
+                  let !entry = rowStartIndex V.! startRow
+                  in if entry >= 0
+                     then -- Non-negative: this row might be non-empty. Check range.
+                       let !lo = entry - shift
+                           !hi = resolveRowStart rowStartIndex (startRow + 1) - shift
+                       in if hi > lo
+                          then Just (startRow, lo, hi)
+                          else -- Traditional empty row: fall back to hybrid scan
+                            let !candidateRow = basicHybridSearchUp
+                                  (\r -> let !rStart = resolveRowStart rowStartIndex r - shift
+                                             !rEnd   = resolveRowStart rowStartIndex (r+1) - shift
+                                         in rEnd > rStart)
+                                  (startRow + 1) (y_row_range - 1)
+                                !cLo = resolveRowStart rowStartIndex candidateRow - shift
+                                !cHi = resolveRowStart rowStartIndex (candidateRow + 1) - shift
+                            in if cHi > cLo
+                               then Just (candidateRow, cLo, cHi)
+                               else Nothing
+                     else -- Skip-encoded empty row: O(1) jump forward
+                       let !skip = fwdSkip entry
+                       in if skip > 0 && startRow + skip < y_row_range
+                          then let !targetRow = startRow + skip
+                                   !lo = rowStartIndex V.! targetRow - shift
+                                   !hi = resolveRowStart rowStartIndex (targetRow + 1) - shift
+                               in if hi > lo
+                                  then Just (targetRow, lo, hi)
+                                  else Nothing  -- shouldn't happen if skip encoding is correct
+                          else Nothing  -- no non-empty row forward
 
+            -- Within a non-empty row [lo, hi), find first column >= targetCol.
+            -- Returns Nothing if all columns in the row are < targetCol.
+            findColGE !targetCol !lo !hi =
+              let -- predicate: columnIndex[pos] >= targetCol  (monotonic: FFFFFTTTTT)
+                  !pos = basicHybridSearchUp (\p -> (columnIndex V.! p) >= targetCol) lo (hi - 1)
+              in if pos < hi && (columnIndex V.! pos) >= targetCol
+                 then Just pos
+                 else Nothing
 
-        --case mebeAddress of
-        --  Nothing ->
-        --    let
-        --    resAddr = Address $! bsearchUp  (\lix-> ix < ((lut V.! lix)-shift) )
-        --                0 (V.length lut )
-        --  in
-        --   resAddr `seq` (Just (basicToIndex form resAddr ,  resAddr))
-        --        -- Q: do i want the Index part of the tuple to be strict or not?
-        --        -- leaving it lazy for now
-        --        -- TODO / FIX / AUDIT ME / NOT SURE
-        --      -- this is the fall back binary search based lookup
-        --  Just (Address adr)->
-        --  -- make sure the address hint is in bounds and
-        --  -- is <= the current position
-        --      if adr >0 && adr < (V.length lut -1) && ix >=((lut V.! adr )-shift)
-        --      then
-        --        -- by construction we know theres at least one applicable index
-        --        -- thats
-        --        let !nextAddr = Address $!
-        --                        basicHybridSearchUp
-        --                          (\lix-> ix <  ((lut V.! lix)-shift ) )
-        --                          adr (V.length lut -1)
-        --          in  Just (basicToIndex form nextAddr ,  nextAddr)
-        --      else
-        --        resAddr `seq` (Just (basicToIndex form resAddr ,  resAddr))
+            -- Build the result from a row and buffer position
+            mkResult !row !pos = Just (toIndex form (SparseAddress row pos), SparseAddress row pos)
+
+            -- The core search: starting from row startRow, column target innerX
+            searchFrom !startRow !colTarget =
+              case findNonEmptyRow startRow of
+                Nothing -> Nothing
+                Just (!row, !lo, !hi)
+                  | row == startRow ->
+                      -- Same row as target: need column >= colTarget
+                      case findColGE colTarget lo hi of
+                        Just !pos -> mkResult row pos
+                        Nothing ->
+                          -- No matching column in this row; advance to next row
+                          -- and take any entry (all entries in later rows are "after" target)
+                          case findNonEmptyRow (startRow + 1) of
+                            Nothing -> Nothing
+                            Just (!row', !lo', _hi') -> mkResult row' lo'
+                  | otherwise ->
+                      -- Advanced past target row; first entry in this row is valid
+                      mkResult row lo
+
+          in case mebeSparseAddress of
+            Nothing -> searchFrom outerY innerX
+
+            Just (SparseAddress hintRow hintPos)
+              -- Hint is in the target row and at or past our column search start:
+              -- narrow the column search within [hintPos, rowHi)
+              | hintRow == outerY
+              , hintPos >= 0 && hintPos < nnz
+              , let (!_lo, !hi) = rowRange outerY
+              , hintPos < hi ->
+                  case findColGE innerX hintPos hi of
+                    Just !pos -> mkResult outerY pos
+                    Nothing -> searchFrom (outerY + 1) 0
+
+              -- Hint is before our target or invalid: fall back to full search
+              | otherwise -> searchFrom outerY innerX
 
 
 
@@ -839,8 +1016,8 @@ overhead, but in general branch prediction should work out ok.
 --  basicFormShape = \ form -> logicalRowShapeInnerContiguousCSR form  :*
 --         logicalColumnShapeInnerContiguousCSR form :* Nil
 --  {-# INLINE basicFormShape #-}
---  basicCompareIndex = \ _ as  bs ->shapeCompareRightToLeft as bs
---  {-# INLINE basicCompareIndex#-}
+--  compareIndex = \ _ as  bs ->shapeCompareRightToLeft as bs
+--  {-# INLINE compareIndex#-}
 
 
 
@@ -860,8 +1037,8 @@ overhead, but in general branch prediction should work out ok.
 --              SparseAddress (outer_dim_range - 1) (V.length innerDimIndex - 1 )
 
 
---      {-#INLINE basicToIndex #-}
---      basicToIndex =
+--      {-#INLINE toIndex #-}
+--      toIndex =
 --       \ (FormatInnerContiguousCompressedSparseInternal _ _  _ innerDimIndex _)
 --          (SparseAddress outer inner) -> (innerDimIndex V.! inner ) :* outer :*  Nil
 --          -- outer is the row (y index) and inner is the lookup position for the x index
@@ -877,8 +1054,8 @@ overhead, but in general branch prediction should work out ok.
 --note that for very very small sparse matrices, the branching will have some
 --overhead, but in general branch prediction should work out ok.
 
---      {-# INLINE basicNextAddress #-}
---      basicNextAddress =
+--      {-# INLINE nextAddr #-}
+--      nextAddr =
 --         \ (FormatInnerContiguousCompressedSparseRow
 --                (FormatInnerContiguousCompressedSparseInternal _ _ _
 --                                                         columnIndex rowstartIndex))

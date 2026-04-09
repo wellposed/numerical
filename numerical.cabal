@@ -38,7 +38,7 @@ maintainer:          carter at wellposed dot com
 category:            Math
 
 build-type:          Simple
-tested-with:    GHC == 8.2.2 , GHC == 8.4.3, GHC == 8.6.5, GHC == 8.8.3,GHC == 8.10.1
+tested-with:    GHC == 8.2.2 , GHC == 8.4.3, GHC == 8.6.5, GHC == 8.8.3, GHC == 8.10.1, GHC == 9.10.3
 
 
 
@@ -113,7 +113,7 @@ library
     build-depends:       base >= 4.10  && < 5
 
                         ,primitive >= 0.5 && < 0.10
-                        ,vector >= 0.11 && < 0.13
+                        ,vector >= 0.11 && < 0.14
                         ,tagged >= 0.7 && < 0.9
                         ,monad-ste >= 0.1 && < 0.2
                         ,transformers >= 0.4 && < 0.7

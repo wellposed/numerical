@@ -252,7 +252,7 @@ instance (Buffer rep Int) => LayoutBuilder (Format CompressedSparseRow 'Contiguo
   buildFormatM (x:* y :* _) proxyFormat  _ (Just builder) = do
     mvtup@(MVPair (MVPair (MVLeaf mvectYs) (MVLeaf mvectXs)) (MVLeaf mvectVals))<-
           materializeBatchMV  $ fmap (\((xix:* yix :* _),val)-> ((yix,xix),val) ) builder
-    _ <-  IntroSort.sortBy (\((y1,x1),_) ((y2,x2),_) ->  basicCompareIndex  proxyFormat (x1:*y1 :* Nil) (x2:*y2:* Nil)  )
+    _ <-  IntroSort.sortBy (\((y1,x1),_) ((y2,x2),_) ->  compareIndex  proxyFormat (x1:*y1 :* Nil) (x2:*y2:* Nil)  )
                   mvtup
     vectXs <- unsafeBufferFreeze mvectXs
     vectYs <- unsafeBufferFreeze mvectYs
@@ -266,7 +266,7 @@ instance (Buffer rep Int) => LayoutBuilder (Format CompressedSparseRow 'Contiguo
     --yRunsVect <- unsafeBufferFreeze yRunsMVect
     let xyVect =         (VPair (VLeaf vectXs) (VLeaf vectYs))
     optFail <- return $
-      isStrictlyMonotonicV (\(x1,y1) (x2,y2)->basicCompareIndex proxyFormat (x1:*y1:*Nil) (x2:*y2:*Nil))
+      isStrictlyMonotonicV (\(x1,y1) (x2,y2)->compareIndex proxyFormat (x1:*y1:*Nil) (x2:*y2:*Nil))
         xyVect
     case optFail of
       Nothing ->  return $
