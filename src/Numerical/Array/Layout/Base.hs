@@ -201,16 +201,12 @@ rsIdentity (_ :* rest) = RSAll (rsIdentity rest)
 -- | Build an 'RSlice' that picks the major (outermost) axis at index @ix@,
 -- passing all remaining axes through. This is @majorAxisProject@ as a slice.
 rsMajorProject :: Shape rank a -> Int -> RSlice ('S rank) rank
-rsMajorProject Nil ix = RSPick ix RSNil
-rsMajorProject (_ :* rest) ix = RSPick ix (rsIdentity (_ :* rest))
-  where _ = rest -- suppress unused warning; shape only used for rank witness
+rsMajorProject shp ix = RSPick ix (rsIdentity shp)
 
 -- | Build an 'RSlice' that restricts the major axis to @[lo..hi]@ inclusive,
 -- passing all remaining axes through. This is @majorAxisSlice@ as a slice.
 rsMajorSlice :: Shape rank a -> Int -> Int -> RSlice ('S rank) ('S rank)
-rsMajorSlice Nil lo hi = RSRange lo hi RSNil
-rsMajorSlice (_ :* rest) lo hi = RSRange lo hi (rsIdentity (_ :* rest))
-  where _ = rest
+rsMajorSlice shp lo hi = RSRange lo hi (rsIdentity shp)
 
 -- | Build a full rectilinear range slice from two corner 'Index' values.
 -- Each axis gets @RSRange (lo_i) (hi_i)@.

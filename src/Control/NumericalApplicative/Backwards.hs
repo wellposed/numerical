@@ -49,7 +49,7 @@ instance (Traversable f) => Traversable (Backwards f) where
     {-#INLINE sequence #-}
 
 (<**>) :: A.Applicative f => f a -> f (a -> b) -> f b
-(<**>) = liftA2 (flip ($))
+(<**>) = A.liftA2 (flip ($))
 {-# INLINE (<**>) #-}
 
 liftA2 :: A.Applicative f => (a -> b -> c) -> f a -> f b -> f c

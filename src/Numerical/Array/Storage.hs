@@ -113,10 +113,10 @@ newtype instance BufferMut Stored st  elem = StorableBufferMut (SV.MVector st el
 
 -- | 'unsafeBufferFreeze'
 unsafeBufferFreeze :: (Buffer rep a,PrimMonad m) => BufferMut rep (PrimState m )  a -> m (BufferPure rep a)
-unsafeBufferFreeze =  VG.basicUnsafeFreeze
+unsafeBufferFreeze =  VG.unsafeFreeze
 
 unsafeBufferThaw :: (Buffer rep a,PrimMonad m) => (BufferPure rep a) -> m (BufferMut rep (PrimState m )  a)
-unsafeBufferThaw = VG.basicUnsafeThaw
+unsafeBufferThaw = VG.unsafeThaw
 
 instance (VGM.MVector BV.MVector elem) => VGM.MVector (BufferMut Boxed)  elem where
   basicInitialize = \(BoxedBufferMut v) -> VGM.basicInitialize v
@@ -207,8 +207,8 @@ instance (VGM.MVector UV.MVector elem) => VGM.MVector (BufferMut Unboxed)  elem 
 instance VG.Vector BV.Vector  a  => VG.Vector (BufferPure Boxed) a   where
 
   basicUnsafeFreeze =
-     \(BoxedBufferMut mv) ->(\ x->return $ BoxedBuffer x) =<<  VG.basicUnsafeFreeze mv
-  basicUnsafeThaw= \(BoxedBuffer v) ->(\x -> return $ BoxedBufferMut x ) =<< VG.basicUnsafeThaw v
+     \(BoxedBufferMut mv) ->(\ x->return $ BoxedBuffer x) =<<  VG.unsafeFreeze mv
+  basicUnsafeThaw= \(BoxedBuffer v) ->(\x -> return $ BoxedBufferMut x ) =<< VG.unsafeThaw v
   basicLength = \(BoxedBuffer v) -> VG.basicLength v
   basicUnsafeSlice =
     \ start len (BoxedBuffer v) ->  BoxedBuffer $! VG.basicUnsafeSlice start len v
@@ -228,9 +228,9 @@ instance VG.Vector BV.Vector  a  => VG.Vector (BufferPure Boxed) a   where
 instance (SV.Storable a)  => VG.Vector (BufferPure Stored) a   where
 
   basicUnsafeFreeze =
-     \(StorableBufferMut mv) -> (\x ->return $ StorableBuffer x) =<<  VG.basicUnsafeFreeze mv
+     \(StorableBufferMut mv) -> (\x ->return $ StorableBuffer x) =<<  VG.unsafeFreeze mv
   basicUnsafeThaw=
-    \(StorableBuffer v) -> (\x -> return $ StorableBufferMut x) =<< VG.basicUnsafeThaw v
+    \(StorableBuffer v) -> (\x -> return $ StorableBufferMut x) =<< VG.unsafeThaw v
   basicLength = \(StorableBuffer v) -> VG.basicLength v
   basicUnsafeSlice =
     \ start len (StorableBuffer v) ->  StorableBuffer $! VG.basicUnsafeSlice start len v
@@ -249,8 +249,8 @@ instance (SV.Storable a)  => VG.Vector (BufferPure Stored) a   where
 
 instance VG.Vector UV.Vector  a  => VG.Vector (BufferPure Unboxed) a   where
 
-  basicUnsafeFreeze = \(UnboxedBufferMut mv) -> (\x -> return $ UnboxedBuffer x) =<<  VG.basicUnsafeFreeze mv
-  basicUnsafeThaw= \(UnboxedBuffer v) ->(\x -> return $  UnboxedBufferMut x) =<< VG.basicUnsafeThaw v
+  basicUnsafeFreeze = \(UnboxedBufferMut mv) -> (\x -> return $ UnboxedBuffer x) =<<  VG.unsafeFreeze mv
+  basicUnsafeThaw= \(UnboxedBuffer v) ->(\x -> return $  UnboxedBufferMut x) =<< VG.unsafeThaw v
   basicLength = \(UnboxedBuffer v) -> VG.basicLength v
   basicUnsafeSlice =
     \ start len (UnboxedBuffer v) ->  UnboxedBuffer $! VG.basicUnsafeSlice start len v

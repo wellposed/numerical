@@ -63,7 +63,7 @@ import Control.NumericalApplicative.Backwards
 import Numerical.Nat
 import qualified Data.Monoid as Monoid
 
-import Prelude hiding  (map,foldl,foldr,init,scanl,scanr,scanl1,scanr1,foldl1,foldr1)
+import Prelude hiding  (map,foldl,foldl',foldr,init,scanl,scanr,scanl1,scanr1,foldl1,foldr1)
 
 import qualified Foreign.Storable  as Store
 import qualified Foreign.Ptr as Ptr
