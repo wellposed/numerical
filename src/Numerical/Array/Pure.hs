@@ -146,7 +146,7 @@ instance (Buffer rep el , L.Layout (L.Format  lay locality  rank rep) rank)
       {-# INLINE basicUnsafeAddressRead #-}
       basicUnsafeAddressRead =
           \ arr  addr ->
-            VG.basicUnsafeIndexM (nativeBufferPure arr)
+            VG.unsafeIndexM (nativeBufferPure arr)
                 (L.addressAsInt (nativeFormatPure arr) $ addr)
 
 class PureArray arr rank a => PureDenseArray arr rank a where
@@ -162,7 +162,6 @@ class PureArray arr rank a => PureDenseArray arr rank a where
     -- | Yield the element at the given position. This method should not be
     -- called directly, use 'unsafeRead' instead.
     basicUnsafeDenseReadM  :: Monad m =>  arr     a -> Index rank  -> m a
-
 
 
 

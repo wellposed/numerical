@@ -176,7 +176,7 @@ instance (Functor m) => Functor (StateT s m) where
     {-# INLINE fmap  #-}
 
 instance (Functor m, Monad m) => Applicative (StateT s m) where
-    pure = \ a ->return a
+    pure = \ a -> StateT $ \ s -> pure (a, s)
     (<*>) = \ a b ->  ap a b
 
 instance (Functor m, MonadPlus m) => Alternative (StateT s m) where
@@ -258,4 +258,3 @@ modify' f = do
 gets :: (Monad m) => (s -> a) -> StateT s m a
 gets = \ f ->  state $ \s -> (f s, s)
 {-# INLINE gets #-}
-

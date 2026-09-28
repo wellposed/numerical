@@ -189,7 +189,7 @@ instance (F.Foldable (Shape r),T.Traversable (Shape r) ,A.Applicative (Shape r))
 
    buildFormatM ix  _ defaultValue _ =
       do
-        buf<-  VGM.replicate (F.foldl' (*) 0   ix) defaultValue
+        buf<-  VGM.replicate (F.foldl' (*) 1   ix) defaultValue
         return (FormatRowContiguous   ix,buf)
 
 instance (F.Foldable (Shape r),T.Traversable (Shape r) ,A.Applicative (Shape r))
@@ -197,7 +197,7 @@ instance (F.Foldable (Shape r),T.Traversable (Shape r) ,A.Applicative (Shape r))
 
    buildFormatM ix  _ defaultValue _ =
       do
-        buf<-  VGM.replicate (F.foldl' (*) 0   ix) defaultValue
+        buf<-  VGM.replicate (F.foldl' (*) 1   ix) defaultValue
         return (FormatColumnContiguous   ix,buf)
 
 isStrictlyMonotonicV ::(VG.Vector v e)=> (e -> e->Ordering)-> v e -> Maybe Int

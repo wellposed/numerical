@@ -41,7 +41,7 @@ import Control.NumericalMonad.State.Strict
 import qualified Data.Foldable as F
 import Data.Traversable
 
-import Prelude hiding (foldr,foldl,map,scanl,scanr,scanl1,scanr1)
+import Prelude hiding (foldr,foldl,foldl',map,scanl,scanr,scanl1,scanr1)
 
 
 data Direct
@@ -908,5 +908,4 @@ Address 0
 Address 2
 *Numerical.Array.Layout> toAddress (FormColumn (2 :* 3 :* 7 :* Nil)) (0:* 0 :* 1 :* Nil)
 -}
-
 

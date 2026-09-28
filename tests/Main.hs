@@ -15,6 +15,7 @@ import Control.Exception (evaluate)
 main :: IO ()
 main = hspec  $ do
   describe "Shape Unit Tests" $  unitTestShape
+  describe "Layout correctness regressions" $ unitTestLayout
 
 --main = defaultMain tests
 

@@ -22,6 +22,7 @@ that acts only on the outermost dimension.
 
 -- {-# LANGUAGE PolyKinds   #-}
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -118,13 +119,14 @@ resolveRowStart rowptr i =
 -- | Build a skip-encoded rowptr from a traditional (monotone non-negative) rowptr.
 -- The input must have length nrows+1 with the last entry being nnz.
 -- Empty rows (where rowptr[i] == rowptr[i+1]) get skip-encoded.
-buildSkipRowPtr :: (V.Vector vec Int, V.Vector vec Int) => vec Int -> vec Int
+buildSkipRowPtr :: forall vec. V.Vector vec Int => vec Int -> vec Int
 buildSkipRowPtr traditional =
   let !n = V.length traditional - 1  -- number of rows
       isEmpty i = (traditional V.! i) == (traditional V.! (i+1))
 
       -- Forward pass: compute fwd_skip for each empty row
       -- fwd_skip[i] = distance to next non-empty row (or 0 if none)
+      fwdSkips :: vec Int
       fwdSkips = V.generate n $ \i ->
         if not (isEmpty i) then 0
         else let go j | j >= n = 0          -- no non-empty row after us
@@ -133,6 +135,7 @@ buildSkipRowPtr traditional =
              in go (i+1)
 
       -- Backward pass: compute bwd_skip for each empty row
+      bwdSkips :: vec Int
       bwdSkips = V.generate n $ \i ->
         if not (isEmpty i) then 0
         else let go j | j < 0 = 0           -- no non-empty row before us
@@ -567,7 +570,7 @@ instance V.Vector (BufferPure rep) Int => Layout  (Format DirectSparse 'Contiguo
   {-# INLINE toAddress #-}
   toAddress =
       \ (FormatDirectSparseContiguous shape  indexshift lookupTable) (ix:*_) ->
-         if  not (ix < shape && ix > 0 ) then  Nothing
+         if  not (ix < shape && ix >= 0 ) then  Nothing
           else  fmap Address  $! lookupExact lookupTable (ix + indexshift)
 
   {-# INLINE toIndex #-}
@@ -580,7 +583,7 @@ instance V.Vector (BufferPure rep) Int => Layout  (Format DirectSparse 'Contiguo
   {-# INLINE nextAddr #-}
   nextAddr =
     \ (FormatDirectSparseContiguous _ _ lut) (Address addr) ->
-      if  addr >= (V.length lut) then Nothing else Just  (Address (addr+1))
+      if addr < 0 || addr >= V.length lut - 1 then Nothing else Just (Address (addr+1))
 
   -- {-# INLINE addressPopCount #-}
   addressPopCount = \ form (Range loadr@(Address lo) hiadr@(Address hi)) ->
@@ -595,7 +598,7 @@ instance V.Vector (BufferPure rep) Int => Layout  (Format DirectSparse 'Contiguo
                "addressPopCount was passed a bad Address Range: "
                 ++show lo++" "++ show hi++"\nwith format Address range"
                 ++ show loBound ++ " " ++ show hiBound
-              else hi - lo
+              else hi - lo + 1
 
 
 {-
@@ -692,7 +695,7 @@ instance  (V.Vector (BufferPure rep) Int )
                "addressPopCount was passed a bad SparseAddress Range: "
                 ++show lo++" "++ show hi++"\nwith format SparseAddress range"
                 ++ show loBound ++ " " ++ show hiBound
-              else hi - lo
+              else hi - lo + 1
 
    -- {-# INLINE rangedFormatAddress #-}
   addressRange = \ form ->
@@ -870,7 +873,7 @@ overhead, but in general branch prediction should work out ok.
             (FormatContiguousCompressedSparseInternal  y_row_range x_col_range
               columnIndex rowStartIndex))
           (ix_x:*ix_y :* _ ) ->
-            if  not (ix_x >= x_col_range ||  ix_y >=y_row_range )
+            if not (ix_x < 0 || ix_y < 0 || ix_x >= x_col_range || ix_y >= y_row_range)
               then
                 let !rowEntry = rowStartIndex V.! ix_y
                 in if isEmptyRowEntry rowEntry
@@ -918,7 +921,7 @@ overhead, but in general branch prediction should work out ok.
 
             -- Find the first non-empty row at or after startRow.
             -- O(1) when rowptr is skip-encoded (negative entries encode fwd_skip).
-            -- Falls back to hybrid search for traditional rowptrs.
+            -- Traditional row ends are cumulative counts, hence monotone.
             findNonEmptyRow !startRow
               | startRow >= y_row_range = Nothing
               | otherwise =
